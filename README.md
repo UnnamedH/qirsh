@@ -32,7 +32,10 @@ The first launch shows example data; tap **Start fresh** to clear it.
 
 ## Publishing updates
 
-The site is served by GitHub Pages from `main`. When you change `index.html` or the icons, bump `VERSION` in `sw.js` so installed copies download the new version.
+The site is served by GitHub Pages from `main`. For each release:
+
+1. Add an entry at the top of `CHANGELOG` in `index.html` with the next version number and a short, plain list of what changed. People see it in a "What's new" sheet the first time they open the updated app.
+2. Bump `VERSION` in `sw.js` (for example `qirsh-v5`) so installed copies download the new version.
 
 ## Files
 

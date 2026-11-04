@@ -180,6 +180,8 @@ button.row:first-child{border-top:0}
 .sub-label{font-size:12.5px;color:var(--muted);font-weight:500}
 .note{font-size:13px;color:var(--muted);margin:0}
 .btn-row{display:flex;gap:8px;flex-wrap:wrap}
+.news{display:flex;flex-direction:column;gap:16px}
+.news ul{margin:6px 0 0;padding-left:20px;display:flex;flex-direction:column;gap:6px}
 .swatches{display:grid;grid-template-columns:repeat(8,1fr);gap:8px;align-items:center;justify-items:center}
 .swatch{width:100%;max-width:36px;aspect-ratio:1;border-radius:50%;border:0;padding:0;background:var(--c);box-shadow:inset 0 0 0 1px rgba(0,0,0,.12);display:grid;place-items:center;color:#fff}
 .swatch[aria-pressed="true"]{box-shadow:0 0 0 2px var(--bg),0 0 0 4px var(--c)}
@@ -355,6 +357,23 @@ const IOS=/iPhone|iPad|iPod/.test(navigator.userAgent)||(navigator.platform==='M
 const HINT_KEY='qirsh.installHint';
 function showInstallHint(){if(!IOS||STANDALONE)return false;try{return localStorage.getItem(HINT_KEY)!=='dismissed';}catch(e){return true;}}
 function registerSW(){if('serviceWorker' in navigator&&location.protocol!=='file:')navigator.serviceWorker.register('sw.js').catch(()=>{});}
+
+/* ---------- what's new ---------- */
+/* Newest first. Each release adds an entry here with the next v, and bumps VERSION in sw.js. */
+const CHANGELOG=[
+  {v:4,date:'2026-11-04',items:['A note like this one now shows up after each update, so you know what changed. You can reread it any time from the bottom of Settings.']},
+  {v:3,date:'2026-11-04',items:['Pick an accent colour in Settings → Appearance, from the presets or any colour you like.','Choose a Light, Dark or System theme.']},
+  {v:2,date:'2026-11-04',items:['Built-in categories now come with emojis.']},
+  {v:1,date:'2026-11-04',items:['Qirsh can be added to your Home Screen. It opens full screen and works offline.']}
+];
+const APP_VERSION=CHANGELOG[0].v,SEEN_KEY='qirsh.seenVersion';
+/* People who used the app before these notes existed last saw version 2; brand-new users see nothing until the next update. */
+function unseenChanges(){let seen=null,had=false;
+  try{seen=localStorage.getItem(SEEN_KEY);had=!!localStorage.getItem(KEY);}catch(e){return [];}
+  if(seen==null){if(!had){markSeen();return [];}seen=2;}
+  return CHANGELOG.filter(c=>c.v>+seen);}
+function markSeen(){try{localStorage.setItem(SEEN_KEY,String(APP_VERSION));}catch(e){}}
+let newsList=[];
 
 let state=load();
 
@@ -589,7 +608,7 @@ function renderSettings(){
     '<select class="input" id="newCatType" style="flex:0 0 auto;width:auto" aria-label="Type"><option value="expense">Spending</option><option value="income">Income</option></select></div>'+
     '<div class="btn-row"><button class="btn sm" data-act="addCat">Add category</button></div></div></section>';
   h+='<section class="sec"><h2>Reset</h2><div class="card"><p class="note">Deletes all entries, budgets and balances. Categories and rate stay.</p><div class="btn-row"><button class="btn danger'+(armed==='wipe'?' armed':'')+'" data-act="wipe">'+(armed==='wipe'?'Tap again to delete everything':'Clear all data')+'</button></div></div></section>';
-  h+='<p class="note" style="text-align:center">Qirsh · '+state.tx.length+' entries saved on this device</p>';
+  h+='<p class="note" style="text-align:center">Qirsh · version '+APP_VERSION+' · '+state.tx.length+(state.tx.length===1?' entry':' entries')+' saved on this device<br><button class="link" data-act="showNews">What’s new</button></p>';
   $('#v-settings').innerHTML=h;
 }
 
@@ -613,8 +632,8 @@ function toast(msg,undo){const el=$('#toast');undoFn=undo||null;
 /* ---------- sheets ---------- */
 let form=null,sheetKind=null;
 function openSheet(kind){sheetKind=kind;$('#toast').hidden=true;$('#scrim').hidden=false;$('#sheet').hidden=false;drawSheet();}
-function closeSheet(){$('#scrim').hidden=true;$('#sheet').hidden=true;sheetKind=null;form=null;}
-function drawSheet(){const el=$('#sheet');el.innerHTML='<div class="grab"></div>'+(sheetKind==='tx'?txSheet():budgetSheet());
+function closeSheet(){if(sheetKind==='news')markSeen();$('#scrim').hidden=true;$('#sheet').hidden=true;sheetKind=null;form=null;}
+function drawSheet(){const el=$('#sheet');el.innerHTML='<div class="grab"></div>'+(sheetKind==='tx'?txSheet():sheetKind==='news'?newsSheet():budgetSheet());
   if(sheetKind==='tx')updatePreview();
   const a=el.querySelector('#f-pay0');if(a&&!form.id&&!form.noFocus)setTimeout(()=>{try{a.focus();}catch(e){}},60);form.noFocus=true;}
 
@@ -717,6 +736,10 @@ function saveTx(){
   else{state.tx.push(t);closeSheet();commit();toast((isX?'Exchanged ':isT?'Moved ':'Added ')+(t.note||txTitle(t))+' · '+payParts(t).join(' + ')+(isT&&t.toCurrency!==t.currency?' → '+fmt(t.toAmount,t.toCurrency):''),()=>{state.tx=state.tx.filter(x=>x.id!==t.id);commit();});}
 }
 
+function newsSheet(){
+  let h='<div class="sheet-head"><h2>What’s new in Qirsh</h2><button class="icon-btn" data-act="close" aria-label="Close">'+ICON.close+'</button></div><div class="news">';
+  h+=newsList.map(c=>'<section><p class="label">Version '+c.v+' · '+esc(dayLabel(c.date))+'</p><ul>'+c.items.map(i=>'<li>'+esc(i)+'</li>').join('')+'</ul></section>').join('');
+  return h+'</div><div class="sheet-actions"><button class="btn primary" data-act="close">Got it</button></div>';}
 function budgetSheet(){const f=form;const cats=state.categories.filter(c=>c.type==='expense');
   let h='<div class="sheet-head"><h2>'+(f.id?'Edit budget':'New budget')+'</h2><button class="icon-btn" data-act="close" aria-label="Close">'+ICON.close+'</button></div>';
   h+='<label class="field"><span>Applies to</span><select id="b-cat"><option value="">All spending (overall cap)</option>'+cats.map(c=>'<option value="'+esc(c.id)+'"'+(f.categoryId===c.id?' selected':'')+'>'+esc(c.name)+'</option>').join('')+'</select></label>';
@@ -808,6 +831,7 @@ document.addEventListener('click',e=>{
     case 'delCat':{if(armed!=='cat:'+id){armed='cat:'+id;render();break;}armed=null;const c=catOf(id);if(!c)break;const to=c.type==='expense'?'other':'other-in';
       state.tx.forEach(t=>{if(t.categoryId===id)t.categoryId=to;});state.budgets=state.budgets.filter(b=>b.categoryId!==id);state.categories=state.categories.filter(x=>x.id!==id);commit();toast('Deleted '+c.name);break;}
     case 'exportShare':exportShare();break;
+    case 'showNews':newsList=CHANGELOG;form={};openSheet('news');break;
     case 'hideInstallHint':try{localStorage.setItem(HINT_KEY,'dismissed');}catch(e){}render();break;
     case 'exportSave':exportSave();break;
     case 'exportCopy':exportCopy();break;
@@ -854,6 +878,7 @@ function updateNotesList(){if(!notesDl){notesDl=document.createElement('datalist
 
 window.__qirsh={get state(){return state},payVec,backVec,txCostUSD,normalize,balances,budgetStatus,templates,range,fmt,parseAmt,combinedUSD};
 render();
+newsList=unseenChanges();if(newsList.length){form={};openSheet('news');}
 persistStorage();
 registerSW();
 })();
