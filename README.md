@@ -2,7 +2,7 @@
 
 A small, phone-first budget tracker for living with two currencies: US dollars and Lebanese lira (LL).
 
-It's a single `index.html` with no build step and no dependencies. Data is stored only on the device, in `localStorage` (and in native storage when it runs inside the Capacitor iOS shell).
+It's a single `index.html` with no build step and no dependencies. Data is stored only on the device, in the browser's `localStorage`. It can be installed to the home screen on iPhone and Android and works offline.
 
 ## Features
 
@@ -13,12 +13,30 @@ It's a single `index.html` with no build step and no dependencies. Data is store
 - Quick add for repeat entries, history by month with search and filters
 - Editable categories with emoji, JSON backup export and import
 
-## Run it
+## Install on a phone
 
-Open `index.html` in a browser, or serve the folder:
+- **iPhone (Safari):** tap Share, then **Add to Home Screen**.
+- **Android (Chrome):** tap **Install app** when prompted, or use the ⋮ menu → **Add to Home screen**.
+
+On iPhone, Safari and the installed app keep separate data. Install first, or move your data across with Settings → Backup.
+
+## Run it locally
+
+Serve the folder (the service worker needs `http://`, not `file://`):
 
 ```bash
 npx serve .
 ```
 
 The first launch shows example data; tap **Start fresh** to clear it.
+
+## Publishing updates
+
+The site is served by GitHub Pages from `main`. When you change `index.html` or the icons, bump `VERSION` in `sw.js` so installed copies download the new version.
+
+## Files
+
+- `index.html`: the whole app
+- `manifest.webmanifest`: name, colours and icons for installing
+- `sw.js`: service worker for offline use
+- `icons/`: app, maskable, Apple touch and favicon icons

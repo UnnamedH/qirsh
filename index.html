@@ -4,7 +4,17 @@
 <meta charset="utf-8">
 <meta name="viewport" content="width=device-width,initial-scale=1,viewport-fit=cover">
 <title>Qirsh</title>
-<style>:root{color-scheme:light}body{margin:0;padding:0}img{max-width:100%}[hidden]:not([hidden=until-found i]){display:none!important}</style>
+<meta name="description" content="Track spending in dollars and lira.">
+<link rel="manifest" href="manifest.webmanifest">
+<link rel="icon" type="image/png" href="icons/favicon.png">
+<link rel="apple-touch-icon" href="icons/apple-touch-icon.png">
+<meta name="theme-color" content="#F3F6F4" media="(prefers-color-scheme: light)">
+<meta name="theme-color" content="#0E1311" media="(prefers-color-scheme: dark)">
+<meta name="mobile-web-app-capable" content="yes">
+<meta name="apple-mobile-web-app-capable" content="yes">
+<meta name="apple-mobile-web-app-title" content="Qirsh">
+<meta name="apple-mobile-web-app-status-bar-style" content="black-translucent">
+<style>:root{color-scheme:light;box-sizing:border-box;padding-top:env(safe-area-inset-top,0px);padding-bottom:env(safe-area-inset-bottom,0px)}html{scroll-padding-top:env(safe-area-inset-top,0px)}body{margin:0;padding:0}img{max-width:100%}[hidden]:not([hidden=until-found i]){display:none!important}</style>
 <link rel="preconnect" href="https://fonts.googleapis.com">
 <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
 <link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Geist:wght@400;500;600;700&family=Geist+Mono:wght@400;500;600&display=swap">
@@ -329,18 +339,16 @@ function load(){
   try{const raw=localStorage.getItem(KEY);if(raw){const s=JSON.parse(raw);if(isValid(s))return normalize(s);}}catch(e){}
   return sampleState();
 }
-/* Inside the iOS app (Capacitor) data is also kept in native storage, which iOS never clears the way it can clear web storage. */
-const NATIVE=!!(window.Capacitor&&typeof window.Capacitor.isNativePlatform==='function'&&window.Capacitor.isNativePlatform());
-const nat=(plugin,method,opts)=>window.Capacitor.nativePromise(plugin,method,opts||{});
-function save(){state.savedAt=Date.now();const raw=JSON.stringify(state);
-  try{localStorage.setItem(KEY,raw);}catch(e){}
-  if(NATIVE)nat('Preferences','set',{key:KEY,value:raw}).catch(()=>{});}
-function syncNative(){if(!NATIVE)return;
-  nat('Preferences','get',{key:KEY}).then(r=>{let s=null;try{s=r&&r.value?JSON.parse(r.value):null;}catch(e){}
-    let hasLocal=false;try{hasLocal=!!localStorage.getItem(KEY);}catch(e){}
-    if(s&&isValid(s)&&(!hasLocal||(+s.savedAt||0)>(+state.savedAt||0))){state=normalize(s);try{localStorage.setItem(KEY,JSON.stringify(state));}catch(e){}render();}
-    else if(hasLocal)nat('Preferences','set',{key:KEY,value:JSON.stringify(state)}).catch(()=>{});
-  }).catch(()=>{});}
+function save(){state.savedAt=Date.now();try{localStorage.setItem(KEY,JSON.stringify(state));}catch(e){}}
+/* Ask the browser not to evict our data when the device is low on space. */
+function persistStorage(){try{const st=navigator.storage;if(st&&st.persist&&st.persisted)st.persisted().then(p=>p||st.persist()).catch(()=>{});}catch(e){}}
+
+/* ---------- installed app ---------- */
+const STANDALONE=(window.matchMedia&&matchMedia('(display-mode: standalone)').matches)||navigator.standalone===true;
+const IOS=/iPhone|iPad|iPod/.test(navigator.userAgent)||(navigator.platform==='MacIntel'&&navigator.maxTouchPoints>1);
+const HINT_KEY='qirsh.installHint';
+function showInstallHint(){if(!IOS||STANDALONE)return false;try{return localStorage.getItem(HINT_KEY)!=='dismissed';}catch(e){return true;}}
+function registerSW(){if('serviceWorker' in navigator&&location.protocol!=='file:')navigator.serviceWorker.register('sw.js').catch(()=>{});}
 
 let state=load();
 
@@ -447,6 +455,7 @@ function renderHome(){
   const overall=state.budgets.find(x=>!x.categoryId&&x.period==='month')||state.budgets.find(x=>!x.categoryId);
   const watch=state.budgets.filter(x=>x.categoryId).map(x=>({b:x,s:budgetStatus(x)})).sort((a,c)=>c.s.pct-a.s.pct).slice(0,3);
   let h='';
+  if(showInstallHint())h+='<div class="banner"><p>Install Qirsh: tap <strong>Share</strong> <svg aria-hidden="true" viewBox="0 0 24 24" width="15" height="15" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" style="vertical-align:-2px"><path d="M12 3v12M8 7l4-4 4 4M6 11H5v9h14v-9h-1"/></svg> in Safari, then <strong>Add to Home Screen</strong>. It opens full screen and works offline.</p><button class="icon-btn" data-act="hideInstallHint" aria-label="Dismiss install tip">'+ICON.close+'</button></div>';
   if(state.sample)h+='<div class="banner"><p>These are example transactions so you can see how it works.</p><button class="btn sm primary" data-act="clearSample">Start fresh</button></div>';
   h+='<section class="balance" aria-label="Wallet balance"><p class="label">Wallet</p>'+
      '<button class="balance-total" data-act="toggleDisplay" title="Switch currency">'+fmtDisp(combinedUSD(w))+'<small>total</small></button>'+
@@ -516,8 +525,8 @@ function renderSettings(){
     '<div class="set-row"><span>Week starts on</span><div class="seg">'+[[1,'Mon'],[6,'Sat'],[0,'Sun']].map(([k,l])=>'<button data-act="setWeek" data-v="'+k+'" aria-pressed="'+(s.weekStart===k)+'">'+l+'</button>').join('')+'</div></div></div></section>';
   h+='<section class="sec"><h2>Starting balances</h2><div class="card"><p class="note">What each account held before your first entry. Change these to correct a balance.</p>'+
     ACCOUNTS.map(a=>'<div class="grid2"><label class="field"><span>'+a.name+' USD</span><input class="num" data-open="'+a.id+'" data-cur="USD" inputmode="decimal" value="'+(state.opening[a.id].USD||0)+'"></label><label class="field"><span>'+a.name+' LL</span><input class="num" data-open="'+a.id+'" data-cur="LBP" inputmode="numeric" value="'+(state.opening[a.id].LBP||0).toLocaleString('en-US')+'"></label></div>').join('')+'</div></section>';
-  h+='<section class="sec"><h2>Backup</h2><div class="card"><p class="note">'+(NATIVE?'Your data lives only on this phone. Backups are saved in the Files app under On My iPhone › Qirsh, and you can send them anywhere from the share sheet. ':'Your data lives only on this phone. Export a JSON backup now and then, and before clearing browser data. ')+(state.lastExport?'Last export: '+dayLabel(state.lastExport.slice(0,10))+'.':'No export yet.')+'</p>'+
-    '<div class="btn-row">'+(NATIVE?'<button class="btn" data-act="exportNative">Save backup</button>':'<button class="btn" data-act="exportShare">Share</button><button class="btn" data-act="exportSave">Save file</button>')+'<button class="btn" data-act="exportCopy">Copy JSON</button></div>'+
+  h+='<section class="sec"><h2>Backup</h2><div class="card"><p class="note">Your data lives only on this phone, in this browser. Export a JSON backup now and then, and before clearing browser data.'+(IOS?' On iPhone, Safari and the Home Screen app keep separate data, so use a backup to move between them.':'')+' '+(state.lastExport?'Last export: '+dayLabel(state.lastExport.slice(0,10))+'.':'No export yet.')+'</p>'+
+    '<div class="btn-row"><button class="btn" data-act="exportShare">Share</button><button class="btn" data-act="exportSave">Save file</button><button class="btn" data-act="exportCopy">Copy JSON</button></div>'+
     '<div id="exportOut"></div>'+
     '<div class="btn-row"><button class="btn" data-act="importPick">Import file</button><button class="btn ghost" data-act="importPaste">Paste JSON</button></div><div id="importArea"></div>'+
     (pendingImport?'<div class="banner" style="flex-direction:column;align-items:stretch"><p>This backup has <strong>'+pendingImport.tx.length+'</strong> entries and <strong>'+pendingImport.budgets.length+'</strong> budgets. Importing replaces everything on this phone.</p><div class="btn-row"><button class="btn primary sm" data-act="importConfirm">Replace my data</button><button class="btn sm" data-act="importCancel">Cancel</button></div></div>':'')+
@@ -682,11 +691,6 @@ function saveBudget(){readBudget();const f=form;const a=parseAmt(f.amount);const
 const exportText=()=>JSON.stringify(Object.assign({},state,{exportedAt:new Date().toISOString()}),null,2);
 const exportName=()=>'qirsh-backup-'+ymd(new Date())+'.json';
 function markExported(){state.lastExport=new Date().toISOString();save();}
-async function exportNative(){const name=exportName();let uri;
-  try{uri=(await nat('Filesystem','writeFile',{path:name,data:exportText(),directory:'DOCUMENTS',encoding:'utf8'})).uri;}
-  catch(e){toast('Couldn’t save the backup. Use Copy JSON instead.');return;}
-  markExported();render();toast('Saved '+name+' to Files › Qirsh');
-  try{await nat('Share','share',{title:'Qirsh backup',files:[uri]});}catch(e){}}
 async function exportShare(){
   try{const file=new File([exportText()],exportName(),{type:'application/json'});
     if(navigator.canShare&&navigator.canShare({files:[file]})){await navigator.share({files:[file],title:'Qirsh backup'});markExported();render();toast('Backup shared');return;}
@@ -756,7 +760,7 @@ document.addEventListener('click',e=>{
     case 'delCat':{if(armed!=='cat:'+id){armed='cat:'+id;render();break;}armed=null;const c=catOf(id);if(!c)break;const to=c.type==='expense'?'other':'other-in';
       state.tx.forEach(t=>{if(t.categoryId===id)t.categoryId=to;});state.budgets=state.budgets.filter(b=>b.categoryId!==id);state.categories=state.categories.filter(x=>x.id!==id);commit();toast('Deleted '+c.name);break;}
     case 'exportShare':exportShare();break;
-    case 'exportNative':exportNative();break;
+    case 'hideInstallHint':try{localStorage.setItem(HINT_KEY,'dismissed');}catch(e){}render();break;
     case 'exportSave':exportSave();break;
     case 'exportCopy':exportCopy();break;
     case 'importPick':$('#importFile').value='';$('#importFile').click();break;
@@ -800,7 +804,8 @@ function updateNotesList(){if(!notesDl){notesDl=document.createElement('datalist
 
 window.__qirsh={get state(){return state},payVec,backVec,txCostUSD,normalize,balances,budgetStatus,templates,range,fmt,parseAmt,combinedUSD};
 render();
-syncNative();
+persistStorage();
+registerSW();
 })();
 </script>
 
