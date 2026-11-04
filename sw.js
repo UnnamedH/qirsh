@@ -1,5 +1,5 @@
 /* Offline support. Bump VERSION whenever you change any of the files in APP so phones pick up the update. */
-const VERSION = 'qirsh-v3';
+const VERSION = 'qirsh-v4';
 const APP = ['./', 'index.html', 'manifest.webmanifest', 'icons/icon-192.png', 'icons/icon-512.png', 'icons/icon-maskable-512.png', 'icons/apple-touch-icon.png', 'icons/favicon.png'];
 const FONTS = 'qirsh-fonts';
 
