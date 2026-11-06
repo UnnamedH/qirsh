@@ -4,6 +4,14 @@ import { KEY } from './state.js';
 /* Newest first. Each release adds an entry here with the next v, and bumps VERSION in sw.js. */
 export const CHANGELOG = [
   {
+    v: 7,
+    date: '2026-11-06',
+    items: [
+      'Monthly report: in History, tap “Monthly report (Excel)” for the month you’re looking at. It shows what you earned and spent, where the money went, what you set aside in Savings, what you’re owed, how your budgets did, and every entry.',
+      'Need the raw numbers? “Entries (CSV)” gives that month’s entries as a CSV file for other apps.',
+    ],
+  },
+  {
     v: 6,
     date: '2026-11-06',
     items: [

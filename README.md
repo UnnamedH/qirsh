@@ -14,6 +14,7 @@ Plain HTML, CSS and JavaScript modules: no framework and no build step. GitHub P
 - Money paid on someone else's behalf, with paybacks, kept out of budgets
 - Weekly and monthly budgets, overall or per category
 - Quick add for repeat entries, history by month with search and filters
+- A monthly report as an Excel file (summary, spending by category, savings, owed, budgets, every entry), and a CSV of the month's entries
 - Accent colours and a light/dark theme, a "What's new" note after each update
 - Editable categories with emoji, JSON backup export and import
 
@@ -64,7 +65,8 @@ js/advances.js          Money paid for others and its paybacks
 js/templates.js         Quick add (frequent and recent entries)
 js/theme.js             Accent colour palette and light/dark theme
 js/changelog.js         Release notes for "What's new"
-js/backup.js            Export and import
+js/backup.js            Export and import, saving generated files
+js/report/              Monthly report: the data (monthly.js) and a small .xlsx writer (xlsx.js)
 js/pwa.js               Install tip and service worker registration
 js/util.js, icons.js    Small helpers and SVG icons
 js/ui/                  Rendering the current view, shared row/budget HTML, toast, UI state
