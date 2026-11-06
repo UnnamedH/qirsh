@@ -198,11 +198,14 @@ export function saveRepay() {
     note: f.note.trim(),
     date: f.date,
     account: 'wallet',
+    rate: state.rate,
     createdAt: Date.now(),
   };
   if (f.mode === 'edit') {
     const i = state.tx.findIndex((x) => x.id === f.id);
     if (i >= 0) {
+      // Keep the rate from the day the payback was first recorded.
+      if (+state.tx[i].rate > 0) t.rate = state.tx[i].rate;
       t.createdAt = state.tx[i].createdAt || t.createdAt;
       state.tx[i] = t;
     }

@@ -470,7 +470,7 @@ export function saveTx() {
   } else if (isA) {
     const who = (f.who || '').trim();
     if (!who) return fail('Who will pay you back?');
-    Object.assign(t, { who, account: 'wallet' });
+    Object.assign(t, { who, account: 'wallet', rate: state.rate });
   } else {
     if (!f.categoryId) return fail('Pick a category.');
     Object.assign(t, { categoryId: f.categoryId, account: 'wallet' });
@@ -492,7 +492,7 @@ export function saveTx() {
       if (old.type === 'advance' && !isA && paybacksOf(old.id).length)
         return fail('This has paybacks recorded. Delete them first, or keep "Someone will pay me back" on.');
       if (old.type === 'advance' && isA)
-        ['closed', 'closedOn', 'keptCat'].forEach((k) => {
+        ['closed', 'closedOn', 'keptCat', 'rate'].forEach((k) => {
           if (old[k] != null) t[k] = old[k];
         });
       t.createdAt = old.createdAt || t.createdAt;

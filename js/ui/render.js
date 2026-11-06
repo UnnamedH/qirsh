@@ -1,5 +1,5 @@
 /* Draws the current view. */
-import { save, state } from '../state.js';
+import { rescuedData, save, saveFailed, state } from '../state.js';
 import { applyTheme } from '../theme.js';
 import { view } from './ui-state.js';
 import { $, DAYS, MONTHS, esc } from '../util.js';
@@ -10,6 +10,7 @@ import { renderSettings } from '../views/settings.js';
 
 export function render() {
   applyTheme();
+  renderAlerts();
   ['home', 'history', 'budgets', 'settings'].forEach((v) => {
     $('#v-' + v).hidden = v !== view;
   });
@@ -25,6 +26,22 @@ export function render() {
   }[view];
   ({ home: renderHome, history: renderHistory, budgets: renderBudgets, settings: renderSettings })[view]();
   updateNotesList();
+}
+
+/* Warnings shown above every view while there is a problem with saved data. */
+function renderAlerts() {
+  const alerts = [];
+  if (saveFailed)
+    alerts.push(
+      '<div class="banner bad" role="alert"><p><strong>Your last change wasn’t saved.</strong> This browser’s storage is full or blocked, for example in a private window. Export a backup from Settings so nothing is lost.</p></div>',
+    );
+  if (rescuedData() && view !== 'settings')
+    alerts.push(
+      '<div class="banner bad" role="alert"><p>Your saved data couldn’t be read, so Qirsh started empty. A copy was kept on this device.</p><button class="btn sm" data-act="nav" data-v="settings">Open Backup</button></div>',
+    );
+  const el = $('#alerts');
+  el.innerHTML = alerts.join('');
+  el.hidden = !alerts.length;
 }
 
 export function commit() {

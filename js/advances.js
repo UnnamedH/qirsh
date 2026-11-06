@@ -1,5 +1,5 @@
 /* Money paid on someone else's behalf ("advances") and their paybacks. */
-import { fmt, fromUSD, payVec, vUSD } from './money.js';
+import { fmt, fromUSD, payVec, toUSD } from './money.js';
 import { state } from './state.js';
 
 /* An 'advance' is money paid on someone else's behalf: it leaves the wallet but is not spending. Paybacks ('repay',
@@ -12,11 +12,29 @@ export const paybacksOf = (id) =>
 
 export const advanceOf = (r) => state.tx.find((t) => t.id === r.advanceId && t.type === 'advance');
 
+/* Amounts are compared in the advance's own currency. An amount in the other currency is converted
+   at the rate stored on its entry when it was saved, so changing the app's rate later does not change
+   how much is still owed. */
+function inCurrency(t, cur) {
+  const v = payVec(t),
+    rate = +t.rate > 0 ? +t.rate : state.rate;
+  return cur === 'USD' ? v.USD + v.LBP / rate : v.LBP + v.USD * rate;
+}
+
+/** What an advance cost, how much came back and how much is left, each as USD at today's rate. */
 export function owed(a) {
-  const cost = vUSD(payVec(a)),
-    back = paybacksOf(a.id).reduce((s, r) => s + vUSD(payVec(r)), 0),
-    left = Math.max(0, cost - back);
-  return { cost, back, left, settled: left < 0.005 || !!a.closed };
+  const cur = a.currency,
+    cost = inCurrency(a, cur),
+    back = paybacksOf(a.id).reduce((s, r) => s + inCurrency(r, cur), 0),
+    left = Math.max(0, cost - back),
+    // Less than a cent, or less than 500 LL, counts as fully paid back.
+    paid = left < (cur === 'USD' ? 0.005 : 500);
+  return {
+    cost: toUSD(cost, cur),
+    back: toUSD(back, cur),
+    left: paid ? 0 : toUSD(left, cur),
+    settled: paid || !!a.closed,
+  };
 }
 
 export const fmtAdv = (a, usd) => fmt(fromUSD(usd, a.currency), a.currency, { round: true });

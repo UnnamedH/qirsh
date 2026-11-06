@@ -4,6 +4,15 @@ import { KEY } from './state.js';
 /* Newest first. Each release adds an entry here with the next v, and bumps VERSION in sw.js. */
 export const CHANGELOG = [
   {
+    v: 6,
+    date: '2026-11-06',
+    items: [
+      'Safer saving: if your saved data can’t be read, Qirsh keeps a copy instead of replacing it, and it warns you if a change couldn’t be saved.',
+      'If Qirsh is open in two places, like the installed app and a browser tab, they now stay in sync instead of overwriting each other.',
+      'A payback in the other currency keeps the exchange rate from the day you recorded it, so changing the rate no longer reopens a settled entry.',
+    ],
+  },
+  {
     v: 5,
     date: '2026-11-06',
     items: [

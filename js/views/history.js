@@ -7,9 +7,11 @@ import { rowSub, txAmt, txGlyph, txTitle } from '../ui/format.js';
 import { hist } from '../ui/ui-state.js';
 import { $, MONTHS, dayLabel, esc } from '../util.js';
 
-export function renderHistory() {
-  const m = hist.month;
-  const r = { start: m, end: new Date(m.getFullYear(), m.getMonth() + 1, 1) };
+const monthRange = (m) => ({ start: m, end: new Date(m.getFullYear(), m.getMonth() + 1, 1) });
+
+/** Entries for the month, filter and search shown in History, newest first. */
+export function historyTxs() {
+  const r = monthRange(hist.month);
   const q = hist.q.trim().toLowerCase();
   let txs = state.tx.filter((t) => inRange(t, r) && histMatch(t));
   if (q)
@@ -19,7 +21,13 @@ export function renderHistory() {
         txTitle(t).toLowerCase().includes(q) ||
         (String(t.amount) + ' ' + (t.amount2 || '')).includes(q),
     );
-  txs.sort((a, b) => b.date.localeCompare(a.date) || (b.createdAt || 0) - (a.createdAt || 0));
+  return txs.sort((a, b) => b.date.localeCompare(a.date) || (b.createdAt || 0) - (a.createdAt || 0));
+}
+
+export function renderHistory() {
+  const m = hist.month;
+  const r = monthRange(m);
+  const txs = historyTxs();
   const spent = sumUSD(r, 'expense'),
     inc = sumUSD(r, 'income');
   let h =
@@ -68,7 +76,7 @@ export function renderHistory() {
 }
 
 /* Paying for others and paybacks are money moves, not spending or income, so they sit under Moves. */
-export const histMatch = (t) =>
+const histMatch = (t) =>
   hist.filter === 'all' ||
   t.type === hist.filter ||
   (hist.filter === 'transfer' && (t.type === 'advance' || t.type === 'repay'));

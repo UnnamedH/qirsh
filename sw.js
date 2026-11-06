@@ -6,7 +6,7 @@
  * the precache below is refreshed and old caches are deleted. tests/precache.spec.js fails if a
  * file is missing from APP.
  */
-const VERSION = 'qirsh-v6';
+const VERSION = 'qirsh-v7';
 const FONTS = 'qirsh-fonts';
 const APP = [
   './',

@@ -51,5 +51,6 @@ export function cloneForToday(t) {
   delete c.closed;
   delete c.closedOn;
   delete c.keptCat;
+  if (c.type === 'advance') c.rate = state.rate;
   return c;
 }

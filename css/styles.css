@@ -227,6 +227,14 @@ main .wrap {
 .banner p {
   margin: 0;
 }
+.banner.bad {
+  background: var(--bad-soft);
+}
+#alerts {
+  display: flex;
+  flex-direction: column;
+  gap: 10px;
+}
 
 /* balance */
 .balance {
