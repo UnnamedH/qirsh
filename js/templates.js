@@ -1,0 +1,55 @@
+/* Quick add: entries the user repeats often or added recently. */
+import { backVec } from './money.js';
+import { state } from './state.js';
+import { uid, ymd } from './util.js';
+
+function tplKey(t) {
+  return [
+    t.type,
+    t.categoryId || '',
+    t.who || '',
+    t.amount,
+    t.currency,
+    (t.note || '').trim().toLowerCase(),
+    t.from || '',
+    t.to || '',
+    t.toCurrency || '',
+    t.type === 'transfer' && t.toCurrency !== t.currency ? t.toAmount : '',
+    t.amount2 || '',
+    ((t) => {
+      const k = backVec(t);
+      return k.USD + '/' + k.LBP;
+    })(t),
+  ].join('|');
+}
+
+export function templates() {
+  const m = new Map();
+  for (const t of state.tx) {
+    if (t.type === 'repay') continue;
+    const k = tplKey(t);
+    const e = m.get(k) || { key: k, tx: t, count: 0, last: 0 };
+    e.count++;
+    if ((t.createdAt || 0) >= e.last) {
+      e.last = t.createdAt || 0;
+      e.tx = t;
+    }
+    m.set(k, e);
+  }
+  const all = [...m.values()];
+  return {
+    frequent: all
+      .filter((e) => e.count >= 2)
+      .sort((a, b) => b.count - a.count || b.last - a.last)
+      .slice(0, 8),
+    recent: all.sort((a, b) => b.last - a.last).slice(0, 8),
+  };
+}
+
+export function cloneForToday(t) {
+  const c = Object.assign({}, t, { id: uid(), date: ymd(new Date()), createdAt: Date.now() });
+  delete c.closed;
+  delete c.closedOn;
+  delete c.keptCat;
+  return c;
+}
