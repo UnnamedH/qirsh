@@ -111,3 +111,11 @@ test('injected inline script does not run', async ({ page }) => {
   await page.waitForTimeout(300);
   expect(await page.evaluate(() => window.__ran)).toBeUndefined();
 });
+
+test('Settings explains where the data lives', async ({ page }) => {
+  await openApp(page);
+  await page.click('.tabs [data-act=nav][data-v=settings]');
+  const privacy = page.locator('#v-settings .sec', { has: page.locator('h2', { hasText: 'Privacy' }) });
+  await expect(privacy).toContainText('stays on this phone');
+  await expect(privacy).toContainText('never sends your data anywhere');
+});
