@@ -1,5 +1,5 @@
 /* Backup export and import. */
-import { isValid, normalize, save, state } from './state.js';
+import { isValid, normalize, rescuedData, save, state } from './state.js';
 import { render } from './ui/render.js';
 import { toast } from './ui/toast.js';
 import { setPendingImport } from './ui/ui-state.js';
@@ -31,16 +31,32 @@ export async function exportShare() {
   toast('Sharing a file isn’t available here. Use Save file or Copy JSON.');
 }
 
+function download(text, name, type) {
+  const url = URL.createObjectURL(new Blob([text], { type }));
+  const a = document.createElement('a');
+  a.href = url;
+  a.download = name;
+  document.body.appendChild(a);
+  a.click();
+  a.remove();
+  setTimeout(() => URL.revokeObjectURL(url), 3000);
+}
+
+/* Downloads saved data that could not be read, exactly as it was stored. */
+export function exportRescued() {
+  const raw = rescuedData();
+  if (!raw) return;
+  try {
+    download(raw, 'qirsh-unreadable-' + ymd(new Date()) + '.txt', 'text/plain');
+    toast('Saving the unreadable data');
+  } catch (e) {
+    toast('Saving failed.');
+  }
+}
+
 export function exportSave() {
   try {
-    const url = URL.createObjectURL(new Blob([exportText()], { type: 'application/json' }));
-    const a = document.createElement('a');
-    a.href = url;
-    a.download = exportName();
-    document.body.appendChild(a);
-    a.click();
-    a.remove();
-    setTimeout(() => URL.revokeObjectURL(url), 3000);
+    download(exportText(), exportName(), 'application/json');
     markExported();
     render();
     toast('Saving ' + exportName());

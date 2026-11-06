@@ -1,9 +1,9 @@
 /* All user interaction: one delegated listener per event type, dispatching on data-act. */
 import { advanceOf, paybacksOf } from './advances.js';
-import { exportCopy, exportSave, exportShare, stageImport } from './backup.js';
+import { exportCopy, exportRescued, exportSave, exportShare, stageImport } from './backup.js';
 import { CHANGELOG } from './changelog.js';
 import { ACCOUNTS, accName } from './config.js';
-import { catName, catOf, inRange } from './ledger.js';
+import { catName, catOf } from './ledger.js';
 import { other, parseAmt, payParts } from './money.js';
 import { HINT_KEY } from './pwa.js';
 import { readBudget, saveBudget } from './sheets/budget.js';
@@ -11,7 +11,7 @@ import { autoTo, formFromTx, newTxForm, readForm, saveTx, updatePreview } from '
 import { setNewsList } from './sheets/news.js';
 import { afterRepay, repayForm, saveRepay } from './sheets/payback.js';
 import { closeSheet, drawSheet, form, openSheet, setForm, sheetKind } from './sheets/sheet.js';
-import { blankState, save, setState, state } from './state.js';
+import { KEY, blankState, discardRescued, parseState, save, setState, state } from './state.js';
 import { cloneForToday, templates } from './templates.js';
 import { DEFAULT_ACCENT, applyTheme, hexRgb } from './theme.js';
 import { txTitle } from './ui/format.js';
@@ -28,7 +28,7 @@ import {
   view,
 } from './ui/ui-state.js';
 import { $, firstGlyph, uid, ymd } from './util.js';
-import { histMatch, historyList } from './views/history.js';
+import { historyList, historyTxs } from './views/history.js';
 
 document.addEventListener('click', (e) => {
   const el = e.target.closest('[data-act]');
@@ -42,7 +42,8 @@ document.addEventListener('click', (e) => {
     act !== 'fdel' &&
     act !== 'bdel' &&
     act !== 'rdel' &&
-    act !== 'keepRest'
+    act !== 'keepRest' &&
+    act !== 'discardRescued'
   )
     setArmed(null);
   switch (act) {
@@ -467,6 +468,20 @@ document.addEventListener('click', (e) => {
     case 'exportSave':
       exportSave();
       break;
+    case 'exportRescued':
+      exportRescued();
+      break;
+    case 'discardRescued':
+      if (armed !== 'rescue') {
+        setArmed('rescue');
+        render();
+        break;
+      }
+      setArmed(null);
+      discardRescued();
+      render();
+      toast('Unreadable data discarded');
+      break;
     case 'exportCopy':
       exportCopy();
       break;
@@ -536,19 +551,7 @@ document.addEventListener('input', (e) => {
   }
   if (t.id === 'hq') {
     hist.q = t.value;
-    const m = hist.month,
-      r = { start: m, end: new Date(m.getFullYear(), m.getMonth() + 1, 1) };
-    const q = hist.q.trim().toLowerCase();
-    let txs = state.tx.filter((x) => inRange(x, r) && histMatch(x));
-    if (q)
-      txs = txs.filter(
-        (x) =>
-          (x.note || '').toLowerCase().includes(q) ||
-          txTitle(x).toLowerCase().includes(q) ||
-          (String(x.amount) + ' ' + (x.amount2 || '')).includes(q),
-      );
-    txs.sort((a, b) => b.date.localeCompare(a.date) || (b.createdAt || 0) - (a.createdAt || 0));
-    $('#histList').innerHTML = historyList(txs);
+    $('#histList').innerHTML = historyList(historyTxs());
   }
 });
 
@@ -622,4 +625,15 @@ document.addEventListener('keydown', (e) => {
     else if (sheetKind === 'repay') saveRepay();
     else if (sheetKind === 'budget') saveBudget();
   }
+});
+
+/* Another copy of the app (a second tab, or the installed app next to a browser tab) saved a change.
+   Take its state, so this copy neither shows stale data nor writes over the change on its next save. */
+window.addEventListener('storage', (e) => {
+  if (e.key !== KEY || !e.newValue) return;
+  const next = parseState(e.newValue);
+  if (!next) return;
+  setState(next);
+  render();
+  if (sheetKind === 'tx' || sheetKind === 'repay') drawSheet();
 });

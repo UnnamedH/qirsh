@@ -4,7 +4,7 @@ import { ACCOUNTS, PROTECTED } from '../config.js';
 import { ICON } from '../icons.js';
 import { catName } from '../ledger.js';
 import { IOS } from '../pwa.js';
-import { state } from '../state.js';
+import { rescuedData, state } from '../state.js';
 import { ACCENTS, DEFAULT_ACCENT } from '../theme.js';
 import { armed, pendingImport } from '../ui/ui-state.js';
 import { $, dayLabel, esc } from '../util.js';
@@ -131,6 +131,13 @@ export function renderSettings() {
     '</p>' +
     '<div class="btn-row"><button class="btn" data-act="exportShare">Share</button><button class="btn" data-act="exportSave">Save file</button><button class="btn" data-act="exportCopy">Copy JSON</button></div>' +
     '<div id="exportOut"></div>' +
+    (rescuedData()
+      ? '<div class="banner bad" style="flex-direction:column;align-items:stretch"><p>Saved data that couldn’t be read was kept on this device. Download it to keep it safe, or discard it once you no longer need it.</p><div class="btn-row"><button class="btn sm" data-act="exportRescued">Download it</button><button class="btn sm danger' +
+        (armed === 'rescue' ? ' armed' : '') +
+        '" data-act="discardRescued">' +
+        (armed === 'rescue' ? 'Tap again to discard' : 'Discard') +
+        '</button></div></div>'
+      : '') +
     '<div class="btn-row"><button class="btn" data-act="importPick">Import file</button><button class="btn ghost" data-act="importPaste">Paste JSON</button></div><div id="importArea"></div>' +
     (pendingImport
       ? '<div class="banner" style="flex-direction:column;align-items:stretch"><p>This backup has <strong>' +
@@ -203,7 +210,7 @@ export function renderSettings() {
                       ? ' Its ' +
                         used(c.id) +
                         ' entries move to "' +
-                        catName(type === 'expense' ? 'other' : 'other-in') +
+                        esc(catName(type === 'expense' ? 'other' : 'other-in')) +
                         '".'
                       : '') +
                     '</p>'
