@@ -180,6 +180,7 @@ button.row:first-child{border-top:0}
 .sub-label{font-size:12.5px;color:var(--muted);font-weight:500}
 .note{font-size:13px;color:var(--muted);margin:0}
 .btn-row{display:flex;gap:8px;flex-wrap:wrap}
+.row>.btn.sm{flex:none}
 .news{display:flex;flex-direction:column;gap:16px}
 .news ul{margin:6px 0 0;padding-left:20px;display:flex;flex-direction:column;gap:6px}
 .swatches{display:grid;grid-template-columns:repeat(8,1fr);gap:8px;align-items:center;justify-items:center}
@@ -301,7 +302,9 @@ function sampleState(){
   s.opening={wallet:{USD:240,LBP:2500000},savings:{USD:900,LBP:0},whish:{USD:35,LBP:0}};
   const now=new Date(); let seq=0;
   const add=(ago,o)=>{const d=addDays(startOfDay(now),-ago);seq++;
-    s.tx.push(Object.assign({id:'s'+seq,date:ymd(d),createdAt:d.getTime()+(8*60+seq*7)*60000,account:'wallet',note:''},o));};
+    /* Spread entries through the day, but never later than now, so anything the user adds sorts above them. */
+    const at=Math.min(d.getTime()+(8*60+seq*7)*60000,now.getTime()-(200-seq)*60000);
+    s.tx.push(Object.assign({id:'s'+seq,date:ymd(d),createdAt:at,account:'wallet',note:''},o));};
   [0,1,2,4,5,7,8,9,11,12,14,15,16,18,19,21,22,25,26,28].forEach(a=>add(a,{type:'expense',amount:2,currency:'USD',categoryId:'coffee',note:'Espresso'}));
   [1,3,6,8,10,13,15,17,20,22,24,27,29].forEach(a=>add(a,{type:'expense',amount:150000,currency:'LBP',categoryId:'food',note:'Manoushe'}));
   [0,2,5,7,9,12,14,16,19,21,23,26,28].forEach(a=>add(a,{type:'expense',amount:300000,currency:'LBP',categoryId:'transport',note:'Service to campus'}));
@@ -312,6 +315,8 @@ function sampleState(){
   add(18,{type:'expense',amount:15,currency:'USD',categoryId:'phone',note:'Alfa recharge'});
   add(12,{type:'expense',amount:900000,currency:'LBP',categoryId:'uni',note:'Printing'});
   add(20,{type:'income',amount:650,currency:'USD',categoryId:'salary',note:'Monthly pay'});
+  add(16,{type:'advance',amount:100,currency:'USD',who:'Scouts',note:'Camp supplies'});const camp='s'+seq;
+  add(6,{type:'repay',amount:60,currency:'USD',advanceId:camp,note:''});
   add(19,{type:'transfer',amount:150,currency:'USD',from:'wallet',to:'savings',toAmount:150,toCurrency:'USD',note:''});
   add(9,{type:'transfer',amount:30,currency:'USD',from:'wallet',to:'whish',toAmount:30,toCurrency:'USD',note:''});
   add(8,{type:'transfer',amount:50,currency:'USD',from:'wallet',to:'wallet',toAmount:4475000,toCurrency:'LBP',note:'Changed at the shop'});
@@ -361,6 +366,7 @@ function registerSW(){if('serviceWorker' in navigator&&location.protocol!=='file
 /* ---------- what's new ---------- */
 /* Newest first. Each release adds an entry here with the next v, and bumps VERSION in sw.js. */
 const CHANGELOG=[
+  {v:5,date:'2026-11-06',items:['Paying for someone else, like the scouts? Turn on “Someone will pay me back” when adding an expense. It comes out of your wallet but isn’t counted in your budgets or spending.','Home shows what you’re still owed. Tap “Paid back” to record paybacks in full or in parts, in $ or LL. They go back into your wallet without counting as income.','If you won’t get all of it back, close it and only the part you didn’t get back counts as your spending.','New entries now start in the currency you used last, $ or LL.']},
   {v:4,date:'2026-11-04',items:['A note like this one now shows up after each update, so you know what changed. You can reread it any time from the bottom of Settings.']},
   {v:3,date:'2026-11-04',items:['Pick an accent colour in Settings → Appearance, from the presets or any colour you like.','Choose a Light, Dark or System theme.']},
   {v:2,date:'2026-11-04',items:['Built-in categories now come with emojis.']},
@@ -400,7 +406,7 @@ function balances(){
   const b={};ACCOUNTS.forEach(a=>{const o=state.opening[a.id]||{};b[a.id]={USD:+o.USD||0,LBP:+o.LBP||0};});
   const acc=id=>(b[id]=b[id]||{USD:0,LBP:0});
   for(const t of state.tx){
-    if(t.type==='expense'||t.type==='income'){const a=acc(t.account||'wallet'),p=payVec(t),sg=t.type==='expense'?-1:1;a.USD+=sg*p.USD;a.LBP+=sg*p.LBP;
+    if(t.type==='expense'||t.type==='income'||t.type==='advance'||t.type==='repay'){const a=acc(t.account||'wallet'),p=payVec(t),sg=t.type==='expense'||t.type==='advance'?-1:1;a.USD+=sg*p.USD;a.LBP+=sg*p.LBP;
       if(t.type==='expense'){const k=backVec(t);a.USD+=k.USD;a.LBP+=k.LBP;}}
     else if(t.type==='transfer'){acc(t.from)[t.currency]-=t.amount;acc(t.to)[t.toCurrency||t.currency]+=(t.toAmount!=null?+t.toAmount:t.amount);}
   }
@@ -413,7 +419,9 @@ function range(period,ref){const d=startOfDay(ref||new Date());
   if(period==='month')return{start:new Date(d.getFullYear(),d.getMonth(),1),end:new Date(d.getFullYear(),d.getMonth()+1,1)};
   const back=(d.getDay()-state.settings.weekStart+7)%7;const start=addDays(d,-back);return{start,end:addDays(start,7)};}
 const inRange=(t,r)=>{const d=parseYmd(t.date);return d>=r.start&&d<r.end;};
-function sumUSD(r,type,catId){let s=0;for(const t of state.tx){if(t.type!==type)continue;if(catId&&t.categoryId!==catId)continue;if(!inRange(t,r))continue;s+=txCostUSD(t);}return s;}
+function sumUSD(r,type,catId){let s=0;for(const t of state.tx){
+    if(type==='expense'&&t.type==='advance'){if(t.closed&&t.keptCat&&(!catId||t.keptCat===catId)&&inRange({date:t.closedOn||t.date},r))s+=owed(t).left;continue;}
+    if(t.type!==type)continue;if(catId&&t.categoryId!==catId)continue;if(!inRange(t,r))continue;s+=txCostUSD(t);}return s;}
 function budgetStatus(b){
   const r=range(b.period);const spent=sumUSD(r,'expense',b.categoryId||null);const limit=toUSD(+b.amount,b.currency);
   const pct=limit>0?spent/limit:0;const daysLeft=Math.max(1,Math.round((r.end-startOfDay(new Date()))/864e5));
@@ -423,11 +431,21 @@ const catOf=id=>state.categories.find(c=>c.id===id);
 const catName=id=>(catOf(id)||{name:'Uncategorised'}).name;
 const budgetName=b=>b.categoryId?catName(b.categoryId):'All spending';
 
+/* ---------- paid for others ---------- */
+/* An 'advance' is money paid on someone else's behalf: it leaves the wallet but is not spending. Paybacks ('repay',
+   linked by advanceId) bring money back without being income. Closing an advance counts only the part never
+   returned as spending, in the chosen category, on the day it was closed. */
+const paybacksOf=id=>state.tx.filter(t=>t.type==='repay'&&t.advanceId===id).sort((a,b)=>a.date.localeCompare(b.date)||(a.createdAt||0)-(b.createdAt||0));
+const advanceOf=r=>state.tx.find(t=>t.id===r.advanceId&&t.type==='advance');
+function owed(a){const cost=vUSD(payVec(a)),back=paybacksOf(a.id).reduce((s,r)=>s+vUSD(payVec(r)),0),left=Math.max(0,cost-back);
+  return {cost,back,left,settled:left<0.005||!!a.closed};}
+const fmtAdv=(a,usd)=>fmt(fromUSD(usd,a.currency),a.currency,{round:true});
+
 /* ---------- repeatable transactions ---------- */
-function tplKey(t){return [t.type,t.categoryId||'',t.amount,t.currency,(t.note||'').trim().toLowerCase(),t.from||'',t.to||'',t.toCurrency||'',t.type==='transfer'&&t.toCurrency!==t.currency?t.toAmount:'',t.amount2||'',(t=>{const k=backVec(t);return k.USD+'/'+k.LBP;})(t)].join('|');}
+function tplKey(t){return [t.type,t.categoryId||'',t.who||'',t.amount,t.currency,(t.note||'').trim().toLowerCase(),t.from||'',t.to||'',t.toCurrency||'',t.type==='transfer'&&t.toCurrency!==t.currency?t.toAmount:'',t.amount2||'',(t=>{const k=backVec(t);return k.USD+'/'+k.LBP;})(t)].join('|');}
 function templates(){
   const m=new Map();
-  for(const t of state.tx){const k=tplKey(t);const e=m.get(k)||{key:k,tx:t,count:0,last:0};e.count++;
+  for(const t of state.tx){if(t.type==='repay')continue;const k=tplKey(t);const e=m.get(k)||{key:k,tx:t,count:0,last:0};e.count++;
     if((t.createdAt||0)>=e.last){e.last=t.createdAt||0;e.tx=t;}m.set(k,e);}
   const all=[...m.values()];
   return {
@@ -435,16 +453,23 @@ function templates(){
     recent:all.sort((a,b)=>b.last-a.last).slice(0,8)
   };
 }
-function cloneForToday(t){const c=Object.assign({},t,{id:uid(),date:ymd(new Date()),createdAt:Date.now()});return c;}
+function cloneForToday(t){const c=Object.assign({},t,{id:uid(),date:ymd(new Date()),createdAt:Date.now()});delete c.closed;delete c.closedOn;delete c.keptCat;return c;}
 
 /* ---------- presentation helpers ---------- */
-function txTitle(t){if(t.type==='transfer')return t.from===t.to?'Exchange':accName(t.from)+' → '+accName(t.to);return catName(t.categoryId);}
+function txTitle(t){if(t.type==='transfer')return t.from===t.to?'Exchange':accName(t.from)+' → '+accName(t.to);
+  if(t.type==='advance')return 'Paid for '+(t.who||'someone');
+  if(t.type==='repay'){const a=advanceOf(t);return 'Paid back by '+(a&&a.who||'someone');}
+  return catName(t.categoryId);}
 function txRate(t){if(t.type!=='transfer'||!t.toCurrency||t.toCurrency===t.currency)return 0;const usd=t.currency==='USD'?t.amount:+t.toAmount,lbp=t.currency==='LBP'?t.amount:+t.toAmount;return usd>0?lbp/usd:0;}
 const rateTxt=r=>Math.round(r).toLocaleString('en-US')+' LL/$';
 function rowSub(t){
   if(t.type==='transfer'){const p=[];if(t.note)p.push(txTitle(t));if(t.from===t.to&&t.from!=='wallet')p.push(accName(t.from));const r=txRate(t);if(r)p.push('at '+rateTxt(r));return p.join(' · ')||'Transfer';}
+  if(t.type==='advance'){const o=owed(t),p=[];if(t.note)p.push(txTitle(t));
+    p.push(t.closed?(o.left>0.005?'Closed · '+fmtAdv(t,o.left)+' kept as spending':'Closed'):o.left<0.005?'Paid back':fmtAdv(t,o.left)+' still owed');return p.join(' · ');}
+  if(t.type==='repay')return t.note?txTitle(t):'Not counted as income';
   return t.note?txTitle(t):cap(t.type);}
 function txGlyph(t){
+  if(t.type==='advance'||t.type==='repay')return '<span class="glyph tr" aria-hidden="true">'+(t.type==='advance'?'↗':'↙')+'</span>';
   if(t.type==='transfer')return '<span class="glyph tr" aria-hidden="true">'+(t.from===t.to?'⇄':'→')+'</span>';
   const c=catOf(t.categoryId);const g=c&&c.icon?c.icon:catName(t.categoryId).charAt(0);return '<span class="glyph'+(t.type==='income'&&!(c&&c.icon)?' in':'')+'" aria-hidden="true">'+esc(g)+'</span>';}
 function txAmt(t){
@@ -452,6 +477,7 @@ function txAmt(t){
     return '<span class="amt tr">'+fmt(t.amount,t.currency)+(diff?' → '+fmt(+t.toAmount,t.toCurrency):'')+'</span>';}
   const p=payParts(t),k=t.type==='expense'?backParts(t):[];
   if(t.type==='income')return '<span class="amt in'+(p.length>1?' has-chg':'')+'">'+p.map(x=>'<span>+'+x+'</span>').join('')+'</span>';
+  if(t.type==='advance'||t.type==='repay')return '<span class="amt tr'+(p.length>1?' has-chg':'')+'">'+p.map(x=>'<span>'+(t.type==='repay'?'+':'')+x+'</span>').join('')+'</span>';
   if(p.length===1&&!k.length)return '<span class="amt">'+p[0]+'</span>';
   return '<span class="amt has-chg">'+p.map(x=>'<span>'+x+'</span>').join('')+(k.length?'<span class="chg">+'+k.join(' + ')+' back</span>':'')+'</span>';}
 function dayLabel(s){const d=parseYmd(s),t=startOfDay(new Date());const diff=Math.round((t-d)/864e5);
@@ -520,6 +546,12 @@ function renderHome(){
   h+='<div class="accounts">'+['savings','whish'].map(id=>{const x=b[id];
       return '<button class="acc" data-act="transferTo" data-id="'+id+'"><span class="acc-name"><span class="label">'+accName(id)+'</span><span class="move">Move</span></span>'+
       '<span class="amt" style="text-align:left">'+fmt(x.USD,'USD')+'</span>'+(Math.abs(x.LBP)>0?'<span class="amt sub" style="text-align:left">'+fmt(x.LBP,'LBP')+'</span>':'')+'</button>';}).join('')+'</div>';
+  const open=state.tx.filter(t=>t.type==='advance').map(t=>({t,o:owed(t)})).filter(x=>!x.o.settled).sort((a,c)=>c.t.date.localeCompare(a.t.date));
+  if(open.length)h+='<section class="sec"><div class="sec-head"><h2>Owed to you</h2><span class="num muted">'+fmtDisp(open.reduce((s,x)=>s+x.o.left,0))+'</span></div><div class="list">'+
+    open.map(({t,o})=>'<div class="row"><button class="row-btn" data-act="editTx" data-id="'+esc(t.id)+'">'+txGlyph(t)+
+      '<span class="row-main"><span class="row-title">'+esc(t.who||'Someone')+'</span><span class="row-sub">'+esc((t.note?t.note+' · ':'')+dayLabel(t.date)+(o.back>0?' · '+fmtAdv(t,o.back)+' back so far':''))+'</span></span>'+
+      '<span class="amt">'+fmtAdv(t,o.left)+'</span></button><button class="btn sm" data-act="newRepay" data-id="'+esc(t.id)+'">Paid back</button></div>').join('')+
+    '</div><p class="note">Money you paid for others. It isn’t counted in your budgets or spending.</p></section>';
   h+='<section class="sec"><div class="sec-head"><h2>Quick add</h2><div class="seg" role="tablist">'+
      ['frequent','recent'].map(k=>'<button data-act="quickTab" data-v="'+k+'" aria-pressed="'+(quickTab===k)+'">'+cap(k)+'</button>').join('')+'</div></div>';
   if(!list.length)h+='<div class="list"><p class="empty">'+(quickTab==='frequent'?'Anything you add twice shows up here, ready to repeat with one tap.':'Your latest transactions will show up here.')+'</p></div>';
@@ -542,7 +574,7 @@ function renderHome(){
 function renderHistory(){
   const m=hist.month;const r={start:m,end:new Date(m.getFullYear(),m.getMonth()+1,1)};
   const q=hist.q.trim().toLowerCase();
-  let txs=state.tx.filter(t=>inRange(t,r)&&(hist.filter==='all'||t.type===hist.filter));
+  let txs=state.tx.filter(t=>inRange(t,r)&&histMatch(t));
   if(q)txs=txs.filter(t=>(t.note||'').toLowerCase().includes(q)||txTitle(t).toLowerCase().includes(q)||(String(t.amount)+' '+(t.amount2||'')).includes(q));
   txs.sort((a,b)=>b.date.localeCompare(a.date)||(b.createdAt||0)-(a.createdAt||0));
   const spent=sumUSD(r,'expense'),inc=sumUSD(r,'income');
@@ -553,6 +585,8 @@ function renderHistory(){
   h+='<div id="histList">'+historyList(txs)+'</div>';
   $('#v-history').innerHTML=h;
 }
+/* Paying for others and paybacks are money moves, not spending or income, so they sit under Moves. */
+const histMatch=t=>hist.filter==='all'||t.type===hist.filter||(hist.filter==='transfer'&&(t.type==='advance'||t.type==='repay'));
 function historyList(txs){
   if(!txs.length)return '<div class="list"><p class="empty">Nothing here for this month.</p></div>';
   let h='',cur=null,group=[];
@@ -633,16 +667,18 @@ function toast(msg,undo){const el=$('#toast');undoFn=undo||null;
 let form=null,sheetKind=null;
 function openSheet(kind){sheetKind=kind;$('#toast').hidden=true;$('#scrim').hidden=false;$('#sheet').hidden=false;drawSheet();}
 function closeSheet(){if(sheetKind==='news')markSeen();$('#scrim').hidden=true;$('#sheet').hidden=true;sheetKind=null;form=null;}
-function drawSheet(){const el=$('#sheet');el.innerHTML='<div class="grab"></div>'+(sheetKind==='tx'?txSheet():sheetKind==='news'?newsSheet():budgetSheet());
+function drawSheet(){const el=$('#sheet');el.innerHTML='<div class="grab"></div>'+(sheetKind==='tx'?txSheet():sheetKind==='repay'?repaySheet():sheetKind==='news'?newsSheet():budgetSheet());
   if(sheetKind==='tx')updatePreview();
   const a=el.querySelector('#f-pay0');if(a&&!form.id&&!form.noFocus)setTimeout(()=>{try{a.focus();}catch(e){}},60);form.noFocus=true;}
 
-function newTxForm(type,extra){return Object.assign({mode:'new',type:type||'expense',pay:[{cur:'USD',v:''}],back:[],categoryId:null,note:'',date:ymd(new Date()),from:'wallet',to:'savings',toAmount:'',toCurrency:'USD',toTouched:false,xrate:state.rate.toLocaleString('en-US'),setRate:false},extra||{});}
+/* New entries start in the currency of the most recently saved one. */
+function lastCur(){let t=null;for(const x of state.tx)if(!t||(x.createdAt||0)>(t.createdAt||0))t=x;return t&&t.currency==='LBP'?'LBP':'USD';}
+function newTxForm(type,extra){const c=lastCur();return Object.assign({mode:'new',type:type||'expense',pay:[{cur:c,v:''}],back:[],categoryId:null,who:'',note:'',date:ymd(new Date()),from:'wallet',to:'savings',toAmount:'',toCurrency:c,toTouched:false,xrate:state.rate.toLocaleString('en-US'),setRate:false},extra||{});}
 function formFromTx(t,mode){
   const pay=[{cur:t.currency,v:String(t.amount)}];if(t.amount2)pay.push({cur:other(t.currency),v:String(t.amount2)});
   const k=backVec(t),back=[];[other(t.currency),t.currency].forEach(c=>{if(k[c]>0)back.push({cur:c,v:String(k[c])});});
   const isX=t.type==='transfer'&&t.from===t.to,r=txRate(t);
-  return {mode,id:mode==='edit'?t.id:null,type:isX?'exchange':t.type,pay:t.type==='transfer'?pay.slice(0,1):pay,xrate:Math.round(r||state.rate).toLocaleString('en-US'),setRate:false,back:t.type==='expense'?back:[],categoryId:t.categoryId||null,note:t.note||'',date:mode==='edit'?t.date:ymd(new Date()),
+  return {mode,id:mode==='edit'?t.id:null,type:isX?'exchange':t.type,pay:t.type==='transfer'?pay.slice(0,1):pay,xrate:Math.round(r||state.rate).toLocaleString('en-US'),setRate:false,back:t.type==='expense'?back:[],categoryId:t.categoryId||null,who:t.who||'',note:t.note||'',date:mode==='edit'?t.date:ymd(new Date()),
     from:t.from||'wallet',to:t.to||'savings',toAmount:t.toAmount!=null?String(t.toAmount):'',toCurrency:t.toCurrency||t.currency,toTouched:t.type==='transfer'&&t.toCurrency!==t.currency};}
 function curToggle(act,val,attrs){return '<div class="seg">'+[['USD','USD'],['LBP','LL']].map(([k,l])=>'<button data-act="'+act+'" data-v="'+k+'"'+(attrs||'')+' aria-pressed="'+(val===k)+'">'+l+'</button>').join('')+'</div>';}
 const curLabel=c=>c==='USD'?'$':'LL';
@@ -654,20 +690,21 @@ function moneyLines(kind,lines){
     (kind==='back'||i>0?'<button class="icon-btn" data-act="lrm" data-k="'+kind+'" data-i="'+i+'" aria-label="Remove this amount">'+ICON.close+'</button>':(many?'<span class="icon-btn" aria-hidden="true"></span>':''))+
     '</div>').join('')+'</div>';}
 function txSheet(){
-  const f=form,isX=f.type==='exchange',isT=f.type==='transfer'||isX,isE=f.type==='expense';
+  const f=form,isX=f.type==='exchange',isT=f.type==='transfer'||isX,isE=f.type==='expense',isA=f.type==='advance';
   const cats=state.categories.filter(c=>c.type===(f.type==='income'?'income':'expense'));
   let h='<div class="sheet-head"><h2>'+(f.mode==='edit'?'Edit entry':'New entry')+'</h2><button class="icon-btn" data-act="close" aria-label="Close">'+ICON.close+'</button></div>';
-  h+='<div class="seg wide">'+[['expense','Expense'],['income','Income'],['transfer','Transfer'],['exchange','Exchange']].map(([k,l])=>'<button data-act="ftype" data-v="'+k+'" aria-pressed="'+(f.type===k)+'">'+l+'</button>').join('')+'</div>';
+  h+='<div class="seg wide">'+[['expense','Expense'],['income','Income'],['transfer','Transfer'],['exchange','Exchange']].map(([k,l])=>'<button data-act="ftype" data-v="'+k+'" aria-pressed="'+(f.type===k||(isA&&k==='expense'))+'">'+l+'</button>').join('')+'</div>';
   if(isT&&!isX)h+='<div class="grid2"><label class="field"><span>From</span><select id="f-from">'+ACCOUNTS.map(a=>'<option value="'+a.id+'"'+(f.from===a.id?' selected':'')+'>'+a.name+'</option>').join('')+'</select></label>'+
     '<label class="field"><span>To</span><select id="f-to">'+ACCOUNTS.map(a=>'<option value="'+a.id+'"'+(f.to===a.id?' selected':'')+'>'+a.name+'</option>').join('')+'</select></label></div>';
   if(isX)h+='<span class="sub-label" style="margin-bottom:-12px">You give</span>';
   h+=moneyLines('pay',isT?f.pay.slice(0,1):f.pay)+(isX?'':'<p class="hint" id="f-preview"></p>');
   if(!isT){const links=[];
-    if(f.pay.length===1)links.push('<button class="link" data-act="ladd" data-k="pay">+ Also '+(isE?'paid':'got')+' in '+curLabel(other(f.pay[0].cur))+'</button>');
+    if(f.pay.length===1)links.push('<button class="link" data-act="ladd" data-k="pay">+ Also '+(isE||isA?'paid':'got')+' in '+curLabel(other(f.pay[0].cur))+'</button>');
     if(isE&&!f.back.length)links.push('<button class="link" data-act="ladd" data-k="back">+ Got change back</button>');
     if(links.length)h+='<div class="links">'+links.join('')+'</div>';
     if(isE&&f.back.length)h+='<div class="sub-lines"><span class="sub-label">Change back</span>'+moneyLines('back',f.back)+'</div>'+
-      (f.back.length===1?'<div class="links" style="margin-top:-8px"><button class="link" data-act="ladd" data-k="back">+ Also got '+curLabel(other(f.back[0].cur))+' back</button></div>':'');}
+      (f.back.length===1?'<div class="links" style="margin-top:-8px"><button class="link" data-act="ladd" data-k="back">+ Also got '+curLabel(other(f.back[0].cur))+' back</button></div>':'');
+    if(isE||isA)h+='<button class="chip sm" data-act="fadv" aria-pressed="'+isA+'">'+(isA?'✓ ':'')+'Someone will pay me back</button>';}
   if(isX){const gc=other(f.pay[0].cur);
     h+='<div class="sub-lines"><span class="sub-label">You get</span><div class="amount-row"><input id="f-toamount" class="amount-input" inputmode="decimal" autocomplete="off" placeholder="0" value="'+esc(f.toAmount)+'" aria-label="Amount received in '+(gc==='USD'?'USD':'LL')+'">'+
       (gc==='LBP'?'<button class="k000" data-act="k000to" aria-label="Add three zeros">000</button>':'')+'<span class="cur-tag">'+(gc==='USD'?'USD':'LL')+'</span></div></div>';
@@ -676,8 +713,11 @@ function txSheet(){
     h+='<p class="hint" id="f-preview" style="margin:0"></p><button class="chip sm" id="f-setrate" data-act="fsetrate" aria-pressed="'+f.setRate+'" hidden></button>';}
   else if(isT){h+='<div class="sub-lines"><span class="sub-label">Arrives as</span><div class="amount-row"><input id="f-toamount" class="amount-input sm" inputmode="decimal" autocomplete="off" placeholder="0" value="'+esc(f.toAmount)+'" aria-label="Amount received">'+curToggle('ftocur',f.toCurrency)+'</div></div>'+
     '<p class="note">Same currency moves it as is. Pick the other currency to exchange on the way, like cash dollars into Whish.</p>';}
+  else if(isA)h+='<label class="field"><span>Who will pay you back?</span><input id="f-who" list="whoList" autocomplete="off" value="'+esc(f.who)+'" placeholder="e.g. Scouts"></label>'+
+    '<p class="note" style="margin-top:-6px">Not counted in your budgets or spending. Record paybacks as they come in.</p>';
   else h+='<div class="chips" role="group" aria-label="Category">'+cats.map(c=>'<button class="chip" data-act="fcat" data-v="'+esc(c.id)+'" aria-pressed="'+(f.categoryId===c.id)+'">'+(c.icon?esc(c.icon)+' ':'')+esc(c.name)+'</button>').join('')+'</div>';
   h+='<div class="grid2"><label class="field"><span>Note</span><input id="f-note" list="notesList" autocomplete="off" value="'+esc(f.note)+'" placeholder="Optional"></label><label class="field"><span>Date</span><input id="f-date" type="date" value="'+esc(f.date)+'"></label></div>';
+  if(isA&&f.mode==='edit')h+=advanceBlock(f);
   h+='<p class="form-error" id="f-err" hidden></p><div class="sheet-actions">'+(f.mode==='edit'?'<button class="btn danger'+(armed==='tx'?' armed':'')+'" data-act="fdel">'+(armed==='tx'?'Tap to confirm':'Delete')+'</button>':'')+
      '<button class="btn primary" data-act="fsave">'+(f.mode==='edit'?'Save changes':'Add')+'</button></div>';
   return h;
@@ -706,12 +746,12 @@ function updatePreview(){const el=$('#f-preview');if(!el||!form)return;
     if(K>0){const cost=P-K;txt=cost<0?'The change is more than you paid':'Costs '+fmt(cost,'USD')+'  ≈ '+fmt(cost*state.rate,'LBP',{round:true});}}
   el.textContent=txt;
   const t=$('#f-toamount');if(t&&!form.toTouched&&document.activeElement!==t)t.value=form.toAmount;}
-function readForm(){const f=form;['note','date','toamount','from','to','acct','xrate'].forEach(k=>{const el=$('#f-'+k);if(el){if(k==='toamount')f.toAmount=el.value;else if(k==='acct'){f.from=f.to=el.value;}else f[k]=el.value;}});
+function readForm(){const f=form;['note','date','who','toamount','from','to','acct','xrate'].forEach(k=>{const el=$('#f-'+k);if(el){if(k==='toamount')f.toAmount=el.value;else if(k==='acct'){f.from=f.to=el.value;}else f[k]=el.value;}});
   document.querySelectorAll('[data-line]').forEach(el=>{const ln=(f[el.dataset.line]||[])[+el.dataset.i];if(ln)ln.v=el.value;});}
 function saveTx(){
   readForm();const f=form,err=$('#f-err');
   const fail=m=>{err.textContent=m;err.hidden=false;};
-  const isX=f.type==='exchange',isT=f.type==='transfer'||isX,isE=f.type==='expense';
+  const isX=f.type==='exchange',isT=f.type==='transfer'||isX,isE=f.type==='expense',isA=f.type==='advance';
   const payLs=isT?f.pay.slice(0,1):f.pay,backLs=isE?f.back:[];
   const bad=ls=>ls.some(l=>String(l.v).trim()!==''&&!(parseAmt(l.v)>0));
   if(bad(payLs)||bad(backLs))return fail('Amounts must be numbers above zero.');
@@ -726,15 +766,52 @@ function saveTx(){
     if(isX){f.to=f.from;f.toCurrency=other(first);}
     else if(f.from===f.to)return fail('Pick two different accounts. To change $ into LL in one account, use Exchange.');
     Object.assign(t,{from:f.from,to:f.to,toAmount:ta,toCurrency:f.toCurrency});}
+  else if(isA){const who=(f.who||'').trim();if(!who)return fail('Who will pay you back?');Object.assign(t,{who,account:'wallet'});}
   else{if(!f.categoryId)return fail('Pick a category.');Object.assign(t,{categoryId:f.categoryId,account:'wallet'});
     if(isE&&backLs.length){const kv=linesVec(backLs);
       if(!(vUSD(kv)>0))return fail('Enter the change you got back, or remove it.');
       if(vUSD(kv)>vUSD(pv)+1e-9)return fail('The change is more than you paid.');
       t.back={USD:kv.USD,LBP:kv.LBP};}}
   if(isX&&f.setRate){const ir=impliedRate(f);if(ir>0)state.rate=Math.round(ir);}
-  if(f.mode==='edit'){const i=state.tx.findIndex(x=>x.id===f.id);if(i>=0){t.createdAt=state.tx[i].createdAt||t.createdAt;state.tx[i]=t;}closeSheet();commit();toast('Saved');}
+  if(f.mode==='edit'){const i=state.tx.findIndex(x=>x.id===f.id);if(i>=0){const old=state.tx[i];
+      if(old.type==='advance'&&!isA&&paybacksOf(old.id).length)return fail('This has paybacks recorded. Delete them first, or keep "Someone will pay me back" on.');
+      if(old.type==='advance'&&isA)['closed','closedOn','keptCat'].forEach(k=>{if(old[k]!=null)t[k]=old[k];});
+      t.createdAt=old.createdAt||t.createdAt;state.tx[i]=t;}closeSheet();commit();toast('Saved');}
   else{state.tx.push(t);closeSheet();commit();toast((isX?'Exchanged ':isT?'Moved ':'Added ')+(t.note||txTitle(t))+' · '+payParts(t).join(' + ')+(isT&&t.toCurrency!==t.currency?' → '+fmt(t.toAmount,t.toCurrency):''),()=>{state.tx=state.tx.filter(x=>x.id!==t.id);commit();});}
 }
+
+function advanceBlock(f){const a=state.tx.find(x=>x.id===f.id&&x.type==='advance');if(!a)return '';
+  const o=owed(a),pb=paybacksOf(a.id);
+  let h='<div class="card"><div class="b-top"><span class="b-name">Paid back</span><span class="b-nums">'+fmtAdv(a,o.back)+' <span class="muted">/ '+fmtAdv(a,o.cost)+'</span></span></div>'+
+    '<div class="bar"><i style="width:'+(o.cost>0?Math.min(100,o.back/o.cost*100):0).toFixed(1)+'%"></i></div>';
+  if(pb.length)h+='<div class="list">'+pb.map(r=>'<button class="row" data-act="editRepay" data-id="'+esc(r.id)+'"><span class="row-main"><span class="row-title">'+esc(dayLabel(r.date))+'</span>'+(r.note?'<span class="row-sub">'+esc(r.note)+'</span>':'')+'</span><span class="amt tr">'+payParts(r).map(x=>'+'+x).join(' ')+'</span></button>').join('')+'</div>';
+  if(a.closed)h+='<p class="note">Closed '+esc(dayLabel(a.closedOn||a.date))+'.'+(o.left>0.005?' The '+fmtAdv(a,o.left)+' you didn’t get back counts as '+esc(catName(a.keptCat))+' spending.':'')+'</p><div class="btn-row"><button class="btn sm" data-act="reopenAdv">Reopen</button></div>';
+  else if(o.left<0.005)h+='<p class="note">All paid back.</p>';
+  else{h+='<p class="note">'+fmtAdv(a,o.left)+' still owed.</p><div class="btn-row"><button class="btn sm primary" data-act="newRepay" data-id="'+esc(a.id)+'">Got paid back</button><button class="btn sm" data-act="keepRest" aria-pressed="'+(armed==='keep')+'">Won’t get the rest</button></div>';
+    if(armed==='keep')h+='<span class="sub-label">Count the '+fmtAdv(a,o.left)+' as my own spending, in:</span><div class="chips">'+state.categories.filter(c=>c.type==='expense').map(c=>'<button class="chip" data-act="closeAdv" data-v="'+esc(c.id)+'">'+(c.icon?esc(c.icon)+' ':'')+esc(c.name)+'</button>').join('')+'</div>';}
+  return h+'</div>';}
+function repayForm(a,r,returnTo){
+  if(r)return {type:'repay',mode:'edit',id:r.id,advanceId:a.id,pay:[{cur:r.currency,v:String(r.amount)}],back:[],note:r.note||'',date:r.date,toTouched:true,returnTo};
+  const left=fromUSD(owed(a).left,a.currency);
+  return {type:'repay',mode:'new',id:null,advanceId:a.id,pay:[{cur:a.currency,v:left>0?String(a.currency==='USD'?Math.round(left*100)/100:Math.round(left)):''}],back:[],note:'',date:ymd(new Date()),toTouched:true,returnTo};}
+function repaySheet(){const f=form,a=advanceOf(f),o=a?owed(a):null;
+  let h='<div class="sheet-head"><h2>'+(f.mode==='edit'?'Edit payback':'Paid back')+'</h2><button class="icon-btn" data-act="close" aria-label="Close">'+ICON.close+'</button></div>';
+  if(a)h+='<p class="note">From <strong>'+esc(a.who||'someone')+'</strong>'+(a.note?' for '+esc(a.note):'')+'. '+fmtAdv(a,o.left)+' of '+fmtAdv(a,o.cost)+' still owed.</p>';
+  h+=moneyLines('pay',f.pay.slice(0,1));
+  h+='<div class="grid2"><label class="field"><span>Note</span><input id="f-note" autocomplete="off" value="'+esc(f.note)+'" placeholder="Optional"></label><label class="field"><span>Date</span><input id="f-date" type="date" value="'+esc(f.date)+'"></label></div>';
+  h+='<p class="note">Goes back into your wallet. It isn’t counted as income.</p>';
+  h+='<p class="form-error" id="f-err" hidden></p><div class="sheet-actions">'+(f.mode==='edit'?'<button class="btn danger'+(armed==='repay'?' armed':'')+'" data-act="rdel">'+(armed==='repay'?'Tap to confirm':'Delete')+'</button>':'')+
+    '<button class="btn primary" data-act="rsave">'+(f.mode==='edit'?'Save changes':'Add payback')+'</button></div>';
+  return h;}
+/* After a payback opened from an entry's sheet, go back to that entry; from Home, just close. */
+function afterRepay(a){if(form.returnTo&&a){form=formFromTx(a,'edit');openSheet('tx');}else closeSheet();}
+function saveRepay(){readForm();const f=form,err=$('#f-err'),fail=m=>{err.textContent=m;err.hidden=false;};
+  const n=parseAmt(f.pay[0].v);if(!(n>0))return fail('Enter an amount above zero.');if(!f.date)return fail('Pick a date.');
+  const a=advanceOf(f);if(!a)return fail('The entry this payback belongs to was deleted.');
+  const t={id:f.id||uid(),type:'repay',advanceId:a.id,amount:n,currency:f.pay[0].cur,note:f.note.trim(),date:f.date,account:'wallet',createdAt:Date.now()};
+  if(f.mode==='edit'){const i=state.tx.findIndex(x=>x.id===f.id);if(i>=0){t.createdAt=state.tx[i].createdAt||t.createdAt;state.tx[i]=t;}afterRepay(a);commit();toast('Saved');return;}
+  state.tx.push(t);afterRepay(a);commit();const o=owed(a);
+  toast(o.left<0.005?'All paid back by '+(a.who||'them'):'Got '+fmt(n,t.currency)+' back · '+fmtAdv(a,o.left)+' still owed',()=>{state.tx=state.tx.filter(x=>x.id!==t.id);commit();if(sheetKind==='tx')drawSheet();});}
 
 function newsSheet(){
   let h='<div class="sheet-head"><h2>What’s new in Qirsh</h2><button class="icon-btn" data-act="close" aria-label="Close">'+ICON.close+'</button></div><div class="news">';
@@ -779,7 +856,7 @@ function stageImport(text){
 /* ---------- events ---------- */
 document.addEventListener('click',e=>{
   const el=e.target.closest('[data-act]');if(!el)return;const act=el.dataset.act,v=el.dataset.v,id=el.dataset.id;
-  if(act!=='delCat'&&act!=='wipe'&&act!=='fdel'&&act!=='bdel')armed=null;
+  if(act!=='delCat'&&act!=='wipe'&&act!=='fdel'&&act!=='bdel'&&act!=='rdel'&&act!=='keepRest')armed=null;
   switch(act){
     case 'nav':view=v;closeSheet();render();window.scrollTo(0,0);break;
     case 'new':form=newTxForm(view==='home'||view==='history'?'expense':'expense');openSheet('tx');break;
@@ -791,11 +868,13 @@ document.addEventListener('click',e=>{
     case 'repeat':{const tp=[...templates().frequent,...templates().recent].find(x=>x.key===el.dataset.key);if(!tp)break;const t=cloneForToday(tp.tx);state.tx.push(t);commit();
       toast('Added '+(t.note||txTitle(t))+' · '+payParts(t).join(' + '),()=>{state.tx=state.tx.filter(x=>x.id!==t.id);commit();});break;}
     case 'repeatEdit':{const tp=[...templates().frequent,...templates().recent].find(x=>x.key===el.dataset.key);if(!tp)break;form=formFromTx(tp.tx,'new');openSheet('tx');break;}
-    case 'newMove':form=v==='exchange'?newTxForm('exchange',{from:'wallet',to:'wallet',toCurrency:'LBP'}):newTxForm('transfer',{from:'wallet',to:'savings'});openSheet('tx');break;
+    case 'newMove':form=v==='exchange'?newTxForm('exchange',{from:'wallet',to:'wallet',pay:[{cur:'USD',v:''}],toCurrency:'LBP'}):newTxForm('transfer',{from:'wallet',to:'savings'});openSheet('tx');break;
     case 'fsetrate':form.setRate=!form.setRate;updatePreview();break;
     case 'k000to':{const n=$('#f-toamount');if(!n)break;n.value=(n.value||'')+'000';form.toAmount=n.value;form.toTouched=true;updatePreview();n.focus();break;}
     case 'transferTo':form=newTxForm('transfer',{from:'wallet',to:id});openSheet('tx');break;
-    case 'editTx':{const t=state.tx.find(x=>x.id===id);if(!t)break;form=formFromTx(t,'edit');openSheet('tx');break;}
+    case 'editTx':{const t=state.tx.find(x=>x.id===id);if(!t)break;
+      if(t.type==='repay'){const a=advanceOf(t);if(a){form=repayForm(a,t,false);openSheet('repay');}break;}
+      form=formFromTx(t,'edit');openSheet('tx');break;}
     case 'ftype':readForm();form.type=v;
       if(v==='exchange'){form.pay=form.pay.slice(0,1);form.to=form.from;form.toCurrency=other(form.pay[0].cur);form.toTouched=false;autoTo();}
       else if(v==='transfer'){form.pay=form.pay.slice(0,1);if(form.from===form.to)form.to=form.from==='wallet'?'savings':'wallet';form.toCurrency=form.pay[0].cur;form.toTouched=false;autoTo();}else{const c=catOf(form.categoryId);if(c&&c.type!==(v==='income'?'income':'expense'))form.categoryId=null;}drawSheet();break;
@@ -814,7 +893,16 @@ document.addEventListener('click',e=>{
       if(j<0||j>=state.categories.length)break;const tmp=state.categories[i];state.categories[i]=state.categories[j];state.categories[j]=tmp;commit();break;}
     case 'fcat':readForm();form.categoryId=v;drawSheet();break;
     case 'fsave':saveTx();break;
-    case 'fdel':if(armed!=='tx'){armed='tx';drawSheet();break;}{armed=null;const t=state.tx.find(x=>x.id===form.id);state.tx=state.tx.filter(x=>x.id!==form.id);closeSheet();commit();toast('Deleted',()=>{state.tx.push(t);commit();});}break;
+    case 'fadv':readForm();if(form.type==='advance')form.type='expense';else{form.type='advance';form.back=[];}drawSheet();break;
+    case 'newRepay':{const a=state.tx.find(x=>x.id===id&&x.type==='advance');if(!a)break;form=repayForm(a,null,sheetKind==='tx');openSheet('repay');break;}
+    case 'editRepay':{const r=state.tx.find(x=>x.id===id&&x.type==='repay'),a=r&&advanceOf(r);if(!a)break;form=repayForm(a,r,true);openSheet('repay');break;}
+    case 'rsave':saveRepay();break;
+    case 'rdel':if(armed!=='repay'){armed='repay';drawSheet();break;}{armed=null;const r=state.tx.find(x=>x.id===form.id),a=r&&advanceOf(r);state.tx=state.tx.filter(x=>x.id!==form.id);afterRepay(a);commit();toast('Payback deleted',()=>{state.tx.push(r);commit();if(sheetKind==='tx')drawSheet();});}break;
+    case 'keepRest':readForm();armed=armed==='keep'?null:'keep';drawSheet();break;
+    case 'closeAdv':{readForm();const a=state.tx.find(x=>x.id===form.id&&x.type==='advance');if(!a)break;Object.assign(a,{closed:true,closedOn:ymd(new Date()),keptCat:v});armed=null;save();render();drawSheet();toast('Closed. The rest counts as '+catName(v)+' spending.');break;}
+    case 'reopenAdv':{readForm();const a=state.tx.find(x=>x.id===form.id&&x.type==='advance');if(!a)break;delete a.closed;delete a.closedOn;delete a.keptCat;save();render();drawSheet();toast('Reopened');break;}
+    case 'fdel':if(armed!=='tx'){armed='tx';drawSheet();break;}{armed=null;const t=state.tx.find(x=>x.id===form.id),kids=t&&t.type==='advance'?paybacksOf(t.id):[];state.tx=state.tx.filter(x=>x.id!==form.id&&!kids.includes(x));closeSheet();commit();
+      toast(kids.length?'Deleted, with '+kids.length+' payback'+(kids.length>1?'s':''):'Deleted',()=>{state.tx.push(t,...kids);commit();});}break;
     case 'newBudget':form={id:null,categoryId:null,period:'month',amount:'',currency:'USD'};openSheet('budget');break;
     case 'editBudget':{const b=state.budgets.find(x=>x.id===id);if(!b)break;form={id:b.id,categoryId:b.categoryId,period:b.period,amount:String(b.amount),currency:b.currency};openSheet('budget');break;}
     case 'bperiod':readBudget();form.period=v;drawSheet();break;
@@ -829,7 +917,7 @@ document.addEventListener('click',e=>{
     case 'setAccent':state.settings.accent=v===DEFAULT_ACCENT?null:v;commit();break;
     case 'addCat':{const n=$('#newCatName').value.trim();if(!n){toast('Type a name for the category first.');break;}const ic=firstGlyph($('#newCatIcon').value.trim());state.categories.push(Object.assign({id:'c'+uid(),name:n,type:$('#newCatType').value},ic?{icon:ic}:{}));commit();toast('Added '+n);break;}
     case 'delCat':{if(armed!=='cat:'+id){armed='cat:'+id;render();break;}armed=null;const c=catOf(id);if(!c)break;const to=c.type==='expense'?'other':'other-in';
-      state.tx.forEach(t=>{if(t.categoryId===id)t.categoryId=to;});state.budgets=state.budgets.filter(b=>b.categoryId!==id);state.categories=state.categories.filter(x=>x.id!==id);commit();toast('Deleted '+c.name);break;}
+      state.tx.forEach(t=>{if(t.categoryId===id)t.categoryId=to;if(t.keptCat===id)t.keptCat=to;});state.budgets=state.budgets.filter(b=>b.categoryId!==id);state.categories=state.categories.filter(x=>x.id!==id);commit();toast('Deleted '+c.name);break;}
     case 'exportShare':exportShare();break;
     case 'showNews':newsList=CHANGELOG;form={};openSheet('news');break;
     case 'hideInstallHint':try{localStorage.setItem(HINT_KEY,'dismissed');}catch(e){}render();break;
@@ -852,7 +940,7 @@ document.addEventListener('input',e=>{
   }
   if(t.id==='accentPick'&&hexRgb(t.value)){state.settings.accent=t.value.toUpperCase();applyTheme();}
   if(t.id==='hq'){hist.q=t.value;const m=hist.month,r={start:m,end:new Date(m.getFullYear(),m.getMonth()+1,1)};
-    const q=hist.q.trim().toLowerCase();let txs=state.tx.filter(x=>inRange(x,r)&&(hist.filter==='all'||x.type===hist.filter));
+    const q=hist.q.trim().toLowerCase();let txs=state.tx.filter(x=>inRange(x,r)&&histMatch(x));
     if(q)txs=txs.filter(x=>(x.note||'').toLowerCase().includes(q)||txTitle(x).toLowerCase().includes(q)||(String(x.amount)+' '+(x.amount2||'')).includes(q));
     txs.sort((a,b)=>b.date.localeCompare(a.date)||(b.createdAt||0)-(a.createdAt||0));$('#histList').innerHTML=historyList(txs);}
 });
@@ -869,10 +957,13 @@ document.addEventListener('change',e=>{
   if(t.dataset.cat){const c=catOf(t.dataset.cat);if(c&&t.value.trim()){c.name=t.value.trim();save();}}
   if(t.id==='importFile'&&t.files&&t.files[0]){const r=new FileReader();r.onload=()=>stageImport(String(r.result));r.readAsText(t.files[0]);}
 });
-document.addEventListener('keydown',e=>{if(e.key==='Escape'&&sheetKind)closeSheet();if(e.key==='Enter'&&sheetKind&&e.target.tagName==='INPUT'){e.preventDefault();sheetKind==='tx'?saveTx():saveBudget();}});
+document.addEventListener('keydown',e=>{if(e.key==='Escape'&&sheetKind)closeSheet();if(e.key==='Enter'&&sheetKind&&e.target.tagName==='INPUT'){e.preventDefault();if(sheetKind==='tx')saveTx();else if(sheetKind==='repay')saveRepay();else if(sheetKind==='budget')saveBudget();}});
 
 let notesDl=null;
+let whoDl=null;
 function updateNotesList(){if(!notesDl){notesDl=document.createElement('datalist');notesDl.id='notesList';document.body.appendChild(notesDl);}
+  if(!whoDl){whoDl=document.createElement('datalist');whoDl.id='whoList';document.body.appendChild(whoDl);}
+  whoDl.innerHTML=[...new Set(state.tx.filter(t=>t.type==='advance'&&t.who).map(t=>t.who.trim()))].map(n=>'<option value="'+esc(n)+'"></option>').join('');
   const seen=new Map();state.tx.forEach(t=>{const n=(t.note||'').trim();if(n)seen.set(n,(seen.get(n)||0)+1);});
   notesDl.innerHTML=[...seen.entries()].sort((a,b)=>b[1]-a[1]).slice(0,40).map(([n])=>'<option value="'+esc(n)+'"></option>').join('');}
 
