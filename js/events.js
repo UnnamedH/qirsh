@@ -475,6 +475,9 @@ document.addEventListener('click', (e) => {
     case 'reportCsv':
       saveFile(monthlyCsv(hist.month), csvName(hist.month));
       break;
+    case 'reloadApp':
+      location.reload();
+      break;
     case 'exportRescued':
       exportRescued();
       break;
@@ -644,3 +647,6 @@ window.addEventListener('storage', (e) => {
   render();
   if (sheetKind === 'tx' || sheetKind === 'repay') drawSheet();
 });
+
+/* A new version finished downloading in the background (see js/pwa.js). */
+window.addEventListener('qirsh:update-ready', () => render());

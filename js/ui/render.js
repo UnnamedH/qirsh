@@ -1,4 +1,5 @@
 /* Draws the current view. */
+import { updateReady } from '../pwa.js';
 import { rescuedData, save, saveFailed, state } from '../state.js';
 import { applyTheme } from '../theme.js';
 import { view } from './ui-state.js';
@@ -38,6 +39,10 @@ function renderAlerts() {
   if (rescuedData() && view !== 'settings')
     alerts.push(
       '<div class="banner bad" role="alert"><p>Your saved data couldn’t be read, so Qirsh started empty. A copy was kept on this device.</p><button class="btn sm" data-act="nav" data-v="settings">Open Backup</button></div>',
+    );
+  if (updateReady)
+    alerts.push(
+      '<div class="banner" role="status"><p>A new version of Qirsh is ready.</p><button class="btn sm primary" data-act="reloadApp">Reload</button></div>',
     );
   const el = $('#alerts');
   el.innerHTML = alerts.join('');

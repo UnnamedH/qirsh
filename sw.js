@@ -1,12 +1,17 @@
 /*
- * Offline support.
+ * Offline-first service worker.
  *
- * The app's own files are fetched from the network first, so a new release shows up on the next
- * launch with a connection; the cached copy is only used offline. Bump VERSION on each release so
- * the precache below is refreshed and old caches are deleted. tests/precache.spec.js fails if a
- * file is missing from APP.
+ * Every file the app needs is stored on the phone when this worker installs, and the app is always
+ * opened from that stored copy, so it starts instantly with no connection or a very slow one.
+ *
+ * Updates: the browser checks this file for changes when the app opens. BUILD is a fingerprint of
+ * every file in APP, so publishing any change produces a new BUILD; the new version is downloaded
+ * in full in the background and only replaces the old one once every file has arrived. The page
+ * then offers to reload. Run `npm run stamp` after changing app files; tests/precache.spec.js
+ * fails if BUILD is out of date or a file is missing from APP.
  */
-const VERSION = 'qirsh-v8';
+const BUILD = '989a9ecf71f8';
+const CACHE = 'qirsh-' + BUILD;
 const APP = [
   './',
   'index.html',
@@ -54,13 +59,21 @@ const APP = [
 ];
 
 self.addEventListener('install', (e) => {
-  // cache: 'reload' skips the browser's HTTP cache so the precache gets the current files.
+  // cache: 'reload' skips the browser's HTTP cache so the new version gets the current files.
+  // addAll is all or nothing: if any file fails, this version is not installed and the old one stays.
+  // The half-filled cache is then removed so it doesn't take up space on the phone.
   const requests = APP.map((url) => new Request(url, { cache: 'reload' }));
   e.waitUntil(
     caches
-      .open(VERSION)
+      .open(CACHE)
       .then((c) => c.addAll(requests))
-      .then(() => self.skipWaiting()),
+      .then(
+        () => self.skipWaiting(),
+        (err) =>
+          caches.delete(CACHE).then(() => {
+            throw err;
+          }),
+      ),
   );
 });
 
@@ -68,30 +81,21 @@ self.addEventListener('activate', (e) => {
   e.waitUntil(
     caches
       .keys()
-      .then((keys) => Promise.all(keys.filter((k) => k !== VERSION).map((k) => caches.delete(k))))
+      .then((keys) => Promise.all(keys.filter((k) => k !== CACHE).map((k) => caches.delete(k))))
       .then(() => self.clients.claim()),
   );
 });
 
 self.addEventListener('fetch', (e) => {
   const req = e.request;
-  if (req.method !== 'GET') return;
-  const url = new URL(req.url);
-
-  if (url.origin !== location.origin) return;
-
-  // Every page load is answered with the app's index.html.
+  if (req.method !== 'GET' || new URL(req.url).origin !== location.origin) return;
+  // Every page load is answered with the stored index.html; everything else with its stored copy.
+  // Only a file that is not stored (which should not happen) goes to the network.
   const key = req.mode === 'navigate' ? 'index.html' : req;
   e.respondWith(
-    fetch(req)
-      .then((res) => {
-        // Only keep good responses, so an error page never replaces the offline copy.
-        if (res.ok) {
-          const copy = res.clone();
-          caches.open(VERSION).then((c) => c.put(key, copy));
-        }
-        return res;
-      })
-      .catch(() => caches.match(key)),
+    caches
+      .open(CACHE)
+      .then((c) => c.match(key))
+      .then((hit) => hit || fetch(req)),
   );
 });

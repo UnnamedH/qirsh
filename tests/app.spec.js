@@ -44,7 +44,7 @@ test('service worker caches the app and it opens offline', async ({ page, contex
   await page.waitForFunction(() => navigator.serviceWorker.controller);
   const cached = await page.evaluate(async () => {
     const names = await caches.keys();
-    const app = names.find((n) => n.startsWith('qirsh-v'));
+    const app = names.find((n) => n.startsWith('qirsh-'));
     return (await (await caches.open(app)).keys()).map((r) => new URL(r.url).pathname);
   });
   expect(cached).toContain('/index.html');
