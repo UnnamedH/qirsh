@@ -11,7 +11,14 @@ test('service worker precaches every app file', () => {
       const p = path.posix.join(dir, d.name);
       return d.isDirectory() ? walk(p) : [p];
     });
-  const needed = ['index.html', 'manifest.webmanifest', ...walk('css'), ...walk('js'), ...walk('icons')];
+  const needed = [
+    'index.html',
+    'manifest.webmanifest',
+    ...walk('css'),
+    ...walk('js'),
+    ...walk('icons'),
+    ...walk('fonts').filter((f) => f.endsWith('.woff2')),
+  ];
   expect(
     needed.filter((f) => !listed.includes(f)),
     'missing from APP in sw.js',

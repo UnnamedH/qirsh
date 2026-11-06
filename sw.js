@@ -7,7 +7,6 @@
  * file is missing from APP.
  */
 const VERSION = 'qirsh-v8';
-const FONTS = 'qirsh-fonts';
 const APP = [
   './',
   'index.html',
@@ -43,6 +42,10 @@ const APP = [
   'js/views/history.js',
   'js/views/home.js',
   'js/views/settings.js',
+  'fonts/geist-latin.woff2',
+  'fonts/geist-latin-ext.woff2',
+  'fonts/geist-mono-latin.woff2',
+  'fonts/geist-mono-latin-ext.woff2',
   'icons/icon-192.png',
   'icons/icon-512.png',
   'icons/icon-maskable-512.png',
@@ -65,9 +68,7 @@ self.addEventListener('activate', (e) => {
   e.waitUntil(
     caches
       .keys()
-      .then((keys) =>
-        Promise.all(keys.filter((k) => k !== VERSION && k !== FONTS).map((k) => caches.delete(k))),
-      )
+      .then((keys) => Promise.all(keys.filter((k) => k !== VERSION).map((k) => caches.delete(k))))
       .then(() => self.clients.claim()),
   );
 });
@@ -77,22 +78,6 @@ self.addEventListener('fetch', (e) => {
   if (req.method !== 'GET') return;
   const url = new URL(req.url);
 
-  // Google Fonts: serve from cache, fetch once.
-  if (url.hostname === 'fonts.googleapis.com' || url.hostname === 'fonts.gstatic.com') {
-    e.respondWith(
-      caches.open(FONTS).then((c) =>
-        c.match(req).then(
-          (hit) =>
-            hit ||
-            fetch(req).then((res) => {
-              if (res.ok || res.type === 'opaque') c.put(req, res.clone());
-              return res;
-            }),
-        ),
-      ),
-    );
-    return;
-  }
   if (url.origin !== location.origin) return;
 
   // Every page load is answered with the app's index.html.
