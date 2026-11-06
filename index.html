@@ -364,7 +364,7 @@ function registerSW(){if('serviceWorker' in navigator&&location.protocol!=='file
 /* ---------- what's new ---------- */
 /* Newest first. Each release adds an entry here with the next v, and bumps VERSION in sw.js. */
 const CHANGELOG=[
-  {v:5,date:'2026-11-06',items:['Paying for someone else, like the scouts? Turn on “Someone will pay me back” when adding an expense. It comes out of your wallet but isn’t counted in your budgets or spending.','Home shows what you’re still owed. Tap “Paid back” to record paybacks in full or in parts, in $ or LL. They go back into your wallet without counting as income.','If you won’t get all of it back, close it and only the part you didn’t get back counts as your spending.']},
+  {v:5,date:'2026-11-06',items:['Paying for someone else, like the scouts? Turn on “Someone will pay me back” when adding an expense. It comes out of your wallet but isn’t counted in your budgets or spending.','Home shows what you’re still owed. Tap “Paid back” to record paybacks in full or in parts, in $ or LL. They go back into your wallet without counting as income.','If you won’t get all of it back, close it and only the part you didn’t get back counts as your spending.','New entries now start in the currency you used last, $ or LL.']},
   {v:4,date:'2026-11-04',items:['A note like this one now shows up after each update, so you know what changed. You can reread it any time from the bottom of Settings.']},
   {v:3,date:'2026-11-04',items:['Pick an accent colour in Settings → Appearance, from the presets or any colour you like.','Choose a Light, Dark or System theme.']},
   {v:2,date:'2026-11-04',items:['Built-in categories now come with emojis.']},
@@ -669,7 +669,9 @@ function drawSheet(){const el=$('#sheet');el.innerHTML='<div class="grab"></div>
   if(sheetKind==='tx')updatePreview();
   const a=el.querySelector('#f-pay0');if(a&&!form.id&&!form.noFocus)setTimeout(()=>{try{a.focus();}catch(e){}},60);form.noFocus=true;}
 
-function newTxForm(type,extra){return Object.assign({mode:'new',type:type||'expense',pay:[{cur:'USD',v:''}],back:[],categoryId:null,who:'',note:'',date:ymd(new Date()),from:'wallet',to:'savings',toAmount:'',toCurrency:'USD',toTouched:false,xrate:state.rate.toLocaleString('en-US'),setRate:false},extra||{});}
+/* New entries start in the currency of the most recently saved one. */
+function lastCur(){let t=null;for(const x of state.tx)if(!t||(x.createdAt||0)>(t.createdAt||0))t=x;return t&&t.currency==='LBP'?'LBP':'USD';}
+function newTxForm(type,extra){const c=lastCur();return Object.assign({mode:'new',type:type||'expense',pay:[{cur:c,v:''}],back:[],categoryId:null,who:'',note:'',date:ymd(new Date()),from:'wallet',to:'savings',toAmount:'',toCurrency:c,toTouched:false,xrate:state.rate.toLocaleString('en-US'),setRate:false},extra||{});}
 function formFromTx(t,mode){
   const pay=[{cur:t.currency,v:String(t.amount)}];if(t.amount2)pay.push({cur:other(t.currency),v:String(t.amount2)});
   const k=backVec(t),back=[];[other(t.currency),t.currency].forEach(c=>{if(k[c]>0)back.push({cur:c,v:String(k[c])});});
@@ -864,7 +866,7 @@ document.addEventListener('click',e=>{
     case 'repeat':{const tp=[...templates().frequent,...templates().recent].find(x=>x.key===el.dataset.key);if(!tp)break;const t=cloneForToday(tp.tx);state.tx.push(t);commit();
       toast('Added '+(t.note||txTitle(t))+' · '+payParts(t).join(' + '),()=>{state.tx=state.tx.filter(x=>x.id!==t.id);commit();});break;}
     case 'repeatEdit':{const tp=[...templates().frequent,...templates().recent].find(x=>x.key===el.dataset.key);if(!tp)break;form=formFromTx(tp.tx,'new');openSheet('tx');break;}
-    case 'newMove':form=v==='exchange'?newTxForm('exchange',{from:'wallet',to:'wallet',toCurrency:'LBP'}):newTxForm('transfer',{from:'wallet',to:'savings'});openSheet('tx');break;
+    case 'newMove':form=v==='exchange'?newTxForm('exchange',{from:'wallet',to:'wallet',pay:[{cur:'USD',v:''}],toCurrency:'LBP'}):newTxForm('transfer',{from:'wallet',to:'savings'});openSheet('tx');break;
     case 'fsetrate':form.setRate=!form.setRate;updatePreview();break;
     case 'k000to':{const n=$('#f-toamount');if(!n)break;n.value=(n.value||'')+'000';form.toAmount=n.value;form.toTouched=true;updatePreview();n.focus();break;}
     case 'transferTo':form=newTxForm('transfer',{from:'wallet',to:id});openSheet('tx');break;
