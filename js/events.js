@@ -1,6 +1,7 @@
 /* All user interaction: one delegated listener per event type, dispatching on data-act. */
 import { advanceOf, paybacksOf } from './advances.js';
-import { exportCopy, exportRescued, exportSave, exportShare, stageImport } from './backup.js';
+import { exportCopy, exportRescued, exportSave, exportShare, saveFile, stageImport } from './backup.js';
+import { csvName, monthlyCsv, monthlyWorkbook, reportName } from './report/monthly.js';
 import { CHANGELOG } from './changelog.js';
 import { ACCOUNTS, accName } from './config.js';
 import { catName, catOf } from './ledger.js';
@@ -467,6 +468,12 @@ document.addEventListener('click', (e) => {
       break;
     case 'exportSave':
       exportSave();
+      break;
+    case 'reportXlsx':
+      saveFile(monthlyWorkbook(hist.month), reportName(hist.month));
+      break;
+    case 'reportCsv':
+      saveFile(monthlyCsv(hist.month), csvName(hist.month));
       break;
     case 'exportRescued':
       exportRescued();

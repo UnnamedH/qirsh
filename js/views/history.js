@@ -49,6 +49,9 @@ export function renderHistory() {
     txs.length +
     '</span></div></div>';
   h +=
+    '<div class="btn-row"><button class="btn sm" data-act="reportXlsx">Monthly report (Excel)</button>' +
+    '<button class="btn sm ghost" data-act="reportCsv">Entries (CSV)</button></div>';
+  h +=
     '<div class="filters"><div class="seg">' +
     [
       ['all', 'All'],

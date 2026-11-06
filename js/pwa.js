@@ -1,6 +1,6 @@
 /* Installed-app (PWA) support: install tip and service worker registration. */
 
-const STANDALONE =
+export const STANDALONE =
   (window.matchMedia && matchMedia('(display-mode: standalone)').matches) || navigator.standalone === true;
 
 export const IOS =

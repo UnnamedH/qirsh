@@ -1,9 +1,10 @@
 /* Backup export and import. */
+import { IOS, STANDALONE } from './pwa.js';
 import { isValid, normalize, rescuedData, save, state } from './state.js';
 import { render } from './ui/render.js';
 import { toast } from './ui/toast.js';
 import { setPendingImport } from './ui/ui-state.js';
-import { $, ymd } from './util.js';
+import { $, downloadBlob, ymd } from './util.js';
 
 const exportText = () =>
   JSON.stringify(Object.assign({}, state, { exportedAt: new Date().toISOString() }), null, 2);
@@ -31,16 +32,7 @@ export async function exportShare() {
   toast('Sharing a file isn’t available here. Use Save file or Copy JSON.');
 }
 
-function download(text, name, type) {
-  const url = URL.createObjectURL(new Blob([text], { type }));
-  const a = document.createElement('a');
-  a.href = url;
-  a.download = name;
-  document.body.appendChild(a);
-  a.click();
-  a.remove();
-  setTimeout(() => URL.revokeObjectURL(url), 3000);
-}
+const download = (text, name, type) => downloadBlob(new Blob([text], { type }), name);
 
 /* Downloads saved data that could not be read, exactly as it was stored. */
 export function exportRescued() {
@@ -100,4 +92,23 @@ export function stageImport(text) {
   }
   setPendingImport(normalize(s));
   render();
+}
+
+/** Saves a generated file. The installed iPhone app has no downloads folder, so it uses the share sheet. */
+export async function saveFile(blob, name) {
+  if (IOS && STANDALONE && navigator.canShare) {
+    const file = new File([blob], name, { type: blob.type });
+    if (navigator.canShare({ files: [file] })) {
+      try {
+        await navigator.share({ files: [file], title: name });
+      } catch (e) {}
+      return;
+    }
+  }
+  try {
+    downloadBlob(blob, name);
+    toast('Saving ' + name);
+  } catch (e) {
+    toast('Saving failed.');
+  }
 }
