@@ -967,7 +967,7 @@ function updateNotesList(){if(!notesDl){notesDl=document.createElement('datalist
   const seen=new Map();state.tx.forEach(t=>{const n=(t.note||'').trim();if(n)seen.set(n,(seen.get(n)||0)+1);});
   notesDl.innerHTML=[...seen.entries()].sort((a,b)=>b[1]-a[1]).slice(0,40).map(([n])=>'<option value="'+esc(n)+'"></option>').join('');}
 
-window.__qirsh={get state(){return state},payVec,backVec,txCostUSD,normalize,balances,budgetStatus,templates,range,fmt,parseAmt,combinedUSD};
+window.__qirsh={get state(){return state},APP_VERSION,payVec,backVec,txCostUSD,normalize,balances,budgetStatus,templates,range,fmt,parseAmt,combinedUSD};
 render();
 newsList=unseenChanges();if(newsList.length){form={};openSheet('news');}
 persistStorage();

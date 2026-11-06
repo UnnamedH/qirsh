@@ -1,0 +1,22 @@
+{
+  "name": "qirsh",
+  "version": "1.0.0",
+  "private": true,
+  "description": "Phone-first USD/LL budget tracker",
+  "type": "module",
+  "scripts": {
+    "start": "http-server . -p 8765 -c-1",
+    "lint": "eslint .",
+    "format": "prettier --write .",
+    "format:check": "prettier --check .",
+    "test": "playwright test"
+  },
+  "devDependencies": {
+    "@eslint/js": "^9.13.0",
+    "@playwright/test": "~1.64.0",
+    "eslint": "^9.13.0",
+    "globals": "^15.11.0",
+    "http-server": "^14.1.1",
+    "prettier": "^3.3.3"
+  }
+}
