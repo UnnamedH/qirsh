@@ -4,6 +4,15 @@ import { KEY } from './state.js';
 /* Newest first. Each release adds an entry here with the next v, and bumps VERSION in sw.js. */
 export const CHANGELOG = [
   {
+    v: 8,
+    date: '2026-11-06',
+    items: [
+      'Qirsh now opens instantly from your phone every time, even with a very weak connection or none at all.',
+      'Updates download in the background. When one is ready, tap Reload to start using it.',
+      'Qirsh no longer loads anything from other websites, not even its font, and the browser now blocks it from ever contacting one. See Settings → Privacy.',
+    ],
+  },
+  {
     v: 7,
     date: '2026-11-06',
     items: [

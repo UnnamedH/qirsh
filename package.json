@@ -6,6 +6,7 @@
   "type": "module",
   "scripts": {
     "start": "http-server . -p 8765 -c-1",
+    "stamp": "node scripts/stamp-sw.mjs",
     "lint": "eslint .",
     "format": "prettier --write .",
     "format:check": "prettier --check .",

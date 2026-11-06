@@ -122,6 +122,11 @@ export function renderSettings() {
     ).join('') +
     '</div></section>';
   h +=
+    '<section class="sec"><h2>Privacy</h2><div class="card">' +
+    '<p class="note">Everything you enter stays on this phone, in this browser. Qirsh has no account and no server, and it never sends your data anywhere: the browser is set to block it from contacting any other website. Nobody else can see your data, not even the people who make Qirsh.</p>' +
+    '<p class="note">Your data isn’t encrypted on the phone, so anyone who can unlock your phone and open Qirsh can see it. Clearing this browser’s data or removing the app deletes it, so keep a backup.</p>' +
+    '</div></section>';
+  h +=
     '<section class="sec"><h2>Backup</h2><div class="card"><p class="note">Your data lives only on this phone, in this browser. Export a JSON backup now and then, and before clearing browser data.' +
     (IOS
       ? ' On iPhone, Safari and the Home Screen app keep separate data, so use a backup to move between them.'

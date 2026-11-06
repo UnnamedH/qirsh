@@ -2,6 +2,15 @@
 <html lang="en">
   <head>
     <meta charset="utf-8" />
+    <!--
+      Content Security Policy: the browser refuses to load scripts, fonts or images from, or send any
+      request to, a site other than this one. Inline styles are allowed because the app sets colours
+      and widths with them; inline scripts are not.
+    -->
+    <meta
+      http-equiv="Content-Security-Policy"
+      content="default-src 'self'; script-src 'self'; style-src 'self' 'unsafe-inline'; font-src 'self'; img-src 'self' data:; connect-src 'self'; manifest-src 'self'; worker-src 'self'; object-src 'none'; base-uri 'none'; form-action 'none'"
+    />
     <meta name="viewport" content="width=device-width,initial-scale=1,viewport-fit=cover" />
     <title>Qirsh</title>
     <meta name="description" content="Track spending in dollars and lira." />
@@ -15,12 +24,8 @@
     <meta name="apple-mobile-web-app-title" content="Qirsh" />
     <meta name="apple-mobile-web-app-status-bar-style" content="black-translucent" />
     <link rel="stylesheet" href="css/styles.css" />
-    <link rel="preconnect" href="https://fonts.googleapis.com" />
-    <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin />
-    <link
-      rel="stylesheet"
-      href="https://fonts.googleapis.com/css2?family=Geist:wght@400;500;600;700&family=Geist+Mono:wght@400;500;600&display=swap"
-    />
+    <link rel="preload" href="fonts/geist-latin.woff2" as="font" type="font/woff2" crossorigin />
+    <link rel="preload" href="fonts/geist-mono-latin.woff2" as="font" type="font/woff2" crossorigin />
   </head>
   <body>
     <header class="top">

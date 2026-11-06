@@ -15,7 +15,7 @@ export default defineConfig({
     channel: process.env.CI ? undefined : 'msedge',
   },
   webServer: {
-    command: `npx http-server . -p ${PORT} -a 127.0.0.1 -c-1 --silent`,
+    command: `node tests/server.mjs . ${PORT}`,
     url: `http://127.0.0.1:${PORT}/`,
     reuseExistingServer: !process.env.CI,
   },
