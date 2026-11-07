@@ -12,7 +12,8 @@ README.md has the full feature list, privacy model and file layout; read it firs
 ## Commands
 
 - Serve: `npm start` → http://127.0.0.1:8765 (must be http, not file://)
-- Test: `npm test` (Playwright; local runs use Windows' Edge via `channel: 'msedge'`, CI uses Chromium)
+- Test: `npm test` (Playwright; local runs use Windows' Edge via `channel: 'msedge'`, CI uses Chromium).
+  Cloud sessions: `PW_CHROMIUM_PATH=/opt/pw-browsers/chromium npm test` to use the pre-installed Chromium.
 - Lint / format: `npm run lint`, `npm run format`, `npm run format:check`
 - After changing any app file: `npm run stamp` (rewrites `BUILD` in `sw.js`)
 
