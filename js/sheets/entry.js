@@ -12,10 +12,13 @@ import { toast } from '../ui/toast.js';
 import { armed } from '../ui/ui-state.js';
 import { $, esc, uid, ymd } from '../util.js';
 
-/* New entries start in the currency of the most recently saved one. */
+/* New entries start in the currency of the most recently saved one, not counting balance corrections. */
 function lastCur() {
   let t = null;
-  for (const x of state.tx) if (!t || (x.createdAt || 0) > (t.createdAt || 0)) t = x;
+  for (const x of state.tx) {
+    if (x.type === 'adjust' || x.correction) continue;
+    if (!t || (x.createdAt || 0) > (t.createdAt || 0)) t = x;
+  }
   return t && t.currency === 'LBP' ? 'LBP' : 'USD';
 }
 
@@ -70,6 +73,8 @@ export function formFromTx(t, mode) {
     toAmount: t.toAmount != null ? String(t.toAmount) : '',
     toCurrency: t.toCurrency || t.currency,
     toTouched: t.type === 'transfer' && t.toCurrency !== t.currency,
+    correction: !!t.correction,
+    account: t.account || 'wallet',
   };
 }
 
@@ -301,6 +306,8 @@ export function txSheet() {
     esc(f.date) +
     '"></label></div>';
   if (isA && f.mode === 'edit') h += advanceBlock(f);
+  if (f.mode === 'edit' && f.correction && (isE || f.type === 'income'))
+    h += '<p class="note">A balance correction for ' + esc(accName(f.account)) + '.</p>';
   h +=
     '<p class="form-error" id="f-err" hidden></p><div class="sheet-actions">' +
     (f.mode === 'edit'
@@ -495,6 +502,9 @@ export function saveTx() {
         ['closed', 'closedOn', 'keptCat', 'rate'].forEach((k) => {
           if (old[k] != null) t[k] = old[k];
         });
+      // A counted balance correction stays one, in its own account, while it stays expense or income.
+      if (old.correction && (isE || t.type === 'income'))
+        Object.assign(t, { correction: true, account: old.account || 'wallet' });
       t.createdAt = old.createdAt || t.createdAt;
       state.tx[i] = t;
     }

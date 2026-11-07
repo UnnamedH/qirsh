@@ -2,11 +2,12 @@
 import { APP_VERSION } from '../changelog.js';
 import { ACCOUNTS, PROTECTED } from '../config.js';
 import { ICON } from '../icons.js';
-import { catName } from '../ledger.js';
+import { balances, catName } from '../ledger.js';
+import { fmt } from '../money.js';
 import { IOS } from '../pwa.js';
 import { rescuedData, state } from '../state.js';
 import { ACCENTS, DEFAULT_ACCENT } from '../theme.js';
-import { armed, pendingImport } from '../ui/ui-state.js';
+import { armed, pendingImport, showOpening } from '../ui/ui-state.js';
 import { $, dayLabel, esc } from '../util.js';
 
 export function renderSettings() {
@@ -102,24 +103,27 @@ export function renderSettings() {
     (preset ? '' : check) +
     '</label></div>' +
     '<p class="note">Pick any colour. Backgrounds, lines and dark mode follow it, and the accent is adjusted so text on it stays readable.</p></div></section>';
+  const bal = balances();
   h +=
-    '<section class="sec"><h2>Starting balances</h2><div class="card"><p class="note">What each account held before your first entry. Change these to correct a balance.</p>' +
+    '<section class="sec"><h2>Balances</h2><div class="card"><p class="note">Missed some entries? Correct an account to what it really holds, and Qirsh records the difference.</p>' +
     ACCOUNTS.map(
       (a) =>
-        '<div class="grid2"><label class="field"><span>' +
+        '<div class="set-row"><span>' +
         a.name +
-        ' USD</span><input class="num" data-open="' +
+        '<br><span class="muted num">' +
+        fmt(bal[a.id].USD, 'USD') +
+        ' · ' +
+        fmt(bal[a.id].LBP, 'LBP') +
+        '</span></span><button class="btn sm" data-act="newAdjust" data-v="' +
         a.id +
-        '" data-cur="USD" inputmode="decimal" value="' +
-        (state.opening[a.id].USD || 0) +
-        '"></label><label class="field"><span>' +
-        a.name +
-        ' LL</span><input class="num" data-open="' +
-        a.id +
-        '" data-cur="LBP" inputmode="numeric" value="' +
-        (state.opening[a.id].LBP || 0).toLocaleString('en-US') +
-        '"></label></div>',
+        '">Correct</button></div>',
     ).join('') +
+    '<div class="links"><button class="link" data-act="toggleOpening" aria-expanded="' +
+    showOpening +
+    '">' +
+    (showOpening ? 'Hide starting balances' : 'Edit starting balances') +
+    '</button></div>' +
+    (showOpening ? openingFields() : '') +
     '</div></section>';
   h +=
     '<section class="sec"><h2>Privacy</h2><div class="card">' +
@@ -242,4 +246,27 @@ export function renderSettings() {
     (state.tx.length === 1 ? ' entry' : ' entries') +
     ' saved on this device<br><button class="link" data-act="showNews">What’s new</button></p>';
   $('#v-settings').innerHTML = h;
+}
+
+/* Starting balances change every balance back to the first entry, so they sit behind a link. */
+function openingFields() {
+  return (
+    '<p class="note">What each account held before your first entry. Changing these changes every balance from the start. To fix today’s balance, use Correct instead.</p>' +
+    ACCOUNTS.map(
+      (a) =>
+        '<div class="grid2"><label class="field"><span>' +
+        a.name +
+        ' USD</span><input class="num" data-open="' +
+        a.id +
+        '" data-cur="USD" inputmode="decimal" value="' +
+        (state.opening[a.id].USD || 0) +
+        '"></label><label class="field"><span>' +
+        a.name +
+        ' LL</span><input class="num" data-open="' +
+        a.id +
+        '" data-cur="LBP" inputmode="numeric" value="' +
+        (state.opening[a.id].LBP || 0).toLocaleString('en-US') +
+        '"></label></div>',
+    ).join('')
+  );
 }

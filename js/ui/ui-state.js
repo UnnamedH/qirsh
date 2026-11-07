@@ -10,7 +10,8 @@ export const hist = {
 };
 
 export let pendingImport = null,
-  armed = null;
+  armed = null,
+  showOpening = false;
 
 export function setView(value) {
   view = value;
@@ -29,5 +30,11 @@ export function setPendingImport(value) {
 
 export function setArmed(value) {
   armed = value;
+  return value;
+}
+
+/* Whether Settings shows the starting balances, which are tucked away behind a link. */
+export function setShowOpening(value) {
+  showOpening = value;
   return value;
 }
