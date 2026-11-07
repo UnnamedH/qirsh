@@ -1,5 +1,6 @@
 /* Bottom sheet: opening, closing and drawing whichever form is active. */
 import { markSeen } from '../changelog.js';
+import { adjustSheet, updateAdjustPreview } from './adjust.js';
 import { budgetSheet } from './budget.js';
 import { txSheet, updatePreview } from './entry.js';
 import { newsSheet } from './news.js';
@@ -35,8 +36,11 @@ export function drawSheet() {
         ? repaySheet()
         : sheetKind === 'news'
           ? newsSheet()
-          : budgetSheet());
+          : sheetKind === 'adjust'
+            ? adjustSheet()
+            : budgetSheet());
   if (sheetKind === 'tx') updatePreview();
+  if (sheetKind === 'adjust') updateAdjustPreview();
   const a = el.querySelector('#f-pay0');
   if (a && !form.id && !form.noFocus)
     setTimeout(() => {

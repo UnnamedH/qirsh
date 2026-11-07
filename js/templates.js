@@ -26,7 +26,8 @@ function tplKey(t) {
 export function templates() {
   const m = new Map();
   for (const t of state.tx) {
-    if (t.type === 'repay') continue;
+    // Paybacks and balance corrections are one-offs, never something to repeat.
+    if (t.type === 'repay' || t.type === 'adjust' || t.correction) continue;
     const k = tplKey(t);
     const e = m.get(k) || { key: k, tx: t, count: 0, last: 0 };
     e.count++;

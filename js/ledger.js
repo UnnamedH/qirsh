@@ -24,6 +24,9 @@ export function balances() {
         a.USD += k.USD;
         a.LBP += k.LBP;
       }
+    } else if (t.type === 'adjust') {
+      // A balance correction: amount is the signed difference, not spending or income.
+      acc(t.account || 'wallet')[t.currency] += t.amount;
     } else if (t.type === 'transfer') {
       acc(t.from)[t.currency] -= t.amount;
       acc(t.to)[t.toCurrency || t.currency] += t.toAmount != null ? +t.toAmount : t.amount;

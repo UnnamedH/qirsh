@@ -7,6 +7,15 @@ import { ACCOUNTS, accName } from './config.js';
 import { catName, catOf } from './ledger.js';
 import { other, parseAmt, payParts } from './money.js';
 import { HINT_KEY } from './pwa.js';
+import {
+  adjustForm,
+  adjustView,
+  deleteAdjust,
+  readAdjust,
+  saveAdjust,
+  setAdjustAccount,
+  updateAdjustPreview,
+} from './sheets/adjust.js';
 import { readBudget, saveBudget } from './sheets/budget.js';
 import { autoTo, formFromTx, newTxForm, readForm, saveTx, updatePreview } from './sheets/entry.js';
 import { setNewsList } from './sheets/news.js';
@@ -25,7 +34,9 @@ import {
   setArmed,
   setPendingImport,
   setQuickTab,
+  setShowOpening,
   setView,
+  showOpening,
   view,
 } from './ui/ui-state.js';
 import { $, firstGlyph, uid, ymd } from './util.js';
@@ -44,6 +55,7 @@ document.addEventListener('click', (e) => {
     act !== 'bdel' &&
     act !== 'rdel' &&
     act !== 'keepRest' &&
+    act !== 'adel' &&
     act !== 'discardRescued'
   )
     setArmed(null);
@@ -136,6 +148,11 @@ document.addEventListener('click', (e) => {
     case 'editTx': {
       const t = state.tx.find((x) => x.id === id);
       if (!t) break;
+      if (t.type === 'adjust') {
+        setForm(adjustView(t));
+        openSheet('adjust');
+        break;
+      }
       if (t.type === 'repay') {
         const a = advanceOf(t);
         if (a) {
@@ -346,6 +363,37 @@ document.addEventListener('click', (e) => {
         );
       }
       break;
+    case 'newAdjust':
+      setForm(adjustForm(v));
+      openSheet('adjust');
+      break;
+    case 'acount':
+      readAdjust();
+      form.count = v === '1';
+      drawSheet();
+      break;
+    case 'aexp':
+    case 'ainc':
+      readAdjust();
+      form[act === 'aexp' ? 'expCat' : 'incCat'] = v;
+      drawSheet();
+      break;
+    case 'asave':
+      saveAdjust();
+      break;
+    case 'adel':
+      if (armed !== 'adjust') {
+        setArmed('adjust');
+        drawSheet();
+        break;
+      }
+      setArmed(null);
+      deleteAdjust();
+      break;
+    case 'toggleOpening':
+      setShowOpening(!showOpening);
+      render();
+      break;
     case 'newBudget':
       setForm({ id: null, categoryId: null, period: 'month', amount: '', currency: 'USD' });
       openSheet('budget');
@@ -555,6 +603,10 @@ document.addEventListener('input', (e) => {
       updatePreview();
     }
   }
+  if (sheetKind === 'adjust' && t.id && t.id.startsWith('a-')) {
+    readAdjust();
+    updateAdjustPreview();
+  }
   if (t.id === 'accentPick' && hexRgb(t.value)) {
     state.settings.accent = t.value.toUpperCase();
     applyTheme();
@@ -575,6 +627,11 @@ document.addEventListener('change', (e) => {
       else form.from = pick;
     }
     autoTo();
+    drawSheet();
+    return;
+  }
+  if (sheetKind === 'adjust' && t.id === 'a-acct') {
+    setAdjustAccount(t.value);
     drawSheet();
     return;
   }
@@ -634,6 +691,7 @@ document.addEventListener('keydown', (e) => {
     if (sheetKind === 'tx') saveTx();
     else if (sheetKind === 'repay') saveRepay();
     else if (sheetKind === 'budget') saveBudget();
+    else if (sheetKind === 'adjust' && form.mode === 'new') saveAdjust();
   }
 });
 
@@ -645,7 +703,7 @@ window.addEventListener('storage', (e) => {
   if (!next) return;
   setState(next);
   render();
-  if (sheetKind === 'tx' || sheetKind === 'repay') drawSheet();
+  if (sheetKind === 'tx' || sheetKind === 'repay' || sheetKind === 'adjust') drawSheet();
 });
 
 /* A new version finished downloading in the background (see js/pwa.js). */

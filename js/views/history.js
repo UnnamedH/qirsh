@@ -78,11 +78,12 @@ export function renderHistory() {
   $('#v-history').innerHTML = h;
 }
 
-/* Paying for others and paybacks are money moves, not spending or income, so they sit under Moves. */
+/* Paying for others, paybacks and balance-only corrections are not spending or income, so they sit
+   under Moves. */
 const histMatch = (t) =>
   hist.filter === 'all' ||
   t.type === hist.filter ||
-  (hist.filter === 'transfer' && (t.type === 'advance' || t.type === 'repay'));
+  (hist.filter === 'transfer' && (t.type === 'advance' || t.type === 'repay' || t.type === 'adjust'));
 
 export function historyList(txs) {
   if (!txs.length) return '<div class="list"><p class="empty">Nothing here for this month.</p></div>';

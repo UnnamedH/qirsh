@@ -1,8 +1,17 @@
 /* Release notes shown in the "What's new" sheet. */
 import { KEY } from './state.js';
 
-/* Newest first. Each release adds an entry here with the next v, and bumps VERSION in sw.js. */
+/* Newest first. Each release adds an entry here with the next v, then runs `npm run stamp` for sw.js. */
 export const CHANGELOG = [
+  {
+    v: 9,
+    date: '2026-11-07',
+    items: [
+      'Missed a few entries? In Settings → Balances, tap Correct next to an account and enter what it really holds. Qirsh records the difference for you.',
+      'Choose “Count it” to add the difference as an expense or income in a category, so your totals and budgets include it, or “Just fix the balance” to change the balance only.',
+      'Starting balances are now tucked away under “Edit starting balances”.',
+    ],
+  },
   {
     v: 8,
     date: '2026-11-06',

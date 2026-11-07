@@ -8,6 +8,7 @@ import { cap, esc } from '../util.js';
 export function txTitle(t) {
   if (t.type === 'transfer') return t.from === t.to ? 'Exchange' : accName(t.from) + ' → ' + accName(t.to);
   if (t.type === 'advance') return 'Paid for ' + (t.who || 'someone');
+  if (t.type === 'adjust') return 'Balance correction';
   if (t.type === 'repay') {
     const a = advanceOf(t);
     return 'Paid back by ' + ((a && a.who) || 'someone');
@@ -49,10 +50,20 @@ export function rowSub(t) {
     return p.join(' · ');
   }
   if (t.type === 'repay') return t.note ? txTitle(t) : 'Not counted as income';
+  if (t.type === 'adjust') {
+    const p = [];
+    if (t.note) p.push(txTitle(t));
+    p.push(accName(t.account || 'wallet'));
+    if (t.target != null) p.push('set to ' + fmt(t.target, t.currency));
+    return p.join(' · ');
+  }
+  if (t.correction)
+    return (t.note ? txTitle(t) + ' · ' : '') + 'Balance correction · ' + accName(t.account || 'wallet');
   return t.note ? txTitle(t) : cap(t.type);
 }
 
 export function txGlyph(t) {
+  if (t.type === 'adjust') return '<span class="glyph tr" aria-hidden="true">±</span>';
   if (t.type === 'advance' || t.type === 'repay')
     return '<span class="glyph tr" aria-hidden="true">' + (t.type === 'advance' ? '↗' : '↙') + '</span>';
   if (t.type === 'transfer')
@@ -69,6 +80,8 @@ export function txGlyph(t) {
 }
 
 export function txAmt(t) {
+  if (t.type === 'adjust')
+    return '<span class="amt tr">' + fmt(t.amount, t.currency, { sign: true }) + '</span>';
   if (t.type === 'transfer') {
     const diff = (t.toCurrency || t.currency) !== t.currency;
     return (

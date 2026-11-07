@@ -89,6 +89,14 @@ export function normalize(s) {
       if (x.toCurrency != null && !isCur(x.toCurrency)) delete x.toCurrency;
       // Entries from before rates were stored keep the rate they were last shown at.
       if ((x.type === 'advance' || x.type === 'repay') && !(+x.rate > 0)) x.rate = out.rate;
+      // A balance correction belongs to one account and remembers the balance it was set to.
+      if (x.type === 'adjust') {
+        if (!ACCOUNTS.some((a) => a.id === x.account)) x.account = 'wallet';
+        if (x.target != null && x.target !== '' && isFinite(+x.target)) x.target = +x.target;
+        else delete x.target;
+      }
+      if (x.correction) x.correction = true;
+      else delete x.correction;
       if (x.amount2 != null) {
         x.amount2 = +x.amount2 || 0;
         if (!x.amount2) delete x.amount2;

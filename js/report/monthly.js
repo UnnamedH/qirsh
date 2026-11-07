@@ -27,9 +27,12 @@ const TYPE_LABEL = {
   transfer: 'Transfer',
   advance: 'Paid for others',
   repay: 'Payback',
+  adjust: 'Balance correction',
 };
 const typeLabel = (t) =>
-  t.type === 'transfer' && t.from === t.to ? 'Exchange' : TYPE_LABEL[t.type] || t.type;
+  t.type === 'transfer' && t.from === t.to
+    ? 'Exchange'
+    : (TYPE_LABEL[t.type] || t.type) + (t.correction ? ' (correction)' : '');
 
 /** Spending per category for a month, including the kept part of closed advances, like sumUSD. */
 function spendingByCategory(r) {
@@ -258,7 +261,7 @@ const accountLabel = (t) =>
     : accName(t.account || 'wallet');
 
 /** USD value used in reports: what an entry cost or brought in, or the amount moved. */
-const valueUSD = (t) => (t.type === 'transfer' ? txUSD(t) : txCostUSD(t));
+const valueUSD = (t) => (t.type === 'transfer' || t.type === 'adjust' ? txUSD(t) : txCostUSD(t));
 
 function entriesSheet(d) {
   return {
