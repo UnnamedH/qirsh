@@ -5,6 +5,7 @@ import { budgetSheet } from './budget.js';
 import { txSheet, updatePreview } from './entry.js';
 import { newsSheet } from './news.js';
 import { repaySheet } from './payback.js';
+import { fitAllThousands } from '../ui/amount.js';
 import { $ } from '../util.js';
 
 export let form = null,
@@ -39,6 +40,7 @@ export function drawSheet() {
           : sheetKind === 'adjust'
             ? adjustSheet()
             : budgetSheet());
+  fitAllThousands(el);
   if (sheetKind === 'tx') updatePreview();
   if (sheetKind === 'adjust') updateAdjustPreview();
   const a = el.querySelector('#f-pay0');

@@ -4,6 +4,15 @@ import { KEY } from './state.js';
 /* Newest first. Each release adds an entry here with the next v, then runs `npm run stamp` for sw.js. */
 export const CHANGELOG = [
   {
+    v: 10,
+    date: '2026-11-09',
+    items: [
+      'Type the price first. Paid with a different amount, like $10 for something that costs 385,000 LL? Tap “Paid with” and Qirsh works out your change. If the shop gave you a different amount, just change it.',
+      'Paid less than the price? Qirsh works out the rest you paid on top, in the other currency.',
+      'LL is now always typed in thousands: type 385 for 385,000 LL. The ,000 is already there, so there’s no 000 button to tap.',
+    ],
+  },
+  {
     v: 9,
     date: '2026-11-07',
     items: [

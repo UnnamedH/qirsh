@@ -87,8 +87,17 @@ export function normalize(s) {
     .map((t) => {
       const x = Object.assign({}, t, { amount: +t.amount });
       if (x.toCurrency != null && !isCur(x.toCurrency)) delete x.toCurrency;
-      // Entries from before rates were stored keep the rate they were last shown at.
-      if ((x.type === 'advance' || x.type === 'repay') && !(+x.rate > 0)) x.rate = out.rate;
+      if (x.priceCur != null && !isCur(x.priceCur)) delete x.priceCur;
+      if (x.rate != null && !(+x.rate > 0)) delete x.rate;
+      // Entries from before rates were stored keep the rate they were last shown at. That covers advances
+      // and paybacks, and expenses or income paid partly in each currency, whose value depends on a rate.
+      const back = isObj(x.back) ? x.back : {};
+      const mixed =
+        (x.type === 'expense' || x.type === 'income') &&
+        (+x.amount2 > 0 ||
+          +back[x.currency === 'USD' ? 'LBP' : 'USD'] > 0 ||
+          (x.priceCur && x.priceCur !== x.currency));
+      if ((x.type === 'advance' || x.type === 'repay' || mixed) && !(+x.rate > 0)) x.rate = out.rate;
       // A balance correction belongs to one account and remembers the balance it was set to.
       if (x.type === 'adjust') {
         if (!ACCOUNTS.some((a) => a.id === x.account)) x.account = 'wallet';

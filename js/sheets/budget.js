@@ -1,7 +1,8 @@
 /* Sheet for adding and editing budgets. */
 import { ICON } from '../icons.js';
 import { budgetName } from '../ledger.js';
-import { parseAmt } from '../money.js';
+import { parseInput } from '../money.js';
+import { amountField } from '../ui/amount.js';
 import { curToggle } from './entry.js';
 import { closeSheet, form } from './sheet.js';
 import { state } from '../state.js';
@@ -53,9 +54,8 @@ export function budgetSheet() {
       .join('') +
     '</div></div>';
   h +=
-    '<div class="amount-row"><input id="b-amount" class="amount-input" inputmode="decimal" placeholder="0" value="' +
-    esc(f.amount) +
-    '" aria-label="Limit">' +
+    '<div class="amount-row">' +
+    amountField({ id: 'b-amount', value: f.amount, cur: f.currency, label: 'Limit' }) +
     curToggle('bcur', f.currency) +
     '</div>';
   h +=
@@ -83,7 +83,7 @@ export function readBudget() {
 export function saveBudget() {
   readBudget();
   const f = form;
-  const a = parseAmt(f.amount);
+  const a = parseInput(f.amount, f.currency);
   const err = $('#b-err');
   if (!(a > 0)) {
     err.textContent = 'Enter a limit above zero.';

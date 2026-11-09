@@ -40,6 +40,7 @@ test('a new release downloads in the background and offers a reload', async ({ p
   await installApp(page);
   const before = await cacheNames(page);
   await page.click('#fab');
+  await page.click('#sheet [data-act=lcur][data-v=USD]');
   await page.fill('#f-pay0', '6');
   await page.click('[data-act=fcat][data-v=coffee]');
   await page.click('[data-act=fsave]');

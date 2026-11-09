@@ -87,7 +87,7 @@ test('changing the rate does not reopen an entry paid back in the other currency
   // Paid back in full in LL at the default 89,500
   await page.click('#v-home [data-act=newRepay]');
   await page.click('#sheet [data-act=lcur][data-v=LBP]');
-  await page.fill('#f-pay0', '8950000');
+  await page.fill('#f-pay0', '8950');
   await page.click('[data-act=rsave]');
   const owedShown = () =>
     page.evaluate(() =>

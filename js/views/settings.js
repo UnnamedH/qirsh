@@ -3,10 +3,11 @@ import { APP_VERSION } from '../changelog.js';
 import { ACCOUNTS, PROTECTED } from '../config.js';
 import { ICON } from '../icons.js';
 import { balances, catName } from '../ledger.js';
-import { fmt } from '../money.js';
+import { fmt, toInput } from '../money.js';
 import { IOS } from '../pwa.js';
 import { rescuedData, state } from '../state.js';
 import { ACCENTS, DEFAULT_ACCENT } from '../theme.js';
+import { thousandsInput } from '../ui/amount.js';
 import { armed, pendingImport, showOpening } from '../ui/ui-state.js';
 import { $, dayLabel, esc } from '../util.js';
 
@@ -262,11 +263,13 @@ function openingFields() {
         (state.opening[a.id].USD || 0) +
         '"></label><label class="field"><span>' +
         a.name +
-        ' LL</span><input class="num" data-open="' +
-        a.id +
-        '" data-cur="LBP" inputmode="numeric" value="' +
-        (state.opening[a.id].LBP || 0).toLocaleString('en-US') +
-        '"></label></div>',
+        ' LL</span>' +
+        thousandsInput(
+          ' data-open="' + a.id + '" data-cur="LBP"',
+          toInput(state.opening[a.id].LBP || 0, 'LBP'),
+          a.name + ' LL',
+        ) +
+        '</label></div>',
     ).join('')
   );
 }

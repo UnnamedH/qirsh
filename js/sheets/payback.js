@@ -2,7 +2,7 @@
 import { advanceOf, fmtAdv, owed, paybacksOf } from '../advances.js';
 import { ICON } from '../icons.js';
 import { catName } from '../ledger.js';
-import { fmt, fromUSD, parseAmt, payParts } from '../money.js';
+import { fmt, fromUSD, parseInput, payParts, toInput } from '../money.js';
 import { formFromTx, moneyLines, readForm } from './entry.js';
 import { closeSheet, drawSheet, form, openSheet, setForm, sheetKind } from './sheet.js';
 import { state } from '../state.js';
@@ -97,7 +97,7 @@ export function repayForm(a, r, returnTo) {
       mode: 'edit',
       id: r.id,
       advanceId: a.id,
-      pay: [{ cur: r.currency, v: String(r.amount) }],
+      pay: [{ cur: r.currency, v: toInput(r.amount, r.currency) }],
       back: [],
       note: r.note || '',
       date: r.date,
@@ -113,7 +113,7 @@ export function repayForm(a, r, returnTo) {
     pay: [
       {
         cur: a.currency,
-        v: left > 0 ? String(a.currency === 'USD' ? Math.round(left * 100) / 100 : Math.round(left)) : '',
+        v: left > 0 ? toInput(left, a.currency) : '',
       },
     ],
     back: [],
@@ -184,7 +184,7 @@ export function saveRepay() {
       err.textContent = m;
       err.hidden = false;
     };
-  const n = parseAmt(f.pay[0].v);
+  const n = parseInput(f.pay[0].v, f.pay[0].cur);
   if (!(n > 0)) return fail('Enter an amount above zero.');
   if (!f.date) return fail('Pick a date.');
   const a = advanceOf(f);

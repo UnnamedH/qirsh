@@ -2,7 +2,7 @@
 import { advanceOf, fmtAdv, owed } from '../advances.js';
 import { accName } from '../config.js';
 import { budgetName, budgetStatus, catName, catOf } from '../ledger.js';
-import { backParts, fmt, fromUSD, payParts } from '../money.js';
+import { backParts, entryValueIn, fmt, fromUSD, payParts } from '../money.js';
 import { cap, esc } from '../util.js';
 
 export function txTitle(t) {
@@ -79,6 +79,10 @@ export function txGlyph(t) {
   );
 }
 
+/** The amount to name in a message: the price for a price-first expense, otherwise what was paid. */
+export const amountText = (t) =>
+  t.type === 'expense' && t.priceCur ? fmt(entryValueIn(t, t.priceCur), t.priceCur) : payParts(t).join(' + ');
+
 export function txAmt(t) {
   if (t.type === 'adjust')
     return '<span class="amt tr">' + fmt(t.amount, t.currency, { sign: true }) + '</span>';
@@ -110,6 +114,16 @@ export function txAmt(t) {
       '</span>'
     );
   if (p.length === 1 && !k.length) return '<span class="amt">' + p[0] + '</span>';
+  // Entered price first: show the price, with how it was paid underneath.
+  if (t.type === 'expense' && t.priceCur)
+    return (
+      '<span class="amt has-chg"><span>' +
+      fmt(entryValueIn(t, t.priceCur), t.priceCur) +
+      '</span><span class="chg">paid ' +
+      p.join(' + ') +
+      (k.length ? ' · ' + k.join(' + ') + ' back' : '') +
+      '</span></span>'
+    );
   return (
     '<span class="amt has-chg">' +
     p.map((x) => '<span>' + x + '</span>').join('') +

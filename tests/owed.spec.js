@@ -62,7 +62,6 @@ test('paying for others stays out of budgets; paybacks are not income', async ({
   await page.click('#v-home [data-act=newRepay]');
   await page.click('#sheet [data-act=lcur][data-v=LBP]');
   await page.fill('#f-pay0', '1790');
-  await page.click('#sheet [data-act=k000]');
   await page.click('[data-act=rsave]');
   expect((await money(page)).walletLBP).toBe(1790000);
   await expect(owedList(page)).toContainText('$20');

@@ -2,6 +2,7 @@
 import { updateReady } from '../pwa.js';
 import { rescuedData, save, saveFailed, state } from '../state.js';
 import { applyTheme } from '../theme.js';
+import { fitAllThousands } from './amount.js';
 import { view } from './ui-state.js';
 import { $, DAYS, MONTHS, esc } from '../util.js';
 import { renderBudgets } from '../views/budgets.js';
@@ -27,6 +28,7 @@ export function render() {
   }[view];
   ({ home: renderHome, history: renderHistory, budgets: renderBudgets, settings: renderSettings })[view]();
   updateNotesList();
+  fitAllThousands($('main'));
 }
 
 /* Warnings shown above every view while there is a problem with saved data. */

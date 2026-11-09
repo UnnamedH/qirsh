@@ -9,7 +9,8 @@ Plain HTML, CSS and JavaScript modules: no framework and no build step. GitHub P
 ## Features
 
 - Wallet, Savings and Whish accounts, each holding both USD and LL
-- Expenses and income paid in one or both currencies, including change you get back
+- Expenses entered price first: say what you paid with and the change, or the rest paid on top, is worked out
+- LL typed in thousands everywhere (type 385 for 385,000 LL)
 - Transfers between accounts and exchanges between $ and LL at a rate you set
 - Money paid on someone else's behalf, with paybacks, kept out of budgets
 - Weekly and monthly budgets, overall or per category
