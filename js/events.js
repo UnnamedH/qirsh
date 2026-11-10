@@ -499,6 +499,10 @@ document.addEventListener('click', (e) => {
       state.settings.weekStart = +v;
       commit();
       break;
+    case 'setEntryStyle':
+      state.settings.entryStyle = v;
+      commit();
+      break;
     case 'setTheme':
       state.settings.theme = v;
       commit();

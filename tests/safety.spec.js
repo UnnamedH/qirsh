@@ -157,7 +157,13 @@ test('a malformed backup imports without breaking the app', async ({ page }) => 
   await page.click('[data-act=importLoad]');
   await page.click('[data-act=importConfirm]');
   const s = await appState(page);
-  expect(s.settings).toEqual({ display: 'USD', weekStart: 1, accent: null, theme: 'system' });
+  expect(s.settings).toEqual({
+    display: 'USD',
+    weekStart: 1,
+    accent: null,
+    theme: 'system',
+    entryStyle: 'price',
+  });
   expect(s.rate).toBe(89500);
   expect(s.tx.map((t) => t.id)).toEqual(['ok']);
   expect(s.budgets).toEqual([]);

@@ -241,3 +241,80 @@ test('removing the extra change goes back to all change in LL', async ({ page })
   await page.click('[data-act=adj2Rm]');
   await expect(page.locator('#f-adj')).toHaveValue('510');
 });
+
+test('price first is the default; Settings can switch to paid + change', async ({ page }) => {
+  await freshWallet(page);
+  expect((await appState(page)).settings.entryStyle).toBe('price');
+  await page.click('#fab');
+  await expect(page.locator('[data-act=paidAdd]')).toHaveCount(1);
+  await expect(page.locator('[data-act=ladd][data-k=back]')).toHaveCount(0);
+  await page.click('#sheet .sheet-head [data-act=close]');
+
+  await page.click('.tabs [data-act=nav][data-v=settings]');
+  await page.click('[data-act=setEntryStyle][data-v=paid]');
+  await page.reload();
+  await page.waitForFunction(() => window.__qirsh);
+  expect((await appState(page)).settings.entryStyle, 'saved').toBe('paid');
+});
+
+test('paid + change: $10 paid, 500,000 LL back, the way it was before', async ({ page }) => {
+  await freshWallet(page);
+  await page.evaluate(() => (window.__qirsh.state.settings.entryStyle = 'paid'));
+  await page.click('#fab');
+  await expect(page.locator('[data-act=paidAdd]')).toHaveCount(0);
+  await page.click('#sheet [data-act=lcur][data-v=USD]');
+  await page.fill('#f-pay0', '10');
+  await page.click('[data-act=ladd][data-k=back]');
+  await expect(page.locator('#sheet [data-act=lcur][data-k=back][aria-pressed=true]')).toHaveAttribute(
+    'data-v',
+    'LBP',
+  );
+  await page.fill('#f-back0', '500');
+  await expect(page.locator('#f-preview')).toContainText('Costs $4.41');
+  // And $2 back as well
+  await page.click('[data-act=ladd][data-k=back]');
+  await page.fill('#f-back1', '2');
+  await page.click('[data-act=fcat][data-v=food]');
+  await page.fill('#f-note', 'Lunch');
+  await page.click('[data-act=fsave]');
+  const t = await lastTx(page);
+  expect(t).toMatchObject({ amount: 10, currency: 'USD', back: { USD: 2, LBP: 500000 }, rate: 89500 });
+  expect(t.priceCur).toBeUndefined();
+  expect(await wallet(page)).toEqual({ USD: 92, LBP: 500000 });
+
+  // Reopens with the same paid and change lines
+  await page.click('.tabs [data-act=nav][data-v=history]');
+  await page.locator('#histList .row', { hasText: 'Lunch' }).click();
+  await expect(page.locator('#f-pay0')).toHaveValue('10');
+  await expect(page.locator('#f-back0')).toHaveValue('500');
+  await expect(page.locator('#f-back1')).toHaveValue('2');
+});
+
+test('an entry made price first keeps its price when edited as paid + change', async ({ page }) => {
+  await freshWallet(page);
+  await startExpense(page, 'LBP', '385');
+  await page.click('[data-act=paidAdd]');
+  await page.fill('#f-paid', '10');
+  await page.fill('#f-adj', '500');
+  await page.fill('#f-note', 'Lunch');
+  await page.click('[data-act=fcat][data-v=food]');
+  await page.click('[data-act=fsave]');
+
+  await page.evaluate(() => (window.__qirsh.state.settings.entryStyle = 'paid'));
+  await page.click('.tabs [data-act=nav][data-v=history]');
+  await page.locator('#histList .row', { hasText: 'Lunch' }).click();
+  await expect(page.locator('#f-pay0')).toHaveValue('10');
+  await expect(page.locator('#f-back0')).toHaveValue('500');
+  await page.click('[data-act=fsave]');
+  const valueLL = await page.evaluate(() =>
+    Math.round(window.__qirsh.txCostUSD(window.__qirsh.state.tx.at(-1)) * window.__qirsh.state.rate),
+  );
+  expect(valueLL).toBe(385000);
+});
+
+test('an unknown entry style in a backup falls back to price first', async ({ page }) => {
+  await openApp(page, {
+    storage: { 'qirsh.v1': JSON.stringify({ tx: [], settings: { entryStyle: 'weird' } }) },
+  });
+  expect((await appState(page)).settings.entryStyle).toBe('price');
+});

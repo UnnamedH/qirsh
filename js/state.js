@@ -9,7 +9,7 @@ export function blankState() {
     app: 'qirsh',
     version: 1,
     rate: 89500,
-    settings: { display: 'USD', weekStart: 1, accent: null, theme: 'system' },
+    settings: { display: 'USD', weekStart: 1, accent: null, theme: 'system', entryStyle: 'price' },
     opening: { wallet: { USD: 0, LBP: 0 }, savings: { USD: 0, LBP: 0 }, whish: { USD: 0, LBP: 0 } },
     categories: DEFAULT_CATS.map((c) => Object.assign({}, c)),
     tx: [],
@@ -38,6 +38,8 @@ function normalizeSettings(st, defaults) {
     accent:
       typeof st.accent === 'string' && /^#[0-9a-f]{6}$/i.test(st.accent) ? st.accent.toUpperCase() : null,
     theme: ['system', 'light', 'dark'].includes(st.theme) ? st.theme : defaults.theme,
+    // How expenses are typed in: 'price' first with "Paid with", or 'paid' amounts plus change back.
+    entryStyle: st.entryStyle === 'paid' ? 'paid' : defaults.entryStyle,
   };
 }
 

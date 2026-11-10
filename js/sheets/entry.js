@@ -115,7 +115,13 @@ export function formFromTx(t, mode) {
     correction: !!t.correction,
     account: t.account || 'wallet',
   };
-  if (t.type === 'expense') Object.assign(f, priceFirst(t));
+  if (t.type === 'expense' && priceFirstOn()) Object.assign(f, priceFirst(t));
+  else if (t.type === 'expense') {
+    const k = backVec(t);
+    f.back = [other(t.currency), t.currency]
+      .filter((c) => k[c] > 0)
+      .map((c) => ({ cur: c, v: toInput(k[c], c) }));
+  }
   return f;
 }
 
@@ -236,14 +242,31 @@ export function txSheet() {
   h +=
     moneyLines('pay', isT ? f.pay.slice(0, 1) : f.pay) + (isX ? '' : '<p class="hint" id="f-preview"></p>');
   if (!isT) {
-    if (isE) h += paidSection(f);
-    else if (f.pay.length === 1)
-      h +=
-        '<div class="links"><button class="link" data-act="ladd" data-k="pay">+ Also ' +
-        (isA ? 'paid' : 'got') +
-        ' in ' +
-        curLabel(other(f.pay[0].cur)) +
-        '</button></div>';
+    if (isE && priceFirstOn()) h += paidSection(f);
+    else {
+      const links = [];
+      if (f.pay.length === 1)
+        links.push(
+          '<button class="link" data-act="ladd" data-k="pay">+ Also ' +
+            (isE || isA ? 'paid' : 'got') +
+            ' in ' +
+            curLabel(other(f.pay[0].cur)) +
+            '</button>',
+        );
+      if (isE && !f.back.length)
+        links.push('<button class="link" data-act="ladd" data-k="back">+ Got change back</button>');
+      if (links.length) h += '<div class="links">' + links.join('') + '</div>';
+      if (isE && f.back.length)
+        h +=
+          '<div class="sub-lines"><span class="sub-label">Change back</span>' +
+          moneyLines('back', f.back) +
+          '</div>' +
+          (f.back.length === 1
+            ? '<div class="links" style="margin-top:-8px"><button class="link" data-act="ladd" data-k="back">+ Also got ' +
+              curLabel(other(f.back[0].cur)) +
+              ' back</button></div>'
+            : '');
+    }
     if (isE || isA)
       h +=
         '<button class="chip sm" data-act="fadv" aria-pressed="' +
@@ -340,6 +363,9 @@ export function txSheet() {
 }
 
 /* ---------- price first: paid with, and the change back ---------- */
+
+/** Whether expenses are typed price first (the default) or as amounts paid plus change back. */
+export const priceFirstOn = () => state.settings.entryStyle !== 'paid';
 
 const convert = (n, from, to) => (from === to ? n : to === 'LBP' ? n * state.rate : n / state.rate);
 // Change is rounded the way it is handed over: to the cent, or to 1,000 LL.
@@ -595,6 +621,14 @@ export function updatePreview() {
     if (t.closest('.thousands')) fitThousands(t);
   }
   if (form.type === 'expense' && form.paid) refreshSettle();
+  else if (form.type === 'expense' && form.back.length && P > 0) {
+    const K = vUSD(linesVec(form.back));
+    if (K > 0)
+      el.textContent =
+        P - K < 0
+          ? 'The change is more than you paid'
+          : 'Costs ' + fmt(P - K, 'USD') + '  ≈ ' + fmt((P - K) * state.rate, 'LBP', { round: true });
+  }
 }
 
 export function readForm() {
@@ -679,7 +713,8 @@ export function saveTx() {
       t.back = { USD: kv.USD, LBP: kv.LBP };
     }
     // Paid in both currencies: keep today's rate on it, so its value doesn't move with later rate changes.
-    if (t.amount2 && !t.rate) t.rate = state.rate;
+    const mixed = t.amount2 || (t.back && t.back[other(t.currency)] > 0);
+    if (mixed && !t.rate) t.rate = state.rate;
   }
   if (isX && f.setRate) {
     const ir = impliedRate(f);
@@ -698,6 +733,11 @@ export function saveTx() {
       // A counted balance correction stays one, in its own account, while it stays expense or income.
       if (old.correction && (isE || t.type === 'income'))
         Object.assign(t, { correction: true, account: old.account || 'wallet' });
+      // Edited as "paid + change": keep the rate (and price currency) it was saved with, so its value stays.
+      if (isE && !f.paid && t.rate && +old.rate > 0) {
+        t.rate = old.rate;
+        if (old.priceCur) t.priceCur = old.priceCur;
+      }
       t.createdAt = old.createdAt || t.createdAt;
       state.tx[i] = t;
     }

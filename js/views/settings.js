@@ -53,7 +53,29 @@ export function renderSettings() {
           '</button>',
       )
       .join('') +
-    '</div></div></div></section>';
+    '</div></div>' +
+    '<div class="set-row"><span>Adding an expense</span><div class="seg">' +
+    [
+      ['price', 'Price first'],
+      ['paid', 'Paid + change'],
+    ]
+      .map(
+        ([k, l]) =>
+          '<button data-act="setEntryStyle" data-v="' +
+          k +
+          '" aria-pressed="' +
+          ((s.entryStyle || 'price') === k) +
+          '">' +
+          l +
+          '</button>',
+      )
+      .join('') +
+    '</div></div>' +
+    '<p class="note">' +
+    (s.entryStyle === 'paid'
+      ? 'Type what you paid in $ and LL, and any change you got back.'
+      : 'Type the price, then what you paid with. Qirsh works out the change.') +
+    '</p></div></section>';
   const acc = (s.accent || DEFAULT_ACCENT).toUpperCase(),
     preset = ACCENTS.some(([c]) => c === acc);
   const check =
