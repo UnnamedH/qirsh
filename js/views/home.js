@@ -2,8 +2,8 @@
 import { fmtAdv, owed } from '../advances.js';
 import { accName } from '../config.js';
 import { ICON } from '../icons.js';
-import { balances, budgetStatus, combinedUSD, range, sumUSD } from '../ledger.js';
-import { fmt, fmtDisp } from '../money.js';
+import { balances, budgetStatus, combinedUSD, range, sumIn } from '../ledger.js';
+import { dispCur, fmt, fmtDisp, fmtTotal } from '../money.js';
 import { showInstallHint } from '../pwa.js';
 import { priceTipBanner, showPriceTip } from '../sheets/demo.js';
 import { state } from '../state.js';
@@ -18,8 +18,8 @@ export function renderHome() {
     tpl = templates(),
     list = tpl[quickTab];
   const mr = range('month');
-  const spent = sumUSD(mr, 'expense'),
-    inc = sumUSD(mr, 'income');
+  const spent = sumIn(mr, 'expense', null, dispCur()),
+    inc = sumIn(mr, 'income', null, dispCur());
   const overall =
     state.budgets.find((x) => !x.categoryId && x.period === 'month') ||
     state.budgets.find((x) => !x.categoryId);
@@ -165,13 +165,13 @@ export function renderHome() {
     MONTHS[new Date().getMonth()] +
     '</h2><button class="link" data-act="nav" data-v="history">History</button></div>' +
     '<div class="stats"><div class="stat"><span class="label">Spent</span><span class="amt">' +
-    fmtDisp(spent) +
+    fmtTotal(spent) +
     '</span></div>' +
     '<div class="stat"><span class="label">Earned</span><span class="amt in">' +
-    fmtDisp(inc) +
+    fmtTotal(inc) +
     '</span></div>' +
     '<div class="stat"><span class="label">Net</span><span class="amt">' +
-    fmtDisp(inc - spent, { sign: inc - spent > 0 }) +
+    fmtTotal(inc - spent, { sign: inc - spent > 0 }) +
     '</span></div></div></section>';
   h +=
     '<section class="sec"><div class="sec-head"><h2>Budgets</h2><button class="link" data-act="nav" data-v="budgets">All budgets</button></div>';

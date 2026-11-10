@@ -59,11 +59,17 @@ export function entryValueIn(t, cur) {
 /** The currency an entry is priced in: the price the user typed, or else the one they paid in. */
 export const priceCurrency = (t) => t.priceCur || t.currency;
 
-/** An entry's value in USD at today's rate, for totals and budgets. */
-export const txCostUSD = (t) => {
-  const cur = priceCurrency(t);
-  return toUSD(entryValueIn(t, cur), cur);
-};
+/**
+ * An entry's value in USD, at the rate saved on it. Every entry keeps the rate of the day it was
+ * saved, so changing the app's rate later doesn't change what past months cost.
+ */
+export const txCostUSD = (t) => entryValueIn(t, 'USD');
+
+/** True when an entry's amounts are in both currencies, so its value depends on a rate. */
+export function isMixed(t) {
+  const k = backVec(t);
+  return !!(+t.amount2 > 0 || k[other(t.currency)] > 0 || (t.priceCur && t.priceCur !== t.currency));
+}
 
 export const payParts = (t) => {
   const p = [fmt(t.amount, t.currency)];
@@ -79,6 +85,13 @@ export const backParts = (t) => {
   return p;
 };
 
+/** The currency totals are shown in, as picked in Settings. */
+export const dispCur = () => state.settings.display;
+
+/** Formats a total that is already in the display currency (see dispCur). */
+export const fmtTotal = (n, o) => fmt(n, dispCur(), Object.assign({ round: true }, o || {}));
+
+/** Formats a USD amount in the display currency at today's rate: for balances and what is owed now. */
 export const fmtDisp = (usd, o) => {
   const c = state.settings.display;
   return fmt(fromUSD(usd, c), c, Object.assign({ round: true }, o || {}));

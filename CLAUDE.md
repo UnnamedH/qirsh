@@ -42,11 +42,16 @@ CI (`.github/workflows/ci.yml`) runs lint, format check and tests on every PR.
 - An expense's value is `entryValueIn()` / `txCostUSD()` in `money.js`, never raw `amount`: price-first
   expenses store what was paid (`amount`, `amount2`, `back`), the price currency (`priceCur`) and the
   shop's `rate`, so the price is exact and doesn't drift when the app's rate changes.
+- **Every entry keeps the `rate` of the day it was saved** (all types except `transfer`, which stores both
+  amounts). Totals add `entryValueIn(t, cur)` per entry with `sumIn()` in `ledger.js`, in the currency
+  shown, so past months and budgets don't move when the app's rate changes. Converting a total at
+  `state.rate` (`fmtDisp`) is only for what you hold now: balances and what is still owed.
 - Transaction `type`: `expense`, `income`, `transfer` (exchange = transfer with `from === to`),
-  `advance` (paid for someone, not spending) and `repay` (payback, linked by `advanceId`, not income).
+  `advance` (paid for someone, not spending), `repay` (payback, linked by `advanceId`, not income) and
+  `adjust` (balance-only correction: signed `amount`, `target`). Counted corrections are ordinary
+  expense/income entries with `correction: true`.
 - Any new persisted field **must** be handled in `normalize()` in `state.js`: data comes from old
   versions and imported backups, so validate and default everything. Never throw on bad data.
-- Advances/paybacks store their own `rate` so later rate changes don't change what is owed.
 
 ## Code style
 

@@ -4,6 +4,15 @@ import { KEY } from './state.js';
 /* Newest first. Each release adds an entry here with the next v, then runs `npm run stamp` for sw.js. */
 export const CHANGELOG = [
   {
+    v: 12,
+    date: '2026-11-10',
+    items: [
+      'Changing the exchange rate no longer changes what past months cost. Each entry now keeps the rate of the day you added it, and totals, budgets and the monthly report use it.',
+      'Budgets in LL now count LL spending exactly, without converting it through dollars.',
+      'Your balances and what you’re owed still use today’s rate, because they’re what you have now.',
+    ],
+  },
+  {
     v: 11,
     date: '2026-11-10',
     items: [

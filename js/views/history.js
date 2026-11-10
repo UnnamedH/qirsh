@@ -1,7 +1,7 @@
 /* History view. */
 import { ICON } from '../icons.js';
-import { inRange, sumUSD } from '../ledger.js';
-import { fmtDisp, txCostUSD } from '../money.js';
+import { inRange, sumIn } from '../ledger.js';
+import { dispCur, entryValueIn, fmtTotal } from '../money.js';
 import { state } from '../state.js';
 import { rowSub, txAmt, txGlyph, txTitle } from '../ui/format.js';
 import { hist } from '../ui/ui-state.js';
@@ -28,8 +28,8 @@ export function renderHistory() {
   const m = hist.month;
   const r = monthRange(m);
   const txs = historyTxs();
-  const spent = sumUSD(r, 'expense'),
-    inc = sumUSD(r, 'income');
+  const spent = sumIn(r, 'expense', null, dispCur()),
+    inc = sumIn(r, 'income', null, dispCur());
   let h =
     '<div class="month-switch"><button class="icon-btn" data-act="month" data-v="-1" aria-label="Previous month">' +
     ICON.left +
@@ -42,9 +42,9 @@ export function renderHistory() {
     '</button></div>';
   h +=
     '<div class="stats"><div class="stat"><span class="label">Spent</span><span class="amt">' +
-    fmtDisp(spent) +
+    fmtTotal(spent) +
     '</span></div><div class="stat"><span class="label">Earned</span><span class="amt in">' +
-    fmtDisp(inc) +
+    fmtTotal(inc) +
     '</span></div><div class="stat"><span class="label">Entries</span><span class="amt">' +
     txs.length +
     '</span></div></div>';
@@ -94,13 +94,13 @@ export function historyList(txs) {
     if (!group.length) return;
     let out = 0;
     group.forEach((t) => {
-      if (t.type === 'expense') out += txCostUSD(t);
+      if (t.type === 'expense') out += entryValueIn(t, dispCur());
     });
     h +=
       '<div class="day-head"><span>' +
       dayLabel(cur) +
       '</span><span class="num">' +
-      (out ? fmtDisp(out) : '') +
+      (out ? fmtTotal(out) : '') +
       '</span></div><div class="list">' +
       group
         .map(

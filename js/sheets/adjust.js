@@ -251,7 +251,15 @@ export function saveAdjust() {
   const now = Date.now(),
     note = f.note.trim();
   const added = diffs.map((d) => {
-    const base = { id: uid(), currency: d.cur, account: f.account, note, date: f.date, createdAt: now };
+    const base = {
+      id: uid(),
+      currency: d.cur,
+      account: f.account,
+      note,
+      date: f.date,
+      createdAt: now,
+      rate: state.rate,
+    };
     if (!f.count) return Object.assign(base, { type: 'adjust', amount: d.diff, target: d.target });
     // Counted: an ordinary expense or income entry, marked so it reads as a correction.
     return Object.assign(base, {

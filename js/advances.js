@@ -37,4 +37,14 @@ export function owed(a) {
   };
 }
 
+/** What was never paid back, in `cur` at the advance's own rate: the part kept as spending once closed. */
+export function leftIn(a, cur) {
+  const left = Math.max(
+    0,
+    inCurrency(a, a.currency) - paybacksOf(a.id).reduce((s, r) => s + inCurrency(r, a.currency), 0),
+  );
+  if (left < (a.currency === 'USD' ? 0.005 : 500)) return 0;
+  return inCurrency({ amount: left, currency: a.currency, rate: a.rate }, cur);
+}
+
 export const fmtAdv = (a, usd) => fmt(fromUSD(usd, a.currency), a.currency, { round: true });

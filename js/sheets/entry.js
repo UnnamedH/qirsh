@@ -6,6 +6,7 @@ import {
   backVec,
   entryValueIn,
   fmt,
+  isMixed,
   other,
   parseAmt,
   parseInput,
@@ -712,9 +713,8 @@ export function saveTx() {
       if (vUSD(kv) > vUSD(pv) + 1e-9) return fail('The change is more than you paid.');
       t.back = { USD: kv.USD, LBP: kv.LBP };
     }
-    // Paid in both currencies: keep today's rate on it, so its value doesn't move with later rate changes.
-    const mixed = t.amount2 || (t.back && t.back[other(t.currency)] > 0);
-    if (mixed && !t.rate) t.rate = state.rate;
+    // Keep today's rate on it (unless price first worked out the shop's), so its value doesn't move later.
+    if (!t.rate) t.rate = state.rate;
   }
   if (isX && f.setRate) {
     const ir = impliedRate(f);
@@ -733,10 +733,11 @@ export function saveTx() {
       // A counted balance correction stays one, in its own account, while it stays expense or income.
       if (old.correction && (isE || t.type === 'income'))
         Object.assign(t, { correction: true, account: old.account || 'wallet' });
-      // Edited as "paid + change": keep the rate (and price currency) it was saved with, so its value stays.
-      if (isE && !f.paid && t.rate && +old.rate > 0) {
+      // An edited entry keeps the rate of the day it was saved, so its value stays. Price first is the
+      // exception: there the rate is worked out from the amounts just typed.
+      if (!isT && !(isE && f.paid) && +old.rate > 0) {
         t.rate = old.rate;
-        if (old.priceCur) t.priceCur = old.priceCur;
+        if (isE && old.priceCur && isMixed(t)) t.priceCur = old.priceCur;
       }
       t.createdAt = old.createdAt || t.createdAt;
       state.tx[i] = t;

@@ -24,6 +24,8 @@ export function isValid(s) {
 }
 
 const CURRENCIES = ['USD', 'LBP'];
+/* Entry types that save the rate of their day. Transfers store both amounts, so they need none. */
+const RATED = ['expense', 'income', 'advance', 'repay', 'adjust'];
 const isCur = (c) => CURRENCIES.includes(c);
 const isObj = (x) => !!x && typeof x === 'object';
 
@@ -91,15 +93,9 @@ export function normalize(s) {
       if (x.toCurrency != null && !isCur(x.toCurrency)) delete x.toCurrency;
       if (x.priceCur != null && !isCur(x.priceCur)) delete x.priceCur;
       if (x.rate != null && !(+x.rate > 0)) delete x.rate;
-      // Entries from before rates were stored keep the rate they were last shown at. That covers advances
-      // and paybacks, and expenses or income paid partly in each currency, whose value depends on a rate.
-      const back = isObj(x.back) ? x.back : {};
-      const mixed =
-        (x.type === 'expense' || x.type === 'income') &&
-        (+x.amount2 > 0 ||
-          +back[x.currency === 'USD' ? 'LBP' : 'USD'] > 0 ||
-          (x.priceCur && x.priceCur !== x.currency));
-      if ((x.type === 'advance' || x.type === 'repay' || mixed) && !(+x.rate > 0)) x.rate = out.rate;
+      // Every entry keeps the rate of the day it was saved, so past months don't change with the app's
+      // rate. Entries from before rates were stored get the rate they were last shown at, once.
+      if (RATED.includes(x.type) && !(+x.rate > 0)) x.rate = out.rate;
       // A balance correction belongs to one account and remembers the balance it was set to.
       if (x.type === 'adjust') {
         if (!ACCOUNTS.some((a) => a.id === x.account)) x.account = 'wallet';
