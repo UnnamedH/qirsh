@@ -1182,3 +1182,48 @@ button.row:first-child {
     font-size: 14px;
   }
 }
+
+/* Price-first demo (js/sheets/demo.js): three steps appear one after another, about two seconds in all. */
+.banner.tip .icon-btn,
+.banner .btn {
+  flex: none;
+  white-space: nowrap;
+}
+.demo {
+  display: flex;
+  flex-direction: column;
+  gap: 14px;
+}
+.demo-step {
+  display: flex;
+  flex-direction: column;
+  gap: 2px;
+  padding: 12px 14px;
+  border-radius: var(--r);
+  background: var(--surface);
+  border: 1px solid var(--line);
+  animation: demo-in 0.4s ease-out both;
+}
+.demo-step:nth-child(2) {
+  animation-delay: 0.7s;
+}
+.demo-step:nth-child(3) {
+  animation-delay: 1.4s;
+  border-color: var(--accent);
+}
+.demo-value {
+  font-family: var(--f-num);
+  font-size: 24px;
+  font-weight: 600;
+}
+@keyframes demo-in {
+  from {
+    opacity: 0;
+    transform: translateY(8px);
+  }
+}
+@media (prefers-reduced-motion: reduce) {
+  .demo-step {
+    animation: none;
+  }
+}

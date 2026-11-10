@@ -27,6 +27,7 @@ import {
   saveTx,
   updatePreview,
 } from './sheets/entry.js';
+import { markPriceTipDone } from './sheets/demo.js';
 import { setNewsList } from './sheets/news.js';
 import { afterRepay, repayForm, saveRepay } from './sheets/payback.js';
 import { closeSheet, drawSheet, form, openSheet, setForm, sheetKind } from './sheets/sheet.js';
@@ -552,6 +553,22 @@ document.addEventListener('click', (e) => {
       setNewsList(CHANGELOG);
       setForm({});
       openSheet('news');
+      break;
+    case 'tipShow':
+      setForm({});
+      openSheet('demo');
+      break;
+    case 'tipClose':
+      markPriceTipDone();
+      if (sheetKind) closeSheet();
+      render();
+      break;
+    case 'tipUse':
+      markPriceTipDone();
+      state.settings.entryStyle = 'price';
+      closeSheet();
+      commit();
+      toast('Price first is on. Tap + to try it.');
       break;
     case 'hideInstallHint':
       try {

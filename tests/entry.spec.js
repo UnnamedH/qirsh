@@ -1,10 +1,13 @@
 import { test, expect, openApp, appState } from './helpers.js';
 
-/** A fresh start with $100 and no LL in the wallet, at the default rate of 89,500. */
-async function freshWallet(page) {
+/** A fresh start with $100 and no LL in the wallet, at the default rate of 89,500, typing price first. */
+async function freshWallet(page, style = 'price') {
   await openApp(page);
   await page.click('[data-act=clearSample]');
-  await page.evaluate(() => (window.__qirsh.state.opening.wallet = { USD: 100, LBP: 0 }));
+  await page.evaluate((style) => {
+    window.__qirsh.state.opening.wallet = { USD: 100, LBP: 0 };
+    window.__qirsh.state.settings.entryStyle = style;
+  }, style);
 }
 
 const wallet = (page) => page.evaluate(() => window.__qirsh.balances().wallet);
@@ -171,6 +174,7 @@ test('LL amounts are typed in thousands everywhere', async ({ page }) => {
 test('an older "paid + change" entry opens price first, unchanged', async ({ page }) => {
   const old = JSON.stringify({
     rate: 89500,
+    settings: { entryStyle: 'price' },
     tx: [
       {
         id: 'old',
@@ -242,24 +246,24 @@ test('removing the extra change goes back to all change in LL', async ({ page })
   await expect(page.locator('#f-adj')).toHaveValue('510');
 });
 
-test('price first is the default; Settings can switch to paid + change', async ({ page }) => {
-  await freshWallet(page);
-  expect((await appState(page)).settings.entryStyle).toBe('price');
+test('paid + change is the default; Settings can switch to price first', async ({ page }) => {
+  await openApp(page);
+  await page.click('[data-act=clearSample]');
+  expect((await appState(page)).settings.entryStyle).toBe('paid');
   await page.click('#fab');
-  await expect(page.locator('[data-act=paidAdd]')).toHaveCount(1);
-  await expect(page.locator('[data-act=ladd][data-k=back]')).toHaveCount(0);
+  await expect(page.locator('[data-act=paidAdd]')).toHaveCount(0);
+  await expect(page.locator('[data-act=ladd][data-k=back]')).toHaveCount(1);
   await page.click('#sheet .sheet-head [data-act=close]');
 
   await page.click('.tabs [data-act=nav][data-v=settings]');
-  await page.click('[data-act=setEntryStyle][data-v=paid]');
+  await page.click('[data-act=setEntryStyle][data-v=price]');
   await page.reload();
   await page.waitForFunction(() => window.__qirsh);
-  expect((await appState(page)).settings.entryStyle, 'saved').toBe('paid');
+  expect((await appState(page)).settings.entryStyle, 'saved').toBe('price');
 });
 
 test('paid + change: $10 paid, 500,000 LL back, the way it was before', async ({ page }) => {
-  await freshWallet(page);
-  await page.evaluate(() => (window.__qirsh.state.settings.entryStyle = 'paid'));
+  await freshWallet(page, 'paid');
   await page.click('#fab');
   await expect(page.locator('[data-act=paidAdd]')).toHaveCount(0);
   await page.click('#sheet [data-act=lcur][data-v=USD]');
@@ -312,9 +316,9 @@ test('an entry made price first keeps its price when edited as paid + change', a
   expect(valueLL).toBe(385000);
 });
 
-test('an unknown entry style in a backup falls back to price first', async ({ page }) => {
+test('an unknown entry style in a backup falls back to paid + change', async ({ page }) => {
   await openApp(page, {
     storage: { 'qirsh.v1': JSON.stringify({ tx: [], settings: { entryStyle: 'weird' } }) },
   });
-  expect((await appState(page)).settings.entryStyle).toBe('price');
+  expect((await appState(page)).settings.entryStyle).toBe('paid');
 });

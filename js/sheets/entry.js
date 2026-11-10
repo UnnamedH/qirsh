@@ -364,8 +364,8 @@ export function txSheet() {
 
 /* ---------- price first: paid with, and the change back ---------- */
 
-/** Whether expenses are typed price first (the default) or as amounts paid plus change back. */
-export const priceFirstOn = () => state.settings.entryStyle !== 'paid';
+/** Whether expenses are typed price first, or as amounts paid plus change back (the default). */
+export const priceFirstOn = () => state.settings.entryStyle === 'price';
 
 const convert = (n, from, to) => (from === to ? n : to === 'LBP' ? n * state.rate : n / state.rate);
 // Change is rounded the way it is handed over: to the cent, or to 1,000 LL.

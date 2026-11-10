@@ -162,7 +162,7 @@ test('a malformed backup imports without breaking the app', async ({ page }) => 
     weekStart: 1,
     accent: null,
     theme: 'system',
-    entryStyle: 'price',
+    entryStyle: 'paid',
   });
   expect(s.rate).toBe(89500);
   expect(s.tx.map((t) => t.id)).toEqual(['ok']);
