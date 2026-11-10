@@ -322,3 +322,56 @@ test('an unknown entry style in a backup falls back to paid + change', async ({ 
   });
   expect((await appState(page)).settings.entryStyle).toBe('paid');
 });
+
+test('typed amounts: decimal commas work, and anything that isn’t a number is refused', async ({ page }) => {
+  await openApp(page);
+  const parsed = await page.evaluate(() => {
+    const p = window.__qirsh.parseAmt;
+    return [
+      '4,50',
+      '1,5',
+      '1,500',
+      '89,500',
+      '1,234,567.5',
+      '1.5k',
+      '2m',
+      '-5',
+      '.5',
+      '12abc',
+      '1e3',
+      '1,50,0',
+      '',
+      'k',
+    ].map((x) => p(x));
+  });
+  expect(parsed).toEqual([4.5, 1.5, 1500, 89500, 1234567.5, 1500, 2000000, -5, 0.5, NaN, NaN, NaN, NaN, NaN]);
+
+  await page.click('[data-act=clearSample]');
+  await page.click('#fab');
+  await page.click('[data-act=lcur][data-v=USD]');
+  await page.fill('#f-pay0', '12abc');
+  await page.click('[data-act=fcat][data-v=coffee]');
+  await page.click('[data-act=fsave]');
+  await expect(page.locator('#f-err')).toHaveText('Amounts must be numbers above zero.');
+  await page.fill('#f-pay0', '4,50');
+  await expect(page.locator('#f-preview')).toContainText('$4.50');
+  await page.click('[data-act=fsave]');
+  expect((await appState(page)).tx.map((t) => t.amount)).toEqual([4.5]);
+});
+
+test('a mistyped starting balance is refused, not saved as zero', async ({ page }) => {
+  await openApp(page);
+  await page.click('.tabs [data-act=nav][data-v=settings]');
+  await page.click('[data-act=toggleOpening]');
+  const field = page.locator('[data-open=wallet][data-cur=USD]');
+  const before = (await appState(page)).opening.wallet.USD;
+  expect(before).toBeGreaterThan(0);
+  await field.fill('2oo');
+  await field.blur();
+  await expect(page.locator('#toast')).toContainText('wasn’t changed');
+  expect((await appState(page)).opening.wallet.USD).toBe(before);
+  await expect(page.locator('[data-open=wallet][data-cur=USD]')).toHaveValue(String(before));
+  await page.locator('[data-open=wallet][data-cur=USD]').fill('');
+  await page.locator('[data-open=wallet][data-cur=USD]').blur();
+  expect((await appState(page)).opening.wallet.USD).toBe(0);
+});

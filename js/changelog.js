@@ -10,6 +10,7 @@ export const CHANGELOG = [
       'New way to add expenses: type the price, say what you paid with, and Qirsh works out your change, even when it comes back in both $ and LL. Turn it on from the tip on Home, or in Settings → Display → “Adding an expense”.',
       'Got a different amount of change than Qirsh worked out? Just type what you got, and the price stays exact.',
       'LL is now always typed in thousands: type 385 for 385,000 LL. The ,000 is already there, so there’s no 000 button to tap.',
+      'Amounts are checked more carefully: a comma works as a decimal point (4,50 is $4.50), and a slip like “12abc” is caught instead of being saved.',
     ],
   },
   {

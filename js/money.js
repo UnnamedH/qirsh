@@ -84,11 +84,17 @@ export const fmtDisp = (usd, o) => {
   return fmt(fromUSD(usd, c), c, Object.assign({ round: true }, o || {}));
 };
 
+/**
+ * Reads a typed number, or returns NaN when it isn't one. Anything that isn't plainly a number is
+ * refused rather than guessed at, so a slip like "12abc" is never saved as 12.
+ * Commas work both ways: "1,500" and "89,500" group thousands, while "4,50" is a decimal comma, as
+ * typed on phones set to a region that writes decimals that way.
+ */
 export function parseAmt(s) {
-  s = String(s || '')
+  s = String(s == null ? '' : s)
     .trim()
     .toLowerCase()
-    .replace(/[,\s]/g, '');
+    .replace(/\s/g, '');
   let m = 1;
   if (/k$/.test(s)) {
     m = 1e3;
@@ -97,8 +103,10 @@ export function parseAmt(s) {
     m = 1e6;
     s = s.slice(0, -1);
   }
-  const n = parseFloat(s);
-  return isFinite(n) ? n * m : NaN;
+  if (/^-?\d{1,3}(,\d{3})+(\.\d+)?$/.test(s)) s = s.replace(/,/g, '');
+  else if (/^-?\d*,\d+$/.test(s)) s = s.replace(',', '.');
+  if (!/^-?(\d+\.?\d*|\.\d+)$/.test(s)) return NaN;
+  return parseFloat(s) * m;
 }
 
 /*

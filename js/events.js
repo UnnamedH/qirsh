@@ -729,10 +729,16 @@ document.addEventListener('change', (e) => {
     }
   }
   if (t.dataset.open) {
-    const n = parseInput(t.value, t.dataset.cur);
-    state.opening[t.dataset.open][t.dataset.cur] = isFinite(n) ? n : 0;
-    commit();
-    toast(accName(t.dataset.open) + ' starting balance updated');
+    // An empty field means zero; anything else that isn't a number is refused, not saved as zero.
+    const n = t.value.trim() === '' ? 0 : parseInput(t.value, t.dataset.cur);
+    if (isFinite(n)) {
+      state.opening[t.dataset.open][t.dataset.cur] = n;
+      commit();
+      toast(accName(t.dataset.open) + ' starting balance updated');
+    } else {
+      render();
+      toast('That isn’t a number, so the starting balance wasn’t changed.');
+    }
   }
   if (t.dataset.caticon) {
     const c = catOf(t.dataset.caticon);
