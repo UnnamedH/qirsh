@@ -176,11 +176,55 @@ export function discardRescued() {
 /* True when the last save failed, for example because storage is full or blocked. */
 export let saveFailed = false;
 
+/* True when the last change was dropped because another copy of the app had saved since (see save). */
+export let saveConflict = false;
+
+/* When the data in storage was saved, read from its text without parsing all of it. `"savedAt":` can
+   only be the top-level field: inside a note the quotes would be escaped. */
+function storedStamp(raw) {
+  const m = /"savedAt":(\d+)/.exec(raw || '');
+  return m ? +m[1] : 0;
+}
+
+/* The save time of the data this copy of the app last loaded or wrote. */
+let knownStamp = 0;
+
+/**
+ * Takes the data from storage if another copy of the app (a second tab, or the installed app next to
+ * a browser tab) saved after this one last looked. Returns true when the state was replaced.
+ * Copies normally hear about each other's saves through the `storage` event, but a copy asleep in
+ * the background can miss it, so this is also called when the app comes back and before every save.
+ */
+export function syncFromStorage() {
+  let raw = null;
+  try {
+    raw = localStorage.getItem(KEY);
+  } catch (e) {
+    return false;
+  }
+  if (!raw || storedStamp(raw) <= knownStamp) return false;
+  const next = parseState(raw);
+  if (!next) return false;
+  state = next;
+  knownStamp = storedStamp(raw);
+  return true;
+}
+
+/**
+ * Saves the state. If another copy saved since this one last looked, writing would erase its changes,
+ * so instead this copy takes the newer data, drops its own last change and reports a conflict.
+ */
 export function save() {
-  state.savedAt = Date.now();
+  if (syncFromStorage()) {
+    saveConflict = true;
+    return false;
+  }
+  saveConflict = false;
+  state.savedAt = Math.max(Date.now(), knownStamp + 1);
   try {
     localStorage.setItem(KEY, JSON.stringify(state));
     saveFailed = false;
+    knownStamp = state.savedAt;
   } catch (e) {
     saveFailed = true;
   }
@@ -199,7 +243,9 @@ export function persistStorage() {
 }
 
 export let state = load();
+knownStamp = +state.savedAt || 0;
 
+/** Replaces the whole state, for example with an imported backup. The next save writes it. */
 export function setState(value) {
   state = value;
   return value;

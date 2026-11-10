@@ -1,6 +1,14 @@
 /* All user interaction: one delegated listener per event type, dispatching on data-act. */
 import { advanceOf, paybacksOf } from './advances.js';
-import { exportCopy, exportRescued, exportSave, exportShare, saveFile, stageImport } from './backup.js';
+import {
+  exportCopy,
+  exportRescued,
+  exportSave,
+  exportShare,
+  saveFile,
+  snoozeBackup,
+  stageImport,
+} from './backup.js';
 import { csvName, monthlyCsv, monthlyWorkbook, reportName } from './report/monthly.js';
 import { CHANGELOG } from './changelog.js';
 import { ACCOUNTS, accName } from './config.js';
@@ -31,7 +39,7 @@ import { markPriceTipDone } from './sheets/demo.js';
 import { setNewsList } from './sheets/news.js';
 import { afterRepay, repayForm, saveRepay } from './sheets/payback.js';
 import { closeSheet, drawSheet, form, openSheet, setForm, sheetKind } from './sheets/sheet.js';
-import { KEY, blankState, discardRescued, parseState, save, setState, state } from './state.js';
+import { KEY, blankState, discardRescued, save, setState, state, syncFromStorage } from './state.js';
 import { cloneForToday, templates } from './templates.js';
 import { DEFAULT_ACCENT, applyTheme, hexRgb } from './theme.js';
 import { amountText, txTitle } from './ui/format.js';
@@ -546,6 +554,17 @@ document.addEventListener('click', (e) => {
       toast('Deleted ' + c.name);
       break;
     }
+    case 'backupNow': {
+      setView('settings');
+      render();
+      const sec = $('#backupSec');
+      if (sec) sec.scrollIntoView();
+      break;
+    }
+    case 'backupLater':
+      snoozeBackup();
+      render();
+      break;
     case 'exportShare':
       exportShare();
       break;
@@ -776,14 +795,25 @@ document.addEventListener('keydown', (e) => {
 
 /* Another copy of the app (a second tab, or the installed app next to a browser tab) saved a change.
    Take its state, so this copy neither shows stale data nor writes over the change on its next save. */
-window.addEventListener('storage', (e) => {
-  if (e.key !== KEY || !e.newValue) return;
-  const next = parseState(e.newValue);
-  if (!next) return;
-  setState(next);
+function redrawAfterSync() {
   render();
   if (sheetKind === 'tx' || sheetKind === 'repay' || sheetKind === 'adjust') drawSheet();
+}
+
+window.addEventListener('storage', (e) => {
+  if (e.key === KEY && syncFromStorage()) redrawAfterSync();
 });
+
+/* Coming back to the app: a copy asleep in the background can miss the `storage` event, so look for
+   newer data now. Re-drawing also brings the date, the month and the budgets' days left up to date
+   when the app was left open overnight. */
+function onReturn() {
+  if (document.visibilityState !== 'visible') return;
+  if (syncFromStorage()) redrawAfterSync();
+  else if (!sheetKind && !document.activeElement.matches('input, textarea, select')) render();
+}
+document.addEventListener('visibilitychange', onReturn);
+window.addEventListener('pageshow', onReturn);
 
 /* A new version finished downloading in the background (see js/pwa.js). */
 window.addEventListener('qirsh:update-ready', () => render());
