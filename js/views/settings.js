@@ -148,37 +148,6 @@ export function renderSettings() {
     '</button></div>' +
     (showOpening ? openingFields() : '') +
     '</div></section>';
-  h +=
-    '<section class="sec"><h2>Privacy</h2><div class="card">' +
-    '<p class="note">Everything you enter stays on this phone, in this browser. Qirsh has no account and no server, and it never sends your data anywhere: the browser is set to block it from contacting any other website. Nobody else can see your data, not even the people who make Qirsh.</p>' +
-    '<p class="note">Your data isn’t encrypted on the phone, so anyone who can unlock your phone and open Qirsh can see it. Clearing this browser’s data or removing the app deletes it, so keep a backup.</p>' +
-    '</div></section>';
-  h +=
-    '<section class="sec"><h2>Backup</h2><div class="card"><p class="note">Your data lives only on this phone, in this browser. Export a JSON backup now and then, and before clearing browser data.' +
-    (IOS
-      ? ' On iPhone, Safari and the Home Screen app keep separate data, so use a backup to move between them.'
-      : '') +
-    ' ' +
-    (state.lastExport ? 'Last export: ' + dayLabel(state.lastExport.slice(0, 10)) + '.' : 'No export yet.') +
-    '</p>' +
-    '<div class="btn-row"><button class="btn" data-act="exportShare">Share</button><button class="btn" data-act="exportSave">Save file</button><button class="btn" data-act="exportCopy">Copy JSON</button></div>' +
-    '<div id="exportOut"></div>' +
-    (rescuedData()
-      ? '<div class="banner bad" style="flex-direction:column;align-items:stretch"><p>Saved data that couldn’t be read was kept on this device. Download it to keep it safe, or discard it once you no longer need it.</p><div class="btn-row"><button class="btn sm" data-act="exportRescued">Download it</button><button class="btn sm danger' +
-        (armed === 'rescue' ? ' armed' : '') +
-        '" data-act="discardRescued">' +
-        (armed === 'rescue' ? 'Tap again to discard' : 'Discard') +
-        '</button></div></div>'
-      : '') +
-    '<div class="btn-row"><button class="btn" data-act="importPick">Import file</button><button class="btn ghost" data-act="importPaste">Paste JSON</button></div><div id="importArea"></div>' +
-    (pendingImport
-      ? '<div class="banner" style="flex-direction:column;align-items:stretch"><p>This backup has <strong>' +
-        pendingImport.tx.length +
-        '</strong> entries and <strong>' +
-        pendingImport.budgets.length +
-        '</strong> budgets. Importing replaces everything on this phone.</p><div class="btn-row"><button class="btn primary sm" data-act="importConfirm">Replace my data</button><button class="btn sm" data-act="importCancel">Cancel</button></div></div>'
-      : '') +
-    '</div></section>';
   const used = (id) => state.tx.filter((t) => t.categoryId === id).length;
   h +=
     '<section class="sec"><h2>Categories</h2><div class="card"><p class="note">Set an emoji in the small box, edit names in place, and use the arrows to change the order they appear in when you add an entry.</p>' +
@@ -261,6 +230,37 @@ export function renderSettings() {
     '" data-act="wipe">' +
     (armed === 'wipe' ? 'Tap again to delete everything' : 'Clear all data') +
     '</button></div></div></section>';
+  h +=
+    '<section class="sec"><h2>Backup</h2><div class="card"><p class="note">Your data lives only on this phone, in this browser. Export a JSON backup now and then, and before clearing browser data.' +
+    (IOS
+      ? ' On iPhone, Safari and the Home Screen app keep separate data, so use a backup to move between them.'
+      : '') +
+    ' ' +
+    (state.lastExport ? 'Last export: ' + dayLabel(state.lastExport.slice(0, 10)) + '.' : 'No export yet.') +
+    '</p>' +
+    '<div class="btn-row"><button class="btn" data-act="exportShare">Share</button><button class="btn" data-act="exportSave">Save file</button><button class="btn" data-act="exportCopy">Copy JSON</button></div>' +
+    '<div id="exportOut"></div>' +
+    (rescuedData()
+      ? '<div class="banner bad" style="flex-direction:column;align-items:stretch"><p>Saved data that couldn’t be read was kept on this device. Download it to keep it safe, or discard it once you no longer need it.</p><div class="btn-row"><button class="btn sm" data-act="exportRescued">Download it</button><button class="btn sm danger' +
+        (armed === 'rescue' ? ' armed' : '') +
+        '" data-act="discardRescued">' +
+        (armed === 'rescue' ? 'Tap again to discard' : 'Discard') +
+        '</button></div></div>'
+      : '') +
+    '<div class="btn-row"><button class="btn" data-act="importPick">Import file</button><button class="btn ghost" data-act="importPaste">Paste JSON</button></div><div id="importArea"></div>' +
+    (pendingImport
+      ? '<div class="banner" style="flex-direction:column;align-items:stretch"><p>This backup has <strong>' +
+        pendingImport.tx.length +
+        '</strong> entries and <strong>' +
+        pendingImport.budgets.length +
+        '</strong> budgets. Importing replaces everything on this phone.</p><div class="btn-row"><button class="btn primary sm" data-act="importConfirm">Replace my data</button><button class="btn sm" data-act="importCancel">Cancel</button></div></div>'
+      : '') +
+    '</div></section>';
+  h +=
+    '<section class="sec"><h2>Privacy</h2><div class="card">' +
+    '<p class="note">Everything you enter stays on this phone, in this browser. Qirsh has no account and no server, and it never sends your data anywhere: the browser is set to block it from contacting any other website. Nobody else can see your data, not even the people who make Qirsh.</p>' +
+    '<p class="note">Your data isn’t encrypted on the phone, so anyone who can unlock your phone and open Qirsh can see it. Clearing this browser’s data or removing the app deletes it, so keep a backup.</p>' +
+    '</div></section>';
   h +=
     '<p class="note" style="text-align:center">Qirsh · version ' +
     APP_VERSION +
