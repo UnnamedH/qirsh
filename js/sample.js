@@ -2,6 +2,10 @@
 import { blankState } from './state.js';
 import { addDays, startOfDay, ymd } from './util.js';
 
+/* Example entries and budgets have ids like s1 or b1, which the app never makes for the user's own. */
+export const isSampleTx = (t) => /^s\d+$/.test(String(t.id));
+export const isSampleBudget = (b) => /^b\d+$/.test(String(b.id));
+
 export function sampleState() {
   const s = blankState();
   s.sample = true;

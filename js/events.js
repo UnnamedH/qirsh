@@ -58,6 +58,7 @@ import {
   showOpening,
   view,
 } from './ui/ui-state.js';
+import { isSampleBudget, isSampleTx } from './sample.js';
 import { $, firstGlyph, uid, ymd } from './util.js';
 import { historyList, historyTxs } from './views/history.js';
 
@@ -108,10 +109,30 @@ document.addEventListener('click', (e) => {
       render();
       break;
     case 'clearSample': {
-      const keep = { rate: state.rate, settings: state.settings, categories: state.categories };
+      // Only the examples go: anything the user added on top of them stays.
+      const prev = state;
+      const own = state.tx.filter((t) => !isSampleTx(t));
+      const keep = {
+        rate: state.rate,
+        settings: state.settings,
+        categories: state.categories,
+        tx: own,
+        budgets: state.budgets.filter((b) => !isSampleBudget(b)),
+      };
       setState(Object.assign(blankState(), keep));
       commit();
-      toast('Example data cleared. Set your starting balances in Settings.');
+      toast(
+        own.length
+          ? 'Example data cleared. Your ' +
+              own.length +
+              (own.length === 1 ? ' entry was' : ' entries were') +
+              ' kept.'
+          : 'Example data cleared. Set your starting balances in Settings.',
+        () => {
+          setState(prev);
+          commit();
+        },
+      );
       break;
     }
     case 'repeat': {
@@ -636,14 +657,26 @@ document.addEventListener('click', (e) => {
     case 'importLoad':
       stageImport($('#importTxt').value);
       break;
-    case 'importConfirm':
+    case 'importConfirm': {
+      const prev = state;
       setState(pendingImport);
       setPendingImport(null);
       commit();
-      toast('Backup imported: ' + state.tx.length + ' entries');
+      toast('Backup imported: ' + state.tx.length + ' entries', () => {
+        setState(prev);
+        commit();
+        toast('Import undone. Your data is back.');
+      });
       break;
+    }
     case 'importCancel':
       setPendingImport(null);
+      render();
+      break;
+    case 'rateConfirm':
+      setRate(+v);
+      break;
+    case 'rateCancel':
       render();
       break;
     case 'wipe':
@@ -654,14 +687,31 @@ document.addEventListener('click', (e) => {
       }
       {
         setArmed(null);
+        const prev = state;
         const keep = { rate: state.rate, settings: state.settings, categories: state.categories };
         setState(Object.assign(blankState(), keep));
         commit();
-        toast('All data cleared');
+        toast('All data cleared', () => {
+          setState(prev);
+          commit();
+          toast('Your data is back.');
+        });
       }
       break;
   }
 });
+
+/* Sets the app's rate, with Undo: entries saved while a wrong rate is set keep it. */
+function setRate(r) {
+  const prev = state.rate;
+  if (r === prev) return;
+  state.rate = r;
+  commit();
+  toast('Rate set to ' + r.toLocaleString('en-US') + ' LL', () => {
+    state.rate = prev;
+    commit();
+  });
+}
 
 document.addEventListener('input', (e) => {
   const t = e.target;
@@ -738,14 +788,14 @@ document.addEventListener('change', (e) => {
   }
   if (t.id === 'rate') {
     const r = parseAmt(t.value);
-    if (r > 0) {
-      state.rate = r;
-      commit();
-      toast('Rate set to ' + r.toLocaleString('en-US') + ' LL');
-    } else {
+    if (!(r > 0)) {
       t.value = state.rate.toLocaleString('en-US');
       toast('Enter a rate above zero.');
-    }
+    } else if (r !== state.rate && (r > state.rate * 2 || r < state.rate / 2)) {
+      // A slip like 895 for 89,500 would be stamped on entries saved before it is noticed, so ask first.
+      setArmed('rate:' + r);
+      render();
+    } else setRate(r);
   }
   if (t.dataset.open) {
     // An empty field means zero; anything else that isn't a number is refused, not saved as zero.
