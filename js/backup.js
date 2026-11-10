@@ -11,6 +11,33 @@ const exportText = () =>
 
 const exportName = () => 'qirsh-backup-' + ymd(new Date()) + '.json';
 
+/* When "Later" was tapped on the backup reminder. Kept on this device only, like the other tips. */
+const SNOOZE_KEY = 'qirsh.backupSnooze';
+const DAY = 864e5;
+
+/**
+ * True when it is time to remind about a backup: there are entries added since the last export, and
+ * the last export (or, with none yet, the oldest entry) is over 30 days old. "Later" waits a week.
+ */
+export function backupDue(now = Date.now()) {
+  if (state.sample || !state.tx.length) return false;
+  const last = state.lastExport ? Date.parse(state.lastExport) || 0 : 0;
+  const times = state.tx.map((t) => +t.createdAt || 0).filter(Boolean);
+  if (!times.some((c) => c > last)) return false;
+  if (now - (last || Math.min(...times)) < 30 * DAY) return false;
+  try {
+    return now - (+localStorage.getItem(SNOOZE_KEY) || 0) >= 7 * DAY;
+  } catch (e) {
+    return true;
+  }
+}
+
+export function snoozeBackup() {
+  try {
+    localStorage.setItem(SNOOZE_KEY, String(Date.now()));
+  } catch (e) {}
+}
+
 function markExported() {
   state.lastExport = new Date().toISOString();
   save();

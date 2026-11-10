@@ -231,7 +231,7 @@ export function renderSettings() {
     (armed === 'wipe' ? 'Tap again to delete everything' : 'Clear all data') +
     '</button></div></div></section>';
   h +=
-    '<section class="sec"><h2>Backup</h2><div class="card"><p class="note">Your data lives only on this phone, in this browser. Export a JSON backup now and then, and before clearing browser data.' +
+    '<section class="sec" id="backupSec"><h2>Backup</h2><div class="card"><p class="note">Your data lives only on this phone, in this browser. Export a JSON backup now and then, and before clearing browser data.' +
     (IOS
       ? ' On iPhone, Safari and the Home Screen app keep separate data, so use a backup to move between them.'
       : '') +
