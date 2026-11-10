@@ -5,9 +5,10 @@ import { state } from '../state.js';
 /* Kept on this device only, like the install tip: it isn't part of the user's data or backups. */
 const TIP_KEY = 'qirsh.tipPriceFirst';
 
-/** The tip shows once, to people still adding expenses as paid + change. */
+/** The tip shows once, to people still adding expenses as paid + change, once they use their own data. */
 export function showPriceTip() {
-  if (state.settings.entryStyle === 'price') return false;
+  // Not on top of the example data: a first launch already has a banner, and nothing is "new" yet.
+  if (state.settings.entryStyle === 'price' || state.sample) return false;
   try {
     return !localStorage.getItem(TIP_KEY);
   } catch (e) {
