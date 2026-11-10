@@ -5,7 +5,7 @@ import { csvName, monthlyCsv, monthlyWorkbook, reportName } from './report/month
 import { CHANGELOG } from './changelog.js';
 import { ACCOUNTS, accName } from './config.js';
 import { catName, catOf } from './ledger.js';
-import { other, parseAmt, payParts } from './money.js';
+import { other, parseAmt, parseInput, toInput } from './money.js';
 import { HINT_KEY } from './pwa.js';
 import {
   adjustForm,
@@ -17,14 +17,25 @@ import {
   updateAdjustPreview,
 } from './sheets/adjust.js';
 import { readBudget, saveBudget } from './sheets/budget.js';
-import { autoTo, formFromTx, newTxForm, readForm, saveTx, updatePreview } from './sheets/entry.js';
+import {
+  autoTo,
+  defaultAdjCur,
+  formFromTx,
+  newTxForm,
+  openPaid,
+  readForm,
+  saveTx,
+  updatePreview,
+} from './sheets/entry.js';
+import { markPriceTipDone } from './sheets/demo.js';
 import { setNewsList } from './sheets/news.js';
 import { afterRepay, repayForm, saveRepay } from './sheets/payback.js';
 import { closeSheet, drawSheet, form, openSheet, setForm, sheetKind } from './sheets/sheet.js';
 import { KEY, blankState, discardRescued, parseState, save, setState, state } from './state.js';
 import { cloneForToday, templates } from './templates.js';
 import { DEFAULT_ACCENT, applyTheme, hexRgb } from './theme.js';
-import { txTitle } from './ui/format.js';
+import { amountText, txTitle } from './ui/format.js';
+import { fitThousands } from './ui/amount.js';
 import { commit, render } from './ui/render.js';
 import { setUndoFn, toast, undoFn } from './ui/toast.js';
 import {
@@ -101,7 +112,7 @@ document.addEventListener('click', (e) => {
       const t = cloneForToday(tp.tx);
       state.tx.push(t);
       commit();
-      toast('Added ' + (t.note || txTitle(t)) + ' · ' + payParts(t).join(' + '), () => {
+      toast('Added ' + (t.note || txTitle(t)) + ' · ' + amountText(t), () => {
         state.tx = state.tx.filter((x) => x.id !== t.id);
         commit();
       });
@@ -131,16 +142,6 @@ document.addEventListener('click', (e) => {
       form.setRate = !form.setRate;
       updatePreview();
       break;
-    case 'k000to': {
-      const n = $('#f-toamount');
-      if (!n) break;
-      n.value = (n.value || '') + '000';
-      form.toAmount = n.value;
-      form.toTouched = true;
-      updatePreview();
-      n.focus();
-      break;
-    }
     case 'transferTo':
       setForm(newTxForm('transfer', { from: 'wallet', to: id }));
       openSheet('tx');
@@ -194,6 +195,11 @@ document.addEventListener('click', (e) => {
       ls[0].cur = v;
       if (k === 'pay') {
         if (form.back.length === 1 && !String(form.back[0].v).trim()) form.back[0].cur = other(v);
+        if (form.paid) {
+          if (!String(form.paid.v).trim()) form.paid.cur = other(v);
+          if (!form.adj.curTouched) form.adj.cur = defaultAdjCur(form);
+          form.adj.touched = false;
+        }
         if (form.type === 'exchange') {
           form.toCurrency = other(v);
           form.toTouched = false;
@@ -223,17 +229,53 @@ document.addEventListener('click', (e) => {
       drawSheet();
       break;
     }
-    case 'k000': {
-      const n = $('#f-' + el.dataset.k + el.dataset.i);
-      if (!n) break;
-      n.value = (n.value || '') + '000';
-      const ln = form[el.dataset.k][+el.dataset.i];
-      ln.v = n.value;
-      if (el.dataset.k === 'pay' && el.dataset.i === '0') autoTo();
-      updatePreview();
-      n.focus();
+    case 'paidAdd':
+      readForm();
+      openPaid(form);
+      drawSheet();
+      setTimeout(() => {
+        const n = $('#f-paid');
+        if (n) n.focus();
+      }, 40);
       break;
-    }
+    case 'adj2Add':
+      readForm();
+      form.adj2 = { cur: other(form.adj.cur), v: '' };
+      form.adj.touched = false;
+      drawSheet();
+      setTimeout(() => {
+        const n = $('#f-adj2');
+        if (n) n.focus();
+      }, 40);
+      break;
+    case 'adj2Rm':
+      readForm();
+      form.adj2 = null;
+      form.adj.touched = false;
+      drawSheet();
+      break;
+    case 'paidRm':
+      readForm();
+      form.paid = null;
+      form.adj = null;
+      form.adj2 = null;
+      drawSheet();
+      break;
+    case 'paidCur':
+      readForm();
+      form.paid.cur = v;
+      if (!form.adj.curTouched) form.adj.cur = defaultAdjCur(form);
+      form.adj.touched = false;
+      drawSheet();
+      break;
+    case 'adjCur':
+      readForm();
+      form.adj.cur = v;
+      if (form.adj2) form.adj2.cur = other(v);
+      form.adj.curTouched = true;
+      form.adj.touched = false;
+      drawSheet();
+      break;
     case 'ftocur':
       readForm();
       form.toCurrency = v;
@@ -405,7 +447,7 @@ document.addEventListener('click', (e) => {
         id: b.id,
         categoryId: b.categoryId,
         period: b.period,
-        amount: String(b.amount),
+        amount: toInput(b.amount, b.currency),
         currency: b.currency,
       });
       openSheet('budget');
@@ -458,6 +500,10 @@ document.addEventListener('click', (e) => {
       state.settings.weekStart = +v;
       commit();
       break;
+    case 'setEntryStyle':
+      state.settings.entryStyle = v;
+      commit();
+      break;
     case 'setTheme':
       state.settings.theme = v;
       commit();
@@ -507,6 +553,22 @@ document.addEventListener('click', (e) => {
       setNewsList(CHANGELOG);
       setForm({});
       openSheet('news');
+      break;
+    case 'tipShow':
+      setForm({});
+      openSheet('demo');
+      break;
+    case 'tipClose':
+      markPriceTipDone();
+      if (sheetKind) closeSheet();
+      render();
+      break;
+    case 'tipUse':
+      markPriceTipDone();
+      state.settings.entryStyle = 'price';
+      closeSheet();
+      commit();
+      toast('Price first is on. Tap + to try it.');
       break;
     case 'hideInstallHint':
       try {
@@ -584,11 +646,22 @@ document.addEventListener('click', (e) => {
 
 document.addEventListener('input', (e) => {
   const t = e.target;
+  if (t.closest && t.closest('.thousands')) fitThousands(t);
   if (sheetKind === 'tx' && form) {
     if (t.dataset.line) {
       const ln = (form[t.dataset.line] || [])[+t.dataset.i];
       if (ln) ln.v = t.value;
       if (t.dataset.line === 'pay' && t.dataset.i === '0') autoTo();
+      updatePreview();
+    } else if (t.id === 'f-paid') {
+      form.paid.v = t.value;
+      updatePreview();
+    } else if (t.id === 'f-adj2') {
+      form.adj2.v = t.value;
+      updatePreview();
+    } else if (t.id === 'f-adj') {
+      form.adj.v = t.value;
+      form.adj.touched = true;
       updatePreview();
     } else if (t.id === 'f-toamount') {
       form.toAmount = t.value;
@@ -656,10 +729,16 @@ document.addEventListener('change', (e) => {
     }
   }
   if (t.dataset.open) {
-    const n = parseAmt(t.value);
-    state.opening[t.dataset.open][t.dataset.cur] = isFinite(n) ? n : 0;
-    commit();
-    toast(accName(t.dataset.open) + ' starting balance updated');
+    // An empty field means zero; anything else that isn't a number is refused, not saved as zero.
+    const n = t.value.trim() === '' ? 0 : parseInput(t.value, t.dataset.cur);
+    if (isFinite(n)) {
+      state.opening[t.dataset.open][t.dataset.cur] = n;
+      commit();
+      toast(accName(t.dataset.open) + ' starting balance updated');
+    } else {
+      render();
+      toast('That isn’t a number, so the starting balance wasn’t changed.');
+    }
   }
   if (t.dataset.caticon) {
     const c = catOf(t.dataset.caticon);

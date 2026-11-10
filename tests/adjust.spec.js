@@ -32,7 +32,7 @@ test('“Just fix the balance” sets the balance without counting it as spendin
   await setUp(page);
   await correct(page, 'wallet');
   await expect(page.locator('#a-USD')).toHaveValue('100');
-  await expect(page.locator('#a-LBP')).toHaveValue('500,000');
+  await expect(page.locator('#a-LBP'), 'LL shown in thousands').toHaveValue('500');
   await page.click('[data-act=acount][data-v="0"]');
   await page.fill('#a-USD', '88');
   await page.fill('#a-LBP', '650k');
@@ -70,7 +70,7 @@ test('“Count it” adds missing money as an expense and extra money as income'
   await expect(page.locator('#a-exp')).toBeVisible();
   await expect(page.locator('#a-inc')).toBeHidden();
   await page.click('[data-act=aexp][data-v=groceries]');
-  await page.fill('#a-LBP', '600,000');
+  await page.fill('#a-LBP', '600');
   await expect(page.locator('#a-inc')).toBeVisible();
   await expect(page.locator('#a-preview')).toHaveText(
     'Wallet: −$12  +100,000 LL · expense in Groceries, income in Other income',

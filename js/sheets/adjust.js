@@ -2,7 +2,8 @@
 import { ACCOUNTS, accName } from '../config.js';
 import { ICON } from '../icons.js';
 import { balances, catName } from '../ledger.js';
-import { fmt, parseAmt } from '../money.js';
+import { fmt, parseInput, toInput } from '../money.js';
+import { thousandsInput } from '../ui/amount.js';
 import { closeSheet, form } from './sheet.js';
 import { state } from '../state.js';
 import { commit } from '../ui/render.js';
@@ -13,7 +14,7 @@ import { $, dayLabel, esc, uid, ymd } from '../util.js';
 const CURS = ['USD', 'LBP'];
 const curName = (c) => (c === 'USD' ? 'USD' : 'LL');
 const round = (n, c) => (c === 'USD' ? Math.round(n * 100) / 100 : Math.round(n));
-const balanceText = (n, c) => (c === 'USD' ? String(round(n, c)) : round(n, c).toLocaleString('en-US'));
+const balanceText = (n, c) => toInput(round(n, c), c);
 const current = (account) => balances()[account] || { USD: 0, LBP: 0 };
 
 /** A new correction for an account, starting from the balance Qirsh has for it now. */
@@ -45,7 +46,7 @@ export function adjustDiffs(f) {
   for (const cur of CURS) {
     const raw = String(f[cur] || '').trim();
     if (!raw) continue;
-    const n = parseAmt(raw);
+    const n = parseInput(raw, cur);
     if (!isFinite(n)) return null;
     const diff = round(n - b[cur], cur);
     if (Math.abs(diff) < (cur === 'USD' ? 0.005 : 1)) continue;
@@ -131,13 +132,17 @@ export function adjustSheet() {
       (c) =>
         '<label class="field"><span>' +
         curName(c) +
-        ' now</span><input id="a-' +
-        c +
-        '" class="num" inputmode="decimal" autocomplete="off" value="' +
-        esc(f[c]) +
-        '" aria-label="' +
-        curName(c) +
-        ' the account holds now"><span class="sub-label">Qirsh has ' +
+        ' now</span>' +
+        (c === 'LBP'
+          ? thousandsInput(' id="a-LBP"', f[c], 'LL the account holds now')
+          : '<input id="a-' +
+            c +
+            '" class="num" inputmode="decimal" autocomplete="off" value="' +
+            esc(f[c]) +
+            '" aria-label="' +
+            curName(c) +
+            ' the account holds now">') +
+        '<span class="sub-label">Qirsh has ' +
         fmt(b[c], c) +
         '</span></label>',
     ).join('') +

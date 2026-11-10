@@ -7,7 +7,7 @@ test('new entries start in the last used currency', async ({ page }) => {
   await page.click('#fab');
   expect(await sheetCurrency(page)).toBe('USD');
   await page.click('#sheet [data-act=lcur][data-v=LBP]');
-  await page.fill('#f-pay0', '150000');
+  await page.fill('#f-pay0', '150');
   await page.click('[data-act=fcat][data-v=food]');
   await page.click('[data-act=fsave]');
 

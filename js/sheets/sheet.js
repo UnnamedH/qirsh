@@ -2,9 +2,12 @@
 import { markSeen } from '../changelog.js';
 import { adjustSheet, updateAdjustPreview } from './adjust.js';
 import { budgetSheet } from './budget.js';
+import { demoSheet, markPriceTipDone } from './demo.js';
 import { txSheet, updatePreview } from './entry.js';
 import { newsSheet } from './news.js';
 import { repaySheet } from './payback.js';
+import { fitAllThousands } from '../ui/amount.js';
+import { render } from '../ui/render.js';
 import { $ } from '../util.js';
 
 export let form = null,
@@ -20,10 +23,14 @@ export function openSheet(kind) {
 
 export function closeSheet() {
   if (sheetKind === 'news') markSeen();
+  const wasDemo = sheetKind === 'demo';
+  if (wasDemo) markPriceTipDone();
   $('#scrim').hidden = true;
   $('#sheet').hidden = true;
   sheetKind = null;
   form = null;
+  // The tip banner on Home goes away once the demo has been seen, however it was closed.
+  if (wasDemo) render();
 }
 
 export function drawSheet() {
@@ -36,9 +43,12 @@ export function drawSheet() {
         ? repaySheet()
         : sheetKind === 'news'
           ? newsSheet()
-          : sheetKind === 'adjust'
-            ? adjustSheet()
-            : budgetSheet());
+          : sheetKind === 'demo'
+            ? demoSheet()
+            : sheetKind === 'adjust'
+              ? adjustSheet()
+              : budgetSheet());
+  fitAllThousands(el);
   if (sheetKind === 'tx') updatePreview();
   if (sheetKind === 'adjust') updateAdjustPreview();
   const a = el.querySelector('#f-pay0');

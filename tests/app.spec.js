@@ -13,6 +13,7 @@ test('opens with example data and the main sections', async ({ page }) => {
 test('an added expense is saved and survives a reload', async ({ page }) => {
   await openApp(page);
   await page.click('#fab');
+  await page.click('#sheet [data-act=lcur][data-v=USD]');
   await page.fill('#f-pay0', '7');
   await page.click('[data-act=fcat][data-v=coffee]');
   await page.click('[data-act=fsave]');

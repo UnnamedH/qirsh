@@ -16,6 +16,9 @@ function tplKey(t) {
     t.toCurrency || '',
     t.type === 'transfer' && t.toCurrency !== t.currency ? t.toAmount : '',
     t.amount2 || '',
+    // The same amounts paid for a different price (price first) are a different entry.
+    t.priceCur || '',
+    t.priceCur ? t.rate || '' : '',
     ((t) => {
       const k = backVec(t);
       return k.USD + '/' + k.LBP;

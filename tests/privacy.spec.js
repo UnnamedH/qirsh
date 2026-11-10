@@ -119,3 +119,10 @@ test('Settings explains where the data lives', async ({ page }) => {
   await expect(privacy).toContainText('stays on this phone');
   await expect(privacy).toContainText('never sends your data anywhere');
 });
+
+test('Privacy is the last section in Settings, with Backup just above it', async ({ page }) => {
+  await openApp(page);
+  await page.click('.tabs [data-act=nav][data-v=settings]');
+  const titles = await page.locator('#v-settings .sec > h2').allInnerTexts();
+  expect(titles.slice(-2)).toEqual(['Backup', 'Privacy']);
+});

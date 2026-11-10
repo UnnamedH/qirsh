@@ -87,7 +87,7 @@ test('changing the rate does not reopen an entry paid back in the other currency
   // Paid back in full in LL at the default 89,500
   await page.click('#v-home [data-act=newRepay]');
   await page.click('#sheet [data-act=lcur][data-v=LBP]');
-  await page.fill('#f-pay0', '8950000');
+  await page.fill('#f-pay0', '8950');
   await page.click('[data-act=rsave]');
   const owedShown = () =>
     page.evaluate(() =>
@@ -157,7 +157,13 @@ test('a malformed backup imports without breaking the app', async ({ page }) => 
   await page.click('[data-act=importLoad]');
   await page.click('[data-act=importConfirm]');
   const s = await appState(page);
-  expect(s.settings).toEqual({ display: 'USD', weekStart: 1, accent: null, theme: 'system' });
+  expect(s.settings).toEqual({
+    display: 'USD',
+    weekStart: 1,
+    accent: null,
+    theme: 'system',
+    entryStyle: 'paid',
+  });
   expect(s.rate).toBe(89500);
   expect(s.tx.map((t) => t.id)).toEqual(['ok']);
   expect(s.budgets).toEqual([]);

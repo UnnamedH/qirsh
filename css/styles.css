@@ -785,9 +785,6 @@ button.row:first-child {
   border-radius: 9px;
   padding: 7px 0;
 }
-.k000.ghost {
-  visibility: hidden;
-}
 .links {
   display: flex;
   flex-wrap: wrap;
@@ -1026,33 +1023,82 @@ button.row:first-child {
   gap: 8px;
   align-items: center;
 }
-.amount-input {
+.amount-field {
   flex: 1;
   min-width: 0;
+  display: flex;
+  align-items: baseline;
+  border-bottom: 2px solid var(--line);
+  cursor: text;
   font-family: var(--f-num);
   font-size: 30px;
   font-weight: 600;
+  letter-spacing: -0.02em;
+}
+.amount-field:focus-within {
+  border-color: var(--accent);
+}
+.amount-field.sm {
+  font-size: 20px;
+}
+.amount-input {
+  flex: 1;
+  width: 100%;
+  min-width: 0;
+  font: inherit;
+  letter-spacing: inherit;
   border: 0;
-  border-bottom: 2px solid var(--line);
   background: none;
   padding: 6px 2px;
   border-radius: 0;
-  letter-spacing: -0.02em;
 }
 .amount-input:focus {
   outline: none;
-  border-color: var(--accent);
 }
-.amount-input.sm {
-  font-size: 20px;
+/* LL fields are sized to their text (js/ui/amount.js) so the fixed ",000" follows the number. */
+.thousands input {
+  flex: 0 0 auto;
+  max-width: calc(100% - 4ch);
+  padding-right: 0;
 }
-.k000 {
+.k-suffix {
+  color: var(--muted);
+  white-space: nowrap;
+  user-select: none;
+}
+.k-box {
+  display: flex;
+  align-items: center;
   border: 1px solid var(--line);
   background: var(--surface);
-  border-radius: 9px;
-  padding: 7px 9px;
+  border-radius: 10px;
+  padding: 0 12px 0 0;
+  cursor: text;
   font-family: var(--f-num);
-  font-size: 13px;
+}
+.k-box:focus-within {
+  border-color: var(--accent);
+}
+.field .k-box input {
+  border: 0;
+  background: none;
+  padding-right: 0;
+  font-family: var(--f-num);
+}
+.field .k-box input:focus {
+  outline: none;
+}
+.k-box .k-suffix {
+  font-size: 16px;
+}
+.adj-row {
+  display: flex;
+  gap: 8px;
+  align-items: center;
+}
+.adj-row .sub-label {
+  flex: none;
+  min-width: 92px;
 }
 .hint {
   margin: -6px 0 0;
@@ -1134,5 +1180,50 @@ button.row:first-child {
   }
   .stats .amt {
     font-size: 14px;
+  }
+}
+
+/* Price-first demo (js/sheets/demo.js): three steps appear one after another, about two seconds in all. */
+.banner.tip .icon-btn,
+.banner .btn {
+  flex: none;
+  white-space: nowrap;
+}
+.demo {
+  display: flex;
+  flex-direction: column;
+  gap: 14px;
+}
+.demo-step {
+  display: flex;
+  flex-direction: column;
+  gap: 2px;
+  padding: 12px 14px;
+  border-radius: var(--r);
+  background: var(--surface);
+  border: 1px solid var(--line);
+  animation: demo-in 0.4s ease-out both;
+}
+.demo-step:nth-child(2) {
+  animation-delay: 0.7s;
+}
+.demo-step:nth-child(3) {
+  animation-delay: 1.4s;
+  border-color: var(--accent);
+}
+.demo-value {
+  font-family: var(--f-num);
+  font-size: 24px;
+  font-weight: 600;
+}
+@keyframes demo-in {
+  from {
+    opacity: 0;
+    transform: translateY(8px);
+  }
+}
+@media (prefers-reduced-motion: reduce) {
+  .demo-step {
+    animation: none;
   }
 }

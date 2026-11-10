@@ -43,7 +43,27 @@ export function backVec(t) {
   return v;
 }
 
-export const txCostUSD = (t) => vUSD(payVec(t)) - (t.type === 'expense' ? vUSD(backVec(t)) : 0);
+/**
+ * What an entry is worth in `cur`: what it cost for an expense (paid minus change back) or what came in
+ * for income. An entry paid in both currencies is converted at the rate stored on it, which for a
+ * price-first expense is the rate the shop used, so it keeps its exact price after the app's rate changes.
+ */
+export function entryValueIn(t, cur) {
+  const v = payVec(t),
+    k = t.type === 'expense' ? backVec(t) : { USD: 0, LBP: 0 },
+    net = { USD: v.USD - k.USD, LBP: v.LBP - k.LBP },
+    rate = +t.rate > 0 ? +t.rate : state.rate;
+  return cur === 'USD' ? net.USD + net.LBP / rate : net.LBP + net.USD * rate;
+}
+
+/** The currency an entry is priced in: the price the user typed, or else the one they paid in. */
+export const priceCurrency = (t) => t.priceCur || t.currency;
+
+/** An entry's value in USD at today's rate, for totals and budgets. */
+export const txCostUSD = (t) => {
+  const cur = priceCurrency(t);
+  return toUSD(entryValueIn(t, cur), cur);
+};
 
 export const payParts = (t) => {
   const p = [fmt(t.amount, t.currency)];
@@ -64,11 +84,17 @@ export const fmtDisp = (usd, o) => {
   return fmt(fromUSD(usd, c), c, Object.assign({ round: true }, o || {}));
 };
 
+/**
+ * Reads a typed number, or returns NaN when it isn't one. Anything that isn't plainly a number is
+ * refused rather than guessed at, so a slip like "12abc" is never saved as 12.
+ * Commas work both ways: "1,500" and "89,500" group thousands, while "4,50" is a decimal comma, as
+ * typed on phones set to a region that writes decimals that way.
+ */
 export function parseAmt(s) {
-  s = String(s || '')
+  s = String(s == null ? '' : s)
     .trim()
     .toLowerCase()
-    .replace(/[,\s]/g, '');
+    .replace(/\s/g, '');
   let m = 1;
   if (/k$/.test(s)) {
     m = 1e3;
@@ -77,6 +103,30 @@ export function parseAmt(s) {
     m = 1e6;
     s = s.slice(0, -1);
   }
-  const n = parseFloat(s);
-  return isFinite(n) ? n * m : NaN;
+  if (/^-?\d{1,3}(,\d{3})+(\.\d+)?$/.test(s)) s = s.replace(/,/g, '');
+  else if (/^-?\d*,\d+$/.test(s)) s = s.replace(',', '.');
+  if (!/^-?(\d+\.?\d*|\.\d+)$/.test(s)) return NaN;
+  return parseFloat(s) * m;
+}
+
+/*
+ * Typed amounts. LL is always typed in thousands, so "385" means 385,000 LL and "0.5" means 500 LL.
+ * Shortcuts stay literal: "385k" is 385,000 and "1.5m" is 1,500,000. Dollars are typed as they are.
+ */
+export function parseInput(s, cur) {
+  const raw = String(s == null ? '' : s)
+    .trim()
+    .toLowerCase();
+  const n = parseAmt(raw);
+  if (cur !== 'LBP' || !isFinite(n)) return n;
+  // LL has no fractions, and 1.1 * 1000 is 1100.0000000000002 in floating point.
+  return Math.round(/[km]$/.test(raw) ? n : n * 1000);
+}
+
+/** The text to show in an amount field for a stored amount. */
+export function toInput(n, cur) {
+  if (n == null || n === '' || !isFinite(+n)) return '';
+  n = +n;
+  if (cur !== 'LBP') return String(Math.round(n * 100) / 100);
+  return String(Math.round(n) / 1000);
 }

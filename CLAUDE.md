@@ -36,6 +36,12 @@ CI (`.github/workflows/ci.yml`) runs lint, format check and tests on every PR.
 ## Data model rules
 
 - Currencies are `'USD'` and `'LBP'` internally; the UI says "LL". Conversion uses `state.rate`.
+- LL is **typed in thousands** ("385" = 385,000 LL). Every amount field goes through `parseInput()` /
+  `toInput()` in `money.js` and is drawn with `amountField()` / `thousandsInput()` from `js/ui/amount.js`,
+  which add the fixed ",000". Only the exchange-rate fields are typed literally.
+- An expense's value is `entryValueIn()` / `txCostUSD()` in `money.js`, never raw `amount`: price-first
+  expenses store what was paid (`amount`, `amount2`, `back`), the price currency (`priceCur`) and the
+  shop's `rate`, so the price is exact and doesn't drift when the app's rate changes.
 - Transaction `type`: `expense`, `income`, `transfer` (exchange = transfer with `from === to`),
   `advance` (paid for someone, not spending) and `repay` (payback, linked by `advanceId`, not income).
 - Any new persisted field **must** be handled in `normalize()` in `state.js`: data comes from old
