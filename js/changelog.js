@@ -8,6 +8,7 @@ export const CHANGELOG = [
     date: '2026-11-09',
     items: [
       'Type the price first. Paid with a different amount, like $10 for something that costs 385,000 LL? Tap “Paid with” and Qirsh works out your change. If the shop gave you a different amount, just change it.',
+      'Got change in both currencies, like $5 and the rest in LL? Tap “Also got $ back” and the LL part is worked out.',
       'Paid less than the price? Qirsh works out the rest you paid on top, in the other currency.',
       'LL is now always typed in thousands: type 385 for 385,000 LL. The ,000 is already there, so there’s no 000 button to tap.',
     ],

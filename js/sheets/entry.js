@@ -55,6 +55,7 @@ export function newTxForm(type, extra) {
       setRate: false,
       paid: null,
       adj: null,
+      adj2: null,
     },
     extra || {},
   );
@@ -71,14 +72,18 @@ function priceFirst(t) {
     v = payVec(t),
     k = backVec(t),
     netE = v[e] - k[e];
-  if (!netE && !k[d]) return { pay: [{ cur: d, v: toInput(t.amount, d) }], paid: null, adj: null };
+  if (!netE && !k[d])
+    return { pay: [{ cur: d, v: toInput(t.amount, d) }], paid: null, adj: null, adj2: null };
   const c = t.priceCur || (netE ? e : d);
   const adjAmount = netE ? Math.abs(netE) : k[d];
   const adjCur = netE ? e : d;
+  // Change in both currencies, like $5 and some LL back from a $10 note.
+  const both = netE < 0 && k[d] > 0;
   return {
     pay: [{ cur: c, v: toInput(entryValueIn(t, c), c) }],
-    paid: { cur: d, v: toInput(netE ? v[d] - k[d] : v[d], d) },
+    paid: { cur: d, v: toInput(netE && !both ? v[d] - k[d] : v[d], d) },
     adj: { cur: adjCur, v: toInput(adjAmount, adjCur), touched: true, curTouched: true },
+    adj2: both ? { cur: d, v: toInput(k[d], d) } : null,
   };
 }
 
@@ -97,6 +102,7 @@ export function formFromTx(t, mode) {
     back: [],
     paid: null,
     adj: null,
+    adj2: null,
     categoryId: t.categoryId || null,
     who: t.who || '',
     note: t.note || '',
@@ -361,11 +367,20 @@ function settle(f) {
   if (!(P > 0) || !(Q > 0)) return null;
   const diff = convert(Q, f.paid.cur, c) - P;
   if (Math.abs(diff) < (c === 'USD' ? 0.005 : 500)) return { kind: 'exact', amount: 0 };
-  return {
-    kind: diff > 0 ? 'change' : 'rest',
-    amount: roundCur(convert(Math.abs(diff), c, f.adj.cur), f.adj.cur),
-  };
+  const kind = diff > 0 ? 'change' : 'rest';
+  let amount = convert(Math.abs(diff), c, f.adj.cur);
+  // Some of the change came back in the other currency: this line is whatever is left.
+  if (kind === 'change')
+    amount = Math.max(0, amount - convert(extraBack(f), f.adj2 ? f.adj2.cur : c, f.adj.cur));
+  return { kind, amount: roundCur(amount, f.adj.cur) };
 }
+
+/** Change typed on the second line ("Also got $ back"), or 0. */
+const extraBack = (f) => {
+  if (!f.adj2) return 0;
+  const n = parseInput(f.adj2.v, f.adj2.cur);
+  return n > 0 ? n : 0;
+};
 
 const adjLabel = (s) => (s && s.kind === 'rest' ? 'You also paid' : 'Change back');
 
@@ -389,9 +404,17 @@ function pricePayment(f) {
   const kind = s.kind === 'rest' ? 'rest' : 'change';
   if (kind === 'rest' && c === d && a === d) return 'You paid less than the price. Enter the price you paid.';
   const p = { amount: Q, currency: d, priceCur: c };
-  if (A > 0) {
-    if (kind === 'change') p.back = { USD: 0, LBP: 0, [a]: A };
-    else if (a === d) p.amount = Q + A;
+  const B = extraBack(f);
+  if (f.adj2 && String(f.adj2.v).trim() !== '' && !(parseInput(f.adj2.v, f.adj2.cur) >= 0))
+    return 'The change must be a number.';
+  if (B > 0 && kind === 'rest')
+    return 'You paid less than the price, so there’s no change. Remove the extra change.';
+  if (A > 0 || B > 0) {
+    if (kind === 'change') {
+      p.back = { USD: 0, LBP: 0 };
+      p.back[a] += A;
+      if (B > 0) p.back[f.adj2.cur] += B;
+    } else if (a === d) p.amount = Q + A;
     else p.amount2 = A;
   }
   // The rate at which the amounts add up to the price, needed when any of them is in the other currency.
@@ -426,6 +449,8 @@ function refreshSettle() {
   if (!f || !f.paid || !lab || !inp || !hint) return;
   const s = settle(f);
   lab.textContent = adjLabel(s);
+  const link = $('#f-adj2link');
+  if (link) link.hidden = !!s && s.kind === 'rest';
   if (!f.adj.touched) {
     f.adj.v = s && s.amount ? toInput(s.amount, f.adj.cur) : '';
     if (document.activeElement !== inp) {
@@ -465,7 +490,19 @@ function paidSection(f) {
     '</span>' +
     amountField({ id: 'f-adj', value: f.adj.v, cur: a, label: 'Change back', small: true }) +
     curToggle('adjCur', a) +
-    '</div><p class="hint" id="f-adjhint"></p>'
+    '</div>' +
+    (f.adj2
+      ? '<div class="adj-row"><span class="sub-label">Also back</span>' +
+        amountField({ id: 'f-adj2', value: f.adj2.v, cur: f.adj2.cur, label: 'Also back', small: true }) +
+        '<span class="cur-tag">' +
+        (f.adj2.cur === 'USD' ? 'USD' : 'LL') +
+        '</span><button class="icon-btn" data-act="adj2Rm" aria-label="Remove the extra change">' +
+        ICON.close +
+        '</button></div>'
+      : '<div class="links" id="f-adj2link"><button class="link" data-act="adj2Add">+ Also got ' +
+        curLabel(other(a)) +
+        ' back</button></div>') +
+    '<p class="hint" id="f-adjhint"></p>'
   );
 }
 
@@ -579,6 +616,8 @@ export function readForm() {
     adj = $('#f-adj');
   if (paid && f.paid) f.paid.v = paid.value;
   if (adj && f.adj) f.adj.v = adj.value;
+  const adj2 = $('#f-adj2');
+  if (adj2 && f.adj2) f.adj2.v = adj2.value;
 }
 
 export function saveTx() {

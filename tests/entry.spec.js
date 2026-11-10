@@ -196,3 +196,48 @@ test('an older "paid + change" entry opens price first, unchanged', async ({ pag
   const t = (await appState(page)).tx[0];
   expect(t).toMatchObject({ amount: 10, currency: 'USD', priceCur: 'LBP', back: { LBP: 500000 } });
 });
+
+test('change in both currencies: $5 back and the rest in LL', async ({ page }) => {
+  await freshWallet(page);
+  await startExpense(page, 'LBP', '385');
+  await page.click('[data-act=paidAdd]');
+  await page.fill('#f-paid', '10');
+  await expect(page.locator('#f-adj')).toHaveValue('510');
+
+  await page.click('[data-act=adj2Add]');
+  await page.fill('#f-adj2', '5');
+  // $5 is 447,500 LL, so 62,500 LL is left, rounded to 63,000
+  await expect(page.locator('#f-adj')).toHaveValue('63');
+  await page.click('[data-act=fcat][data-v=food]');
+  await page.click('[data-act=fsave]');
+  expect(await lastTx(page)).toMatchObject({ amount: 10, currency: 'USD', back: { USD: 5, LBP: 63000 } });
+  expect(await wallet(page)).toEqual({ USD: 95, LBP: 63000 });
+
+  // Reopens with both change lines; the shop's actual LL keeps the price exact
+  await page.click('.tabs [data-act=nav][data-v=history]');
+  await page.locator('#histList .row').first().click();
+  await expect(page.locator('#f-adj2')).toHaveValue('5');
+  await page.fill('#f-adj', '60');
+  await expect(page.locator('#f-adjhint')).toHaveText('That’s 89,000 LL per $1.');
+  await page.click('[data-act=fsave]');
+  const t = await lastTx(page);
+  expect(t).toMatchObject({ back: { USD: 5, LBP: 60000 }, rate: 89000 });
+  expect(
+    Math.round(
+      await page.evaluate(
+        () => window.__qirsh.txCostUSD(window.__qirsh.state.tx.at(-1)) * window.__qirsh.state.rate,
+      ),
+    ),
+  ).toBe(385000);
+});
+
+test('removing the extra change goes back to all change in LL', async ({ page }) => {
+  await freshWallet(page);
+  await startExpense(page, 'LBP', '385');
+  await page.click('[data-act=paidAdd]');
+  await page.fill('#f-paid', '10');
+  await page.click('[data-act=adj2Add]');
+  await page.fill('#f-adj2', '5');
+  await page.click('[data-act=adj2Rm]');
+  await expect(page.locator('#f-adj')).toHaveValue('510');
+});

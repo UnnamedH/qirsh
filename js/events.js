@@ -237,10 +237,27 @@ document.addEventListener('click', (e) => {
         if (n) n.focus();
       }, 40);
       break;
+    case 'adj2Add':
+      readForm();
+      form.adj2 = { cur: other(form.adj.cur), v: '' };
+      form.adj.touched = false;
+      drawSheet();
+      setTimeout(() => {
+        const n = $('#f-adj2');
+        if (n) n.focus();
+      }, 40);
+      break;
+    case 'adj2Rm':
+      readForm();
+      form.adj2 = null;
+      form.adj.touched = false;
+      drawSheet();
+      break;
     case 'paidRm':
       readForm();
       form.paid = null;
       form.adj = null;
+      form.adj2 = null;
       drawSheet();
       break;
     case 'paidCur':
@@ -253,6 +270,7 @@ document.addEventListener('click', (e) => {
     case 'adjCur':
       readForm();
       form.adj.cur = v;
+      if (form.adj2) form.adj2.cur = other(v);
       form.adj.curTouched = true;
       form.adj.touched = false;
       drawSheet();
@@ -616,6 +634,9 @@ document.addEventListener('input', (e) => {
       updatePreview();
     } else if (t.id === 'f-paid') {
       form.paid.v = t.value;
+      updatePreview();
+    } else if (t.id === 'f-adj2') {
+      form.adj2.v = t.value;
       updatePreview();
     } else if (t.id === 'f-adj') {
       form.adj.v = t.value;
