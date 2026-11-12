@@ -36,6 +36,20 @@ test('opens with no connection at all, in a fresh tab', async ({ page, context }
   await expect(tab.locator('[data-act=clearSample]')).toBeVisible();
 });
 
+test('keeps opening on a host that redirects index.html to the folder, like Cloudflare', async ({
+  page,
+  context,
+}) => {
+  await page.request.get(base() + '__ctl?pretty=1');
+  await installApp(page);
+  await page.reload();
+  await page.waitForFunction(() => window.__qirsh);
+  await context.setOffline(true);
+  const tab = await context.newPage();
+  await tab.goto(base());
+  await expect(tab.locator('.balance-total')).toBeVisible();
+});
+
 test('a new release downloads in the background and offers a reload', async ({ page }) => {
   await installApp(page);
   const before = await cacheNames(page);
