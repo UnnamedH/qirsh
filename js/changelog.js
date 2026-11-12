@@ -9,6 +9,7 @@ export const CHANGELOG = [
     items: [
       'Qirsh is now Frata (فراطة), Lebanese for small change. It has a new icon and a new look at the top of the app.',
       'The coins at the top, and the icon in your browser tab, take on the accent colour you pick in Settings → Appearance, in light and dark.',
+      'Frata has a new home at frata.cc. On the old address, a banner moves your data there in one tap (on iPhone, with a backup file).',
       'Nothing else changes: your entries, settings and backups are all where they were. On iPhone, the Home Screen icon may keep the old look until you add the app again.',
     ],
   },

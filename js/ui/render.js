@@ -1,6 +1,7 @@
 /* Draws the current view. */
-import { updateReady } from '../pwa.js';
 import { backupDue } from '../backup.js';
+import { moveDue } from '../handoff.js';
+import { IOS, updateReady } from '../pwa.js';
 import { isSampleTx } from '../sample.js';
 import { rescuedData, save, saveConflict, saveFailed, state } from '../state.js';
 import { applyTheme } from '../theme.js';
@@ -45,6 +46,7 @@ function renderAlerts() {
       '<div class="banner bad" role="alert"><p><strong>Your last change wasn’t saved.</strong> Frata was changed in another tab or window, and this one has now caught up. Please make the change again.</p></div>',
     );
   if (pendingMove) alerts.push(moveAlert(pendingMove));
+  if (moveDue()) alerts.push(leaveAlert());
   if (rescuedData() && view !== 'settings')
     alerts.push(
       '<div class="banner bad" role="alert"><p>Your saved data couldn’t be read, so Frata started empty. A copy was kept on this device.</p><button class="btn sm" data-act="nav" data-v="settings">Open Backup</button></div>',
@@ -87,6 +89,31 @@ function moveAlert(m) {
     '. ' +
     here +
     '</p><div class="btn-row"><button class="btn primary sm" data-act="moveConfirm">Use this data</button><button class="btn sm" data-act="moveCancel">Not now</button></div></div>'
+  );
+}
+
+/* On the old address: asks people to take their data to frata.cc. */
+function leaveAlert() {
+  const empty = state.sample && !state.tx.some((t) => !isSampleTx(t));
+  let p, btn;
+  if (empty) {
+    p = ' Open it there from now on.';
+    btn = '<button class="btn primary sm" data-act="moveGo">Open frata.cc</button>';
+  } else if (IOS) {
+    // On iPhone the Home Screen app and Safari keep separate data, so a link can land in the wrong one.
+    p =
+      ' To take your data along, make a backup here, then add frata.cc to your Home Screen and import the backup in its Settings.';
+    btn = '<button class="btn primary sm" data-act="backupNow">Back up</button>';
+  } else {
+    p = ' Move your data there in one tap, then use Frata from the new address.';
+    btn = '<button class="btn primary sm" data-act="moveGo">Move my data</button>';
+  }
+  return (
+    '<div class="banner" role="status" style="flex-direction:column;align-items:stretch"><p><strong>Frata has a new home: frata.cc.</strong>' +
+    p +
+    '</p><div class="btn-row">' +
+    btn +
+    '<button class="btn sm" data-act="moveLater">Later</button></div></div>'
   );
 }
 
