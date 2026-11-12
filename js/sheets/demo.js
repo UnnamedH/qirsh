@@ -24,7 +24,7 @@ export function markPriceTipDone() {
 
 export function priceTipBanner() {
   return (
-    '<div class="banner tip"><p><strong>New:</strong> type the price and what you paid with, and Qirsh works out your change.</p>' +
+    '<div class="banner tip"><p><strong>New:</strong> type the price and what you paid with, and Frata works out your change.</p>' +
     '<button class="btn sm primary" data-act="tipShow">Show me</button>' +
     '<button class="icon-btn" data-act="tipClose" aria-label="Dismiss this tip">' +
     ICON.close +

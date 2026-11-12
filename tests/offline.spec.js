@@ -61,7 +61,7 @@ test('a new release downloads in the background and offers a reload', async ({ p
 
   await control(page, 'release=next1');
   await checkForUpdate(page);
-  await expect(page.locator('#alerts')).toContainText('A new version of Qirsh is ready');
+  await expect(page.locator('#alerts')).toContainText('A new version of Frata is ready');
   await page.click('[data-act=reloadApp]');
   await page.waitForFunction(() => window.__qirsh);
 

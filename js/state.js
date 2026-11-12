@@ -127,7 +127,7 @@ export function normalize(s) {
 /* Saved data that could not be read is copied here, so starting over never destroys it. */
 export const RESCUE_KEY = 'qirsh.v1.unreadable';
 
-/** Parses saved or imported text into a state, or returns null if it is not usable Qirsh data. */
+/** Parses saved or imported text into a state, or returns null if it is not usable Frata data. */
 export function parseState(raw) {
   try {
     const s = JSON.parse(raw);

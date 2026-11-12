@@ -1,0 +1,7 @@
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 120 120">
+  <!-- The Frata app icon: a bold f with a small gold coin. scripts/make-icons.mjs makes the PNGs from it. -->
+  <rect id="bg" width="120" height="120" rx="28" fill="#2F6B4F"/>
+  <path d="M54 92 V52 Q54 32 76 32" fill="none" stroke="#E6F0EA" stroke-width="11" stroke-linecap="round"/>
+  <path d="M38 58 H70" fill="none" stroke="#E6F0EA" stroke-width="11" stroke-linecap="round"/>
+  <circle cx="84" cy="84" r="11" fill="#C9A227"/>
+</svg>

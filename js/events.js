@@ -11,7 +11,7 @@ import {
 } from './backup.js';
 import { csvName, monthlyCsv, monthlyWorkbook, reportName } from './report/monthly.js';
 import { CHANGELOG } from './changelog.js';
-import { checkMove } from './handoff.js';
+import { FRATA_URL, checkMove, moveLink, snoozeMove } from './handoff.js';
 import { ACCOUNTS, accName } from './config.js';
 import { catName, catOf } from './ledger.js';
 import { other, parseAmt, parseInput, toInput } from './money.js';
@@ -654,7 +654,7 @@ document.addEventListener('click', (e) => {
       break;
     case 'importPaste':
       $('#importArea').innerHTML =
-        '<label class="field"><span>Paste a Qirsh backup</span><textarea id="importTxt"></textarea></label><div class="btn-row"><button class="btn sm" data-act="importLoad">Check backup</button></div>';
+        '<label class="field"><span>Paste a Frata backup</span><textarea id="importTxt"></textarea></label><div class="btn-row"><button class="btn sm" data-act="importLoad">Check backup</button></div>';
       $('#importTxt').focus();
       break;
     case 'importLoad':
@@ -676,6 +676,13 @@ document.addEventListener('click', (e) => {
       replaceData(next, 'Your data is here: ' + next.tx.length + ' entries');
       break;
     }
+    case 'moveGo':
+      moveAway();
+      break;
+    case 'moveLater':
+      snoozeMove();
+      render();
+      break;
     case 'moveCancel':
       setPendingMove(null);
       render();
@@ -707,6 +714,19 @@ document.addEventListener('click', (e) => {
       break;
   }
 });
+
+/* Opens frata.cc carrying this copy's data. Too much for a link: off to the backup instead. */
+async function moveAway() {
+  const empty = state.sample && !state.tx.some((t) => !isSampleTx(t));
+  const link = empty ? FRATA_URL : await moveLink(state);
+  if (!link) {
+    toast('Too much data for a link. Make a backup here and import it on frata.cc.');
+    setView('settings');
+    render();
+    return;
+  }
+  location.href = link;
+}
 
 /* Swaps in imported or moved data, with Undo to bring back what was there before. */
 function replaceData(next, message) {
@@ -883,6 +903,12 @@ function onReturn() {
 }
 document.addEventListener('visibilitychange', onReturn);
 window.addEventListener('pageshow', onReturn);
+
+/* The phone switched between light and dark: the theme follows it, and so does the tab icon. */
+if (window.matchMedia) {
+  const dark = matchMedia('(prefers-color-scheme: dark)');
+  if (dark.addEventListener) dark.addEventListener('change', () => applyTheme());
+}
 
 /* A new version finished downloading in the background (see js/pwa.js). */
 window.addEventListener('qirsh:update-ready', () => render());

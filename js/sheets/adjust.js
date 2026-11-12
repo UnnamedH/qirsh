@@ -17,7 +17,7 @@ const round = (n, c) => (c === 'USD' ? Math.round(n * 100) / 100 : Math.round(n)
 const balanceText = (n, c) => toInput(round(n, c), c);
 const current = (account) => balances()[account] || { USD: 0, LBP: 0 };
 
-/** A new correction for an account, starting from the balance Qirsh has for it now. */
+/** A new correction for an account, starting from the balance Frata has for it now. */
 export function adjustForm(account) {
   const b = current(account);
   return {
@@ -37,7 +37,7 @@ export function adjustForm(account) {
 export const adjustView = (t) => ({ mode: 'view', id: t.id });
 
 /**
- * What would change: one item per currency whose entered balance differs from Qirsh's, with the
+ * What would change: one item per currency whose entered balance differs from Frata's, with the
  * signed difference. Returns null if an entered amount is not a number. A blank amount is left as is.
  */
 export function adjustDiffs(f) {
@@ -118,7 +118,7 @@ export function adjustSheet() {
     ICON.close +
     '</button></div>';
   h +=
-    '<p class="note">Missed some entries? Enter what the account actually holds now, and Qirsh records the difference.</p>';
+    '<p class="note">Missed some entries? Enter what the account actually holds now, and Frata records the difference.</p>';
   h +=
     '<label class="field"><span>Account</span><select id="a-acct">' +
     ACCOUNTS.map(
@@ -142,7 +142,7 @@ export function adjustSheet() {
             '" aria-label="' +
             curName(c) +
             ' the account holds now">') +
-        '<span class="sub-label">Qirsh has ' +
+        '<span class="sub-label">Frata has ' +
         fmt(b[c], c) +
         '</span></label>',
     ).join('') +
@@ -215,7 +215,7 @@ export function updateAdjustPreview() {
   if (exp) exp.hidden = !neg;
   if (inc) inc.hidden = !pos;
   if (!diffs) el.textContent = 'Enter amounts as numbers.';
-  else if (!diffs.length) el.textContent = 'This matches what Qirsh has. Nothing to correct.';
+  else if (!diffs.length) el.textContent = 'This matches what Frata has. Nothing to correct.';
   else
     el.textContent =
       accName(f.account) +
@@ -246,7 +246,7 @@ export function saveAdjust() {
     };
   const diffs = adjustDiffs(f);
   if (!diffs) return fail('Enter amounts as numbers.');
-  if (!diffs.length) return fail('This already matches what Qirsh has.');
+  if (!diffs.length) return fail('This already matches what Frata has.');
   if (!f.date) return fail('Pick a date.');
   const now = Date.now(),
     note = f.note.trim();

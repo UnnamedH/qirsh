@@ -31,7 +31,7 @@ export function renderHome() {
   let h = '';
   if (showInstallHint())
     h +=
-      '<div class="banner"><p>Install Qirsh: tap <strong>Share</strong> <svg aria-hidden="true" viewBox="0 0 24 24" width="15" height="15" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" style="vertical-align:-2px"><path d="M12 3v12M8 7l4-4 4 4M6 11H5v9h14v-9h-1"/></svg> in Safari, then <strong>Add to Home Screen</strong>. It opens full screen and works offline.</p><button class="icon-btn" data-act="hideInstallHint" aria-label="Dismiss install tip">' +
+      '<div class="banner"><p>Install Frata: tap <strong>Share</strong> <svg aria-hidden="true" viewBox="0 0 24 24" width="15" height="15" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" style="vertical-align:-2px"><path d="M12 3v12M8 7l4-4 4 4M6 11H5v9h14v-9h-1"/></svg> in Safari, then <strong>Add to Home Screen</strong>. It opens full screen and works offline.</p><button class="icon-btn" data-act="hideInstallHint" aria-label="Dismiss install tip">' +
       ICON.close +
       '</button></div>';
   if (showPriceTip()) h += priceTipBanner();

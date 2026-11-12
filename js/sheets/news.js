@@ -6,7 +6,7 @@ export let newsList = [];
 
 export function newsSheet() {
   let h =
-    '<div class="sheet-head"><h2>What’s new in Qirsh</h2><button class="icon-btn" data-act="close" aria-label="Close">' +
+    '<div class="sheet-head"><h2>What’s new in Frata</h2><button class="icon-btn" data-act="close" aria-label="Close">' +
     ICON.close +
     '</button></div><div class="news">';
   h += newsList
