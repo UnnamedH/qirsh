@@ -150,7 +150,7 @@ test('the Excel report has the summary and detail sheets with the right totals',
   const food = 300000 / 89500;
   const spent = 25 + 2 + food;
   const s = wb.sheets.Summary;
-  expect(s[0][0]).toBe('Qirsh · November 2026');
+  expect(s[0][0]).toBe('Frata · November 2026');
   expect(rowOf(s, 'Earned').slice(1, 4)).toEqual([650, 650 * 89500, 600]);
   expect(rowOf(s, 'Spent')[1]).toBeCloseTo(spent, 2);
   expect(rowOf(s, 'Spent')[3]).toBe(40);

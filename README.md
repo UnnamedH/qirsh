@@ -1,8 +1,10 @@
-# Qirsh
+# Frata
 
 A small, phone-first budget tracker for living with two currencies: US dollars and Lebanese lira (LL).
 
-Live at **https://unnamedh.github.io/qirsh/**. It can be installed to the home screen on iPhone and Android, and it always opens from the phone, with or without a connection.
+Frata (فراطة) is Lebanese for small change. The app used to be called Qirsh: the repository and the keys its data is saved under still use that name, because changing the keys would leave people's saved data behind.
+
+Live at **https://frata.cc/**, and at the old address, https://unnamedh.github.io/qirsh/, until everyone has moved their data across. It can be installed to the home screen on iPhone and Android, and it always opens from the phone, with or without a connection.
 
 Plain HTML, CSS and JavaScript modules: no framework and no build step. The host serves the files as they are.
 
@@ -55,6 +57,7 @@ Then open http://127.0.0.1:8765. The app has to be served over `http://`: browse
 | ---------------------- | --------------------------------------------------------- |
 | `npm start`            | Serves the app locally at http://127.0.0.1:8765           |
 | `npm run stamp`        | Updates `BUILD` in `sw.js` after you change app files     |
+| `npm run icons`        | Makes the PNG icons in `icons/` from `scripts/icon.svg`   |
 | `npm test`             | Runs the browser tests in `tests/` (Playwright)           |
 | `npm run lint`         | Checks the code for mistakes (ESLint)                     |
 | `npm run format`       | Reformats every file (Prettier)                           |
@@ -91,7 +94,7 @@ sw.js                   Service worker: offline-first, all-or-nothing updates
 wrangler.jsonc          Cloudflare deploy for frata.cc; .assetsignore lists the files it publishes
 manifest.webmanifest    Name, colours and icons for installing
 icons/                  App, maskable, Apple touch and favicon icons
-scripts/                `npm run stamp` and the BUILD fingerprint it writes into sw.js
+scripts/                `npm run stamp` and the BUILD fingerprint; `npm run icons` and the icon's source, icon.svg
 tests/                  Playwright tests, and server.mjs, a test server that can be slow or publish a fake release
 ```
 
