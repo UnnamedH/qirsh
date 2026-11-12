@@ -114,9 +114,9 @@ test('the account can be switched, and an unchanged balance is not saved', async
   await correct(page, 'wallet');
   await page.selectOption('#a-acct', 'savings');
   await expect(page.locator('#a-USD')).toHaveValue('300');
-  await expect(page.locator('#a-preview')).toHaveText('This matches what Qirsh has. Nothing to correct.');
+  await expect(page.locator('#a-preview')).toHaveText('This matches what Frata has. Nothing to correct.');
   await page.click('[data-act=asave]');
-  await expect(page.locator('#a-err')).toHaveText('This already matches what Qirsh has.');
+  await expect(page.locator('#a-err')).toHaveText('This already matches what Frata has.');
   await page.fill('#a-USD', 'lots');
   await page.click('[data-act=asave]');
   await expect(page.locator('#a-err')).toHaveText('Enter amounts as numbers.');

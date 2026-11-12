@@ -86,7 +86,7 @@ export function renderSettings() {
     '</div></div>' +
     '<p class="note">' +
     (s.entryStyle === 'price'
-      ? 'Type the price, then what you paid with. Qirsh works out the change.'
+      ? 'Type the price, then what you paid with. Frata works out the change.'
       : 'Type what you paid in $ and LL, and any change you got back.') +
     '</p></div></section>';
   const acc = (s.accent || DEFAULT_ACCENT).toUpperCase(),
@@ -141,7 +141,7 @@ export function renderSettings() {
     '<p class="note">Pick any colour. Backgrounds, lines and dark mode follow it, and the accent is adjusted so text on it stays readable.</p></div></section>';
   const bal = balances();
   h +=
-    '<section class="sec"><h2>Balances</h2><div class="card"><p class="note">Missed some entries? Correct an account to what it really holds, and Qirsh records the difference.</p>' +
+    '<section class="sec"><h2>Balances</h2><div class="card"><p class="note">Missed some entries? Correct an account to what it really holds, and Frata records the difference.</p>' +
     ACCOUNTS.map(
       (a) =>
         '<div class="set-row"><span>' +
@@ -271,11 +271,11 @@ export function renderSettings() {
     '</div></section>';
   h +=
     '<section class="sec"><h2>Privacy</h2><div class="card">' +
-    '<p class="note">Everything you enter stays on this phone, in this browser. Qirsh has no account and no server, and it never sends your data anywhere: the browser is set to block it from contacting any other website. Nobody else can see your data, not even the people who make Qirsh.</p>' +
-    '<p class="note">Your data isn’t encrypted on the phone, so anyone who can unlock your phone and open Qirsh can see it. Clearing this browser’s data or removing the app deletes it, so keep a backup.</p>' +
+    '<p class="note">Everything you enter stays on this phone, in this browser. Frata has no account and no server, and it never sends your data anywhere: the browser is set to block it from contacting any other website. Nobody else can see your data, not even the people who make Frata.</p>' +
+    '<p class="note">Your data isn’t encrypted on the phone, so anyone who can unlock your phone and open Frata can see it. Clearing this browser’s data or removing the app deletes it, so keep a backup.</p>' +
     '</div></section>';
   h +=
-    '<p class="note" style="text-align:center">Qirsh · version ' +
+    '<p class="note" style="text-align:center">Frata · version ' +
     APP_VERSION +
     ' · ' +
     state.tx.length +

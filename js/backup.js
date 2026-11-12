@@ -47,7 +47,7 @@ export async function exportShare() {
   try {
     const file = new File([exportText()], exportName(), { type: 'application/json' });
     if (navigator.canShare && navigator.canShare({ files: [file] })) {
-      await navigator.share({ files: [file], title: 'Qirsh backup' });
+      await navigator.share({ files: [file], title: 'Frata backup' });
       markExported();
       render();
       toast('Backup shared');
@@ -114,7 +114,7 @@ export function stageImport(text) {
     return;
   }
   if (!isValid(s)) {
-    toast('That file isn’t a Qirsh backup (no transactions list).');
+    toast('That file isn’t a Frata backup (no transactions list).');
     return;
   }
   setPendingImport(normalize(s));

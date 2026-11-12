@@ -203,25 +203,56 @@ h2 {
   font-size: 19px;
   font-weight: 700;
   letter-spacing: -0.02em;
+  line-height: 1;
 }
-.coin {
-  width: 20px;
-  height: 20px;
-  border-radius: 50%;
-  border: 3px solid var(--accent);
-  position: relative;
+/* The logo: three coins getting smaller, like change. Fixed brand colours, not the accent. */
+.coins {
+  display: flex;
+  align-items: flex-end;
+  gap: 2px;
+  margin-right: 2px;
   flex: none;
+  --coin-1: #2f6b4f;
+  --coin-2: #3e8562;
+  --coin-3: #c9a227;
 }
-.coin::after {
-  content: '';
-  position: absolute;
-  width: 3px;
+.coins i {
+  display: block;
+  width: 17px;
+  height: 17px;
+  border-radius: 50%;
+  background: var(--coin-1);
+}
+.coins i:nth-child(2) {
+  width: 11px;
+  height: 11px;
+  background: var(--coin-2);
+}
+.coins i:nth-child(3) {
+  width: 7px;
   height: 7px;
-  background: var(--accent);
-  right: -5px;
-  bottom: -5px;
-  transform: rotate(-45deg);
-  border-radius: 2px;
+  background: var(--coin-3);
+}
+/* A step lighter in dark mode, so the green doesn't sink into the background. */
+@media (prefers-color-scheme: dark) {
+  :root:not([data-theme='light']) .coins {
+    --coin-1: #5fa882;
+    --coin-2: #7fb59a;
+    --coin-3: #d9b23a;
+  }
+}
+:root[data-theme='dark'] .coins {
+  --coin-1: #5fa882;
+  --coin-2: #7fb59a;
+  --coin-3: #d9b23a;
+}
+/* Geist has no Arabic letters, so the phone's own Arabic font is used. */
+.brand-ar {
+  font-size: 16px;
+  font-weight: 400;
+  color: var(--muted);
+  letter-spacing: 0;
+  margin-left: 2px;
 }
 .top-sub {
   font-size: 13px;

@@ -42,12 +42,12 @@ function renderAlerts() {
     );
   if (saveConflict)
     alerts.push(
-      '<div class="banner bad" role="alert"><p><strong>Your last change wasn’t saved.</strong> Qirsh was changed in another tab or window, and this one has now caught up. Please make the change again.</p></div>',
+      '<div class="banner bad" role="alert"><p><strong>Your last change wasn’t saved.</strong> Frata was changed in another tab or window, and this one has now caught up. Please make the change again.</p></div>',
     );
   if (pendingMove) alerts.push(moveAlert(pendingMove));
   if (rescuedData() && view !== 'settings')
     alerts.push(
-      '<div class="banner bad" role="alert"><p>Your saved data couldn’t be read, so Qirsh started empty. A copy was kept on this device.</p><button class="btn sm" data-act="nav" data-v="settings">Open Backup</button></div>',
+      '<div class="banner bad" role="alert"><p>Your saved data couldn’t be read, so Frata started empty. A copy was kept on this device.</p><button class="btn sm" data-act="nav" data-v="settings">Open Backup</button></div>',
     );
   if (view === 'home' && backupDue())
     alerts.push(
@@ -59,7 +59,7 @@ function renderAlerts() {
     );
   if (updateReady)
     alerts.push(
-      '<div class="banner" role="status"><p>A new version of Qirsh is ready.</p><button class="btn sm primary" data-act="reloadApp">Reload</button></div>',
+      '<div class="banner" role="status"><p>A new version of Frata is ready.</p><button class="btn sm primary" data-act="reloadApp">Reload</button></div>',
     );
   const el = $('#alerts');
   el.innerHTML = alerts.join('');

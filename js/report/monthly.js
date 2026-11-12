@@ -153,7 +153,7 @@ function summarySheet(d) {
     prevNet = d.prevEarned - d.prevSpent;
   const top = [...d.spending].sort((a, b) => b[1].usd - a[1].usd).slice(0, 5);
   const rows = [
-    [{ v: 'Qirsh · ' + monthLabel(d.month), s: STYLE.title }],
+    [{ v: 'Frata · ' + monthLabel(d.month), s: STYLE.title }],
     [
       muted(
         'USD amounts use each entry’s own rate. The LL column converts them at 1 USD = ' +

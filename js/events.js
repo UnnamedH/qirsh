@@ -654,7 +654,7 @@ document.addEventListener('click', (e) => {
       break;
     case 'importPaste':
       $('#importArea').innerHTML =
-        '<label class="field"><span>Paste a Qirsh backup</span><textarea id="importTxt"></textarea></label><div class="btn-row"><button class="btn sm" data-act="importLoad">Check backup</button></div>';
+        '<label class="field"><span>Paste a Frata backup</span><textarea id="importTxt"></textarea></label><div class="btn-row"><button class="btn sm" data-act="importLoad">Check backup</button></div>';
       $('#importTxt').focus();
       break;
     case 'importLoad':
