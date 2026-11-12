@@ -1,7 +1,7 @@
 /* Entry point. */
 import { APP_VERSION, unseenChanges } from './changelog.js';
-import { balances, budgetStatus, combinedUSD, range } from './ledger.js';
-import { backVec, fmt, parseAmt, payVec, txCostUSD } from './money.js';
+import { balances, budgetStatus, combinedUSD, range, sumIn } from './ledger.js';
+import { backVec, entryValueIn, fmt, parseAmt, payVec, txCostUSD } from './money.js';
 import { registerSW } from './pwa.js';
 import { newsList, setNewsList } from './sheets/news.js';
 import { openSheet, setForm } from './sheets/sheet.js';
@@ -19,6 +19,8 @@ window.__qirsh = {
   payVec,
   backVec,
   txCostUSD,
+  entryValueIn,
+  sumIn,
   normalize,
   balances,
   budgetStatus,

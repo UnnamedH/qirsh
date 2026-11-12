@@ -1,7 +1,7 @@
 /* Account balances, spending totals and budget progress. */
-import { owed } from './advances.js';
+import { leftIn } from './advances.js';
 import { ACCOUNTS } from './config.js';
-import { backVec, payVec, toUSD, txCostUSD } from './money.js';
+import { backVec, entryValueIn, payVec } from './money.js';
 import { state } from './state.js';
 import { addDays, parseYmd, startOfDay } from './util.js';
 
@@ -54,7 +54,12 @@ export const inRange = (t, r) => {
   return d >= r.start && d < r.end;
 };
 
-export function sumUSD(r, type, catId) {
+/**
+ * Total spending ('expense') or income ('income') in a date range, optionally for one category, in
+ * `cur`. Each entry counts at the rate saved on it, so the total doesn't move when the app's rate does.
+ * Spending includes the part of a closed advance that was never paid back.
+ */
+export function sumIn(r, type, catId, cur) {
   let s = 0;
   for (const t of state.tx) {
     if (type === 'expense' && t.type === 'advance') {
@@ -64,21 +69,24 @@ export function sumUSD(r, type, catId) {
         (!catId || t.keptCat === catId) &&
         inRange({ date: t.closedOn || t.date }, r)
       )
-        s += owed(t).left;
+        s += leftIn(t, cur);
       continue;
     }
     if (t.type !== type) continue;
     if (catId && t.categoryId !== catId) continue;
     if (!inRange(t, r)) continue;
-    s += txCostUSD(t);
+    s += entryValueIn(t, cur);
   }
   return s;
 }
 
+export const sumUSD = (r, type, catId) => sumIn(r, type, catId, 'USD');
+
+/** A budget's progress, in the budget's own currency, so an LL budget counts LL spending exactly. */
 export function budgetStatus(b) {
   const r = range(b.period);
-  const spent = sumUSD(r, 'expense', b.categoryId || null);
-  const limit = toUSD(+b.amount, b.currency);
+  const spent = sumIn(r, 'expense', b.categoryId || null, b.currency);
+  const limit = +b.amount;
   const pct = limit > 0 ? spent / limit : 0;
   const daysLeft = Math.max(1, Math.round((r.end - startOfDay(new Date())) / 864e5));
   return {

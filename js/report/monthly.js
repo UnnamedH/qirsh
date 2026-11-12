@@ -5,7 +5,7 @@
  */
 import { owed, paybacksOf } from '../advances.js';
 import { accName } from '../config.js';
-import { catName, inRange, sumUSD } from '../ledger.js';
+import { catName, inRange, sumIn, sumUSD } from '../ledger.js';
 import { backVec, other, toUSD, txCostUSD } from '../money.js';
 import { state } from '../state.js';
 import { txTitle } from '../ui/format.js';
@@ -101,8 +101,9 @@ export function monthlyData(month) {
     budgets: state.budgets
       .filter((b) => b.period === 'month')
       .map((b) => {
-        const limit = toUSD(+b.amount, b.currency);
-        const spent = sumUSD(r, 'expense', b.categoryId || null);
+        // In the budget's own currency, each entry at its own rate, like the Budgets screen.
+        const limit = +b.amount;
+        const spent = sumIn(r, 'expense', b.categoryId || null, b.currency);
         return {
           name: b.categoryId ? catName(b.categoryId) : 'All spending',
           limit,
@@ -155,7 +156,9 @@ function summarySheet(d) {
     [{ v: 'Qirsh · ' + monthLabel(d.month), s: STYLE.title }],
     [
       muted(
-        'Amounts in LL use 1 USD = ' + d.rate.toLocaleString('en-US') + ' LL, your rate when this was made.',
+        'USD amounts use each entry’s own rate. The LL column converts them at 1 USD = ' +
+          d.rate.toLocaleString('en-US') +
+          ' LL, your rate when this was made.',
       ),
     ],
     [],
@@ -196,7 +199,7 @@ function summarySheet(d) {
       head('Monthly budgets', 'Limit', 'Spent', 'Left', 'Used'),
       // Each budget is shown in the currency it was set in.
       ...d.budgets.map((b) => {
-        const money = (u) => (b.currency === 'USD' ? usd(u) : lbp(u));
+        const money = (n) => (b.currency === 'USD' ? usd(n) : { v: Math.round(n), s: STYLE.lbp });
         return [
           b.name,
           money(b.limit),

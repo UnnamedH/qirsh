@@ -2,7 +2,7 @@
 import { advanceOf, fmtAdv, owed } from '../advances.js';
 import { accName } from '../config.js';
 import { budgetName, budgetStatus, catName, catOf } from '../ledger.js';
-import { backParts, entryValueIn, fmt, fromUSD, payParts } from '../money.js';
+import { backParts, entryValueIn, fmt, payParts } from '../money.js';
 import { cap, esc } from '../util.js';
 
 export function txTitle(t) {
@@ -143,12 +143,10 @@ export function budgetHtml(b, clickable) {
         ? '<span class="pill warn">' + Math.round(s.pct * 100) + '%</span>'
         : '<span class="pill">' + per + '</span>';
   const left =
-    s.left >= 0
-      ? fmt(fromUSD(s.left, c), c, { round: true }) + ' left'
-      : fmt(fromUSD(-s.left, c), c, { round: true }) + ' over';
+    s.left >= 0 ? fmt(s.left, c, { round: true }) + ' left' : fmt(-s.left, c, { round: true }) + ' over';
   const perDay =
     s.left > 0
-      ? fmt(fromUSD(s.left / s.daysLeft, c), c, { round: true }) +
+      ? fmt(s.left / s.daysLeft, c, { round: true }) +
         '/day for ' +
         s.daysLeft +
         ' day' +
@@ -167,7 +165,7 @@ export function budgetHtml(b, clickable) {
     pill +
     '</span>' +
     '<span class="b-nums">' +
-    fmt(fromUSD(s.spent, c), c, { round: true }) +
+    fmt(s.spent, c, { round: true }) +
     ' <span class="muted">/ ' +
     fmt(+b.amount, c) +
     '</span></span></div>' +

@@ -64,7 +64,7 @@ test('the change the shop actually gave is kept, with the shop’s rate', async 
   const valueLL = () =>
     page.evaluate(() => {
       const t = window.__qirsh.state.tx.at(-1);
-      return Math.round(window.__qirsh.txCostUSD(t) * window.__qirsh.state.rate);
+      return Math.round(window.__qirsh.entryValueIn(t, 'LBP'));
     });
   expect(await valueLL()).toBe(385000);
   await page.evaluate(() => (window.__qirsh.state.rate = 95000));
@@ -103,7 +103,7 @@ test('change in the same currency: $7 paid with $10', async ({ page }) => {
   await page.click('[data-act=fsave]');
   const t = await lastTx(page);
   expect(t).toMatchObject({ amount: 10, currency: 'USD', back: { USD: 3 } });
-  expect(t.rate, 'no rate needed when everything is in dollars').toBeUndefined();
+  expect(t.rate, 'every entry keeps the rate of its day').toBe(89500);
   expect(await wallet(page)).toEqual({ USD: 93, LBP: 0 });
 });
 
@@ -227,11 +227,7 @@ test('change in both currencies: $5 back and the rest in LL', async ({ page }) =
   const t = await lastTx(page);
   expect(t).toMatchObject({ back: { USD: 5, LBP: 60000 }, rate: 89000 });
   expect(
-    Math.round(
-      await page.evaluate(
-        () => window.__qirsh.txCostUSD(window.__qirsh.state.tx.at(-1)) * window.__qirsh.state.rate,
-      ),
-    ),
+    Math.round(await page.evaluate(() => window.__qirsh.entryValueIn(window.__qirsh.state.tx.at(-1), 'LBP'))),
   ).toBe(385000);
 });
 
@@ -311,7 +307,7 @@ test('an entry made price first keeps its price when edited as paid + change', a
   await expect(page.locator('#f-back0')).toHaveValue('500');
   await page.click('[data-act=fsave]');
   const valueLL = await page.evaluate(() =>
-    Math.round(window.__qirsh.txCostUSD(window.__qirsh.state.tx.at(-1)) * window.__qirsh.state.rate),
+    Math.round(window.__qirsh.entryValueIn(window.__qirsh.state.tx.at(-1), 'LBP')),
   );
   expect(valueLL).toBe(385000);
 });

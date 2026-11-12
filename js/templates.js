@@ -1,5 +1,5 @@
 /* Quick add: entries the user repeats often or added recently. */
-import { backVec } from './money.js';
+import { backVec, isMixed } from './money.js';
 import { state } from './state.js';
 import { uid, ymd } from './util.js';
 
@@ -55,6 +55,8 @@ export function cloneForToday(t) {
   delete c.closed;
   delete c.closedOn;
   delete c.keptCat;
-  if (c.type === 'advance') c.rate = state.rate;
+  // Added again today, it counts at today's rate. An entry in both currencies keeps the rate that
+  // made its amounts add up, such as the shop's rate for a price-first expense.
+  if (c.type !== 'transfer' && !(c.type !== 'advance' && isMixed(c))) c.rate = state.rate;
   return c;
 }
