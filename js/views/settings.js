@@ -15,8 +15,21 @@ export function renderSettings() {
   const s = state.settings;
   let h =
     '<section class="sec"><h2>Exchange rate</h2><div class="card"><div class="set-row"><label class="field"><span>LL for 1 USD</span><input id="rate" class="num" inputmode="numeric" value="' +
-    state.rate.toLocaleString('en-US') +
+    (armed && armed.startsWith('rate:')
+      ? (+armed.slice(5)).toLocaleString('en-US')
+      : state.rate.toLocaleString('en-US')) +
     '"></label></div>' +
+    (armed && armed.startsWith('rate:')
+      ? '<div class="banner bad" style="flex-direction:column;align-items:stretch"><p>That’s a big change from ' +
+        state.rate.toLocaleString('en-US') +
+        ' LL. Entries you add while it’s set keep this rate, so check it isn’t a typo.</p><div class="btn-row"><button class="btn sm primary" data-act="rateConfirm" data-v="' +
+        esc(armed.slice(5)) +
+        '">Use ' +
+        (+armed.slice(5)).toLocaleString('en-US') +
+        ' LL</button><button class="btn sm" data-act="rateCancel">Keep ' +
+        state.rate.toLocaleString('en-US') +
+        '</button></div></div>'
+      : '') +
     '<p class="note">Used for the combined total, budgets and the suggested amount when you exchange money.</p></div></section>';
   h +=
     '<section class="sec"><h2>Display</h2><div class="card"><div class="set-row"><span>Show totals in</span><div class="seg">' +
@@ -231,7 +244,7 @@ export function renderSettings() {
     (armed === 'wipe' ? 'Tap again to delete everything' : 'Clear all data') +
     '</button></div></div></section>';
   h +=
-    '<section class="sec"><h2>Backup</h2><div class="card"><p class="note">Your data lives only on this phone, in this browser. Export a JSON backup now and then, and before clearing browser data.' +
+    '<section class="sec" id="backupSec"><h2>Backup</h2><div class="card"><p class="note">Your data lives only on this phone, in this browser. Export a JSON backup now and then, and before clearing browser data.' +
     (IOS
       ? ' On iPhone, Safari and the Home Screen app keep separate data, so use a backup to move between them.'
       : '') +

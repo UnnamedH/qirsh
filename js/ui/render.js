@@ -1,6 +1,7 @@
 /* Draws the current view. */
 import { updateReady } from '../pwa.js';
-import { rescuedData, save, saveFailed, state } from '../state.js';
+import { backupDue } from '../backup.js';
+import { rescuedData, save, saveConflict, saveFailed, state } from '../state.js';
 import { applyTheme } from '../theme.js';
 import { fitAllThousands } from './amount.js';
 import { view } from './ui-state.js';
@@ -38,9 +39,21 @@ function renderAlerts() {
     alerts.push(
       '<div class="banner bad" role="alert"><p><strong>Your last change wasn’t saved.</strong> This browser’s storage is full or blocked, for example in a private window. Export a backup from Settings so nothing is lost.</p></div>',
     );
+  if (saveConflict)
+    alerts.push(
+      '<div class="banner bad" role="alert"><p><strong>Your last change wasn’t saved.</strong> Qirsh was changed in another tab or window, and this one has now caught up. Please make the change again.</p></div>',
+    );
   if (rescuedData() && view !== 'settings')
     alerts.push(
       '<div class="banner bad" role="alert"><p>Your saved data couldn’t be read, so Qirsh started empty. A copy was kept on this device.</p><button class="btn sm" data-act="nav" data-v="settings">Open Backup</button></div>',
+    );
+  if (view === 'home' && backupDue())
+    alerts.push(
+      '<div class="banner"><p>' +
+        (state.lastExport
+          ? 'It’s been over a month since your last backup.'
+          : 'You haven’t made a backup yet.') +
+        ' Your entries live only on this phone.</p><button class="btn sm primary" data-act="backupNow">Back up</button><button class="btn sm" data-act="backupLater">Later</button></div>',
     );
   if (updateReady)
     alerts.push(

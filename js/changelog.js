@@ -4,6 +4,17 @@ import { KEY } from './state.js';
 /* Newest first. Each release adds an entry here with the next v, then runs `npm run stamp` for sw.js. */
 export const CHANGELOG = [
   {
+    v: 11,
+    date: '2026-11-10',
+    items: [
+      'Qirsh now reminds you to back up when a month has gone by with new entries and no backup. Your entries live only on your phone, so a backup is the only copy.',
+      'If Qirsh is open in two places, an out-of-date one can no longer write over newer entries. It catches up first, and tells you if a change needs making again.',
+      '“Start fresh” now only removes the example data, so anything you added on top of it stays.',
+      'Importing a backup, clearing all data and changing the exchange rate can now be undone. A rate far from the current one asks first, so a typo like 895 doesn’t slip in.',
+      'Leaving Qirsh open overnight? It now shows the right day and month when you come back.',
+    ],
+  },
+  {
     v: 10,
     date: '2026-11-09',
     items: [

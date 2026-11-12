@@ -1,6 +1,14 @@
 /* All user interaction: one delegated listener per event type, dispatching on data-act. */
 import { advanceOf, paybacksOf } from './advances.js';
-import { exportCopy, exportRescued, exportSave, exportShare, saveFile, stageImport } from './backup.js';
+import {
+  exportCopy,
+  exportRescued,
+  exportSave,
+  exportShare,
+  saveFile,
+  snoozeBackup,
+  stageImport,
+} from './backup.js';
 import { csvName, monthlyCsv, monthlyWorkbook, reportName } from './report/monthly.js';
 import { CHANGELOG } from './changelog.js';
 import { ACCOUNTS, accName } from './config.js';
@@ -31,7 +39,7 @@ import { markPriceTipDone } from './sheets/demo.js';
 import { setNewsList } from './sheets/news.js';
 import { afterRepay, repayForm, saveRepay } from './sheets/payback.js';
 import { closeSheet, drawSheet, form, openSheet, setForm, sheetKind } from './sheets/sheet.js';
-import { KEY, blankState, discardRescued, parseState, save, setState, state } from './state.js';
+import { KEY, blankState, discardRescued, save, setState, state, syncFromStorage } from './state.js';
 import { cloneForToday, templates } from './templates.js';
 import { DEFAULT_ACCENT, applyTheme, hexRgb } from './theme.js';
 import { amountText, txTitle } from './ui/format.js';
@@ -50,6 +58,7 @@ import {
   showOpening,
   view,
 } from './ui/ui-state.js';
+import { isSampleBudget, isSampleTx } from './sample.js';
 import { $, firstGlyph, uid, ymd } from './util.js';
 import { historyList, historyTxs } from './views/history.js';
 
@@ -100,10 +109,30 @@ document.addEventListener('click', (e) => {
       render();
       break;
     case 'clearSample': {
-      const keep = { rate: state.rate, settings: state.settings, categories: state.categories };
+      // Only the examples go: anything the user added on top of them stays.
+      const prev = state;
+      const own = state.tx.filter((t) => !isSampleTx(t));
+      const keep = {
+        rate: state.rate,
+        settings: state.settings,
+        categories: state.categories,
+        tx: own,
+        budgets: state.budgets.filter((b) => !isSampleBudget(b)),
+      };
       setState(Object.assign(blankState(), keep));
       commit();
-      toast('Example data cleared. Set your starting balances in Settings.');
+      toast(
+        own.length
+          ? 'Example data cleared. Your ' +
+              own.length +
+              (own.length === 1 ? ' entry was' : ' entries were') +
+              ' kept.'
+          : 'Example data cleared. Set your starting balances in Settings.',
+        () => {
+          setState(prev);
+          commit();
+        },
+      );
       break;
     }
     case 'repeat': {
@@ -546,6 +575,17 @@ document.addEventListener('click', (e) => {
       toast('Deleted ' + c.name);
       break;
     }
+    case 'backupNow': {
+      setView('settings');
+      render();
+      const sec = $('#backupSec');
+      if (sec) sec.scrollIntoView();
+      break;
+    }
+    case 'backupLater':
+      snoozeBackup();
+      render();
+      break;
     case 'exportShare':
       exportShare();
       break;
@@ -617,14 +657,26 @@ document.addEventListener('click', (e) => {
     case 'importLoad':
       stageImport($('#importTxt').value);
       break;
-    case 'importConfirm':
+    case 'importConfirm': {
+      const prev = state;
       setState(pendingImport);
       setPendingImport(null);
       commit();
-      toast('Backup imported: ' + state.tx.length + ' entries');
+      toast('Backup imported: ' + state.tx.length + ' entries', () => {
+        setState(prev);
+        commit();
+        toast('Import undone. Your data is back.');
+      });
       break;
+    }
     case 'importCancel':
       setPendingImport(null);
+      render();
+      break;
+    case 'rateConfirm':
+      setRate(+v);
+      break;
+    case 'rateCancel':
       render();
       break;
     case 'wipe':
@@ -635,14 +687,31 @@ document.addEventListener('click', (e) => {
       }
       {
         setArmed(null);
+        const prev = state;
         const keep = { rate: state.rate, settings: state.settings, categories: state.categories };
         setState(Object.assign(blankState(), keep));
         commit();
-        toast('All data cleared');
+        toast('All data cleared', () => {
+          setState(prev);
+          commit();
+          toast('Your data is back.');
+        });
       }
       break;
   }
 });
+
+/* Sets the app's rate, with Undo: entries saved while a wrong rate is set keep it. */
+function setRate(r) {
+  const prev = state.rate;
+  if (r === prev) return;
+  state.rate = r;
+  commit();
+  toast('Rate set to ' + r.toLocaleString('en-US') + ' LL', () => {
+    state.rate = prev;
+    commit();
+  });
+}
 
 document.addEventListener('input', (e) => {
   const t = e.target;
@@ -719,14 +788,14 @@ document.addEventListener('change', (e) => {
   }
   if (t.id === 'rate') {
     const r = parseAmt(t.value);
-    if (r > 0) {
-      state.rate = r;
-      commit();
-      toast('Rate set to ' + r.toLocaleString('en-US') + ' LL');
-    } else {
+    if (!(r > 0)) {
       t.value = state.rate.toLocaleString('en-US');
       toast('Enter a rate above zero.');
-    }
+    } else if (r !== state.rate && (r > state.rate * 2 || r < state.rate / 2)) {
+      // A slip like 895 for 89,500 would be stamped on entries saved before it is noticed, so ask first.
+      setArmed('rate:' + r);
+      render();
+    } else setRate(r);
   }
   if (t.dataset.open) {
     // An empty field means zero; anything else that isn't a number is refused, not saved as zero.
@@ -776,14 +845,25 @@ document.addEventListener('keydown', (e) => {
 
 /* Another copy of the app (a second tab, or the installed app next to a browser tab) saved a change.
    Take its state, so this copy neither shows stale data nor writes over the change on its next save. */
-window.addEventListener('storage', (e) => {
-  if (e.key !== KEY || !e.newValue) return;
-  const next = parseState(e.newValue);
-  if (!next) return;
-  setState(next);
+function redrawAfterSync() {
   render();
   if (sheetKind === 'tx' || sheetKind === 'repay' || sheetKind === 'adjust') drawSheet();
+}
+
+window.addEventListener('storage', (e) => {
+  if (e.key === KEY && syncFromStorage()) redrawAfterSync();
 });
+
+/* Coming back to the app: a copy asleep in the background can miss the `storage` event, so look for
+   newer data now. Re-drawing also brings the date, the month and the budgets' days left up to date
+   when the app was left open overnight. */
+function onReturn() {
+  if (document.visibilityState !== 'visible') return;
+  if (syncFromStorage()) redrawAfterSync();
+  else if (!sheetKind && !document.activeElement.matches('input, textarea, select')) render();
+}
+document.addEventListener('visibilitychange', onReturn);
+window.addEventListener('pageshow', onReturn);
 
 /* A new version finished downloading in the background (see js/pwa.js). */
 window.addEventListener('qirsh:update-ready', () => render());
