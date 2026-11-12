@@ -884,6 +884,12 @@ function onReturn() {
 document.addEventListener('visibilitychange', onReturn);
 window.addEventListener('pageshow', onReturn);
 
+/* The phone switched between light and dark: the theme follows it, and so does the tab icon. */
+if (window.matchMedia) {
+  const dark = matchMedia('(prefers-color-scheme: dark)');
+  if (dark.addEventListener) dark.addEventListener('change', () => applyTheme());
+}
+
 /* A new version finished downloading in the background (see js/pwa.js). */
 window.addEventListener('qirsh:update-ready', () => render());
 window.addEventListener('hashchange', checkMove);
