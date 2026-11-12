@@ -1,0 +1,9 @@
+// Cloudflare settings for frata.cc. The app is static files served as they are, with no build step and
+// no Worker code. Which files are published is set in .assetsignore.
+{
+  "name": "frata",
+  "compatibility_date": "2026-11-10",
+  "assets": {
+    "directory": ".",
+  },
+}

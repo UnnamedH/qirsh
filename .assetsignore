@@ -1,0 +1,10 @@
+# Only the app itself is published to frata.cc: everything at the top level is left out, then the app's
+# own files and folders are let back in. The repo's dev tooling, tests and node_modules stay private.
+/*
+!/index.html
+!/manifest.webmanifest
+!/sw.js
+!/css/
+!/js/
+!/fonts/
+!/icons/

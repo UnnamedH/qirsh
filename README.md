@@ -88,6 +88,7 @@ js/ui/                  Rendering the current view, shared row/budget HTML, toas
 js/views/               Home, History, Budgets and Settings
 js/sheets/              Bottom sheets: entry, payback, budget, "What's new"
 sw.js                   Service worker: offline-first, all-or-nothing updates
+wrangler.jsonc          Cloudflare deploy for frata.cc; .assetsignore lists the files it publishes
 manifest.webmanifest    Name, colours and icons for installing
 icons/                  App, maskable, Apple touch and favicon icons
 scripts/                `npm run stamp` and the BUILD fingerprint it writes into sw.js
