@@ -80,6 +80,7 @@ js/templates.js         Quick add (frequent and recent entries)
 js/theme.js             Accent colour palette and light/dark theme
 js/changelog.js         Release notes for "What's new"
 js/backup.js            Export and import, saving generated files
+js/handoff.js           Moving data to frata.cc in a link, and reading it on arrival
 js/report/              Monthly report: the data (monthly.js) and a small .xlsx writer (xlsx.js)
 js/pwa.js               Install tip and service worker registration
 js/util.js, icons.js    Small helpers and SVG icons

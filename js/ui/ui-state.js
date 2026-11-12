@@ -10,6 +10,7 @@ export const hist = {
 };
 
 export let pendingImport = null,
+  pendingMove = null,
   armed = null,
   showOpening = false;
 
@@ -25,6 +26,12 @@ export function setQuickTab(value) {
 
 export function setPendingImport(value) {
   pendingImport = value;
+  return value;
+}
+
+/* Data brought from the old address by a move link, waiting for the person to confirm it (handoff.js). */
+export function setPendingMove(value) {
+  pendingMove = value;
   return value;
 }
 

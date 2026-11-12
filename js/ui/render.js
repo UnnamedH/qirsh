@@ -1,10 +1,11 @@
 /* Draws the current view. */
 import { updateReady } from '../pwa.js';
 import { backupDue } from '../backup.js';
+import { isSampleTx } from '../sample.js';
 import { rescuedData, save, saveConflict, saveFailed, state } from '../state.js';
 import { applyTheme } from '../theme.js';
 import { fitAllThousands } from './amount.js';
-import { view } from './ui-state.js';
+import { pendingMove, view } from './ui-state.js';
 import { $, DAYS, MONTHS, esc } from '../util.js';
 import { renderBudgets } from '../views/budgets.js';
 import { renderHistory } from '../views/history.js';
@@ -43,6 +44,7 @@ function renderAlerts() {
     alerts.push(
       '<div class="banner bad" role="alert"><p><strong>Your last change wasn’t saved.</strong> Qirsh was changed in another tab or window, and this one has now caught up. Please make the change again.</p></div>',
     );
+  if (pendingMove) alerts.push(moveAlert(pendingMove));
   if (rescuedData() && view !== 'settings')
     alerts.push(
       '<div class="banner bad" role="alert"><p>Your saved data couldn’t be read, so Qirsh started empty. A copy was kept on this device.</p><button class="btn sm" data-act="nav" data-v="settings">Open Backup</button></div>',
@@ -62,6 +64,30 @@ function renderAlerts() {
   const el = $('#alerts');
   el.innerHTML = alerts.join('');
   el.hidden = !alerts.length;
+}
+
+/* Asks before data brought from the old address replaces what is here. */
+function moveAlert(m) {
+  if (m.error)
+    return '<div class="banner bad" role="alert"><p>The data in that link couldn’t be read, so nothing was changed. Go back to the old app and try again, or move it with a backup file instead.</p><button class="btn sm" data-act="moveCancel">OK</button></div>';
+  const n = (x, one, many) => '<strong>' + x + '</strong> ' + (x === 1 ? one : many);
+  const own = state.tx.filter((t) => !isSampleTx(t)).length;
+  let here = '';
+  if (state.sample)
+    here = own
+      ? 'It replaces the example data and the ' + n(own, 'entry', 'entries') + ' you added here.'
+      : 'It replaces the example data.';
+  else if (state.tx.length || state.budgets.length)
+    here = 'It replaces the ' + n(state.tx.length, 'entry', 'entries') + ' already here.';
+  return (
+    '<div class="banner" role="alert" style="flex-direction:column;align-items:stretch"><p><strong>Your data has arrived.</strong> It has ' +
+    n(m.tx.length, 'entry', 'entries') +
+    ' and ' +
+    n(m.budgets.length, 'budget', 'budgets') +
+    '. ' +
+    here +
+    '</p><div class="btn-row"><button class="btn primary sm" data-act="moveConfirm">Use this data</button><button class="btn sm" data-act="moveCancel">Not now</button></div></div>'
+  );
 }
 
 export function commit() {

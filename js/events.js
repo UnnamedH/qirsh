@@ -11,6 +11,7 @@ import {
 } from './backup.js';
 import { csvName, monthlyCsv, monthlyWorkbook, reportName } from './report/monthly.js';
 import { CHANGELOG } from './changelog.js';
+import { checkMove } from './handoff.js';
 import { ACCOUNTS, accName } from './config.js';
 import { catName, catOf } from './ledger.js';
 import { other, parseAmt, parseInput, toInput } from './money.js';
@@ -50,8 +51,10 @@ import {
   armed,
   hist,
   pendingImport,
+  pendingMove,
   setArmed,
   setPendingImport,
+  setPendingMove,
   setQuickTab,
   setShowOpening,
   setView,
@@ -658,19 +661,23 @@ document.addEventListener('click', (e) => {
       stageImport($('#importTxt').value);
       break;
     case 'importConfirm': {
-      const prev = state;
-      setState(pendingImport);
+      const next = pendingImport;
       setPendingImport(null);
-      commit();
-      toast('Backup imported: ' + state.tx.length + ' entries', () => {
-        setState(prev);
-        commit();
-        toast('Import undone. Your data is back.');
-      });
+      replaceData(next, 'Backup imported: ' + next.tx.length + ' entries');
       break;
     }
     case 'importCancel':
       setPendingImport(null);
+      render();
+      break;
+    case 'moveConfirm': {
+      const next = pendingMove;
+      setPendingMove(null);
+      replaceData(next, 'Your data is here: ' + next.tx.length + ' entries');
+      break;
+    }
+    case 'moveCancel':
+      setPendingMove(null);
       render();
       break;
     case 'rateConfirm':
@@ -700,6 +707,18 @@ document.addEventListener('click', (e) => {
       break;
   }
 });
+
+/* Swaps in imported or moved data, with Undo to bring back what was there before. */
+function replaceData(next, message) {
+  const prev = state;
+  setState(next);
+  commit();
+  toast(message, () => {
+    setState(prev);
+    commit();
+    toast('Import undone. Your data is back.');
+  });
+}
 
 /* Sets the app's rate, with Undo: entries saved while a wrong rate is set keep it. */
 function setRate(r) {
@@ -867,3 +886,4 @@ window.addEventListener('pageshow', onReturn);
 
 /* A new version finished downloading in the background (see js/pwa.js). */
 window.addEventListener('qirsh:update-ready', () => render());
+window.addEventListener('hashchange', checkMove);

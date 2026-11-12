@@ -2,6 +2,7 @@
 import { APP_VERSION, unseenChanges } from './changelog.js';
 import { balances, budgetStatus, combinedUSD, range, sumIn } from './ledger.js';
 import { backVec, entryValueIn, fmt, parseAmt, payVec, txCostUSD } from './money.js';
+import { checkMove, moveLink } from './handoff.js';
 import { registerSW } from './pwa.js';
 import { newsList, setNewsList } from './sheets/news.js';
 import { openSheet, setForm } from './sheets/sheet.js';
@@ -29,6 +30,7 @@ window.__qirsh = {
   fmt,
   parseAmt,
   combinedUSD,
+  moveLink,
 };
 
 render();
@@ -39,6 +41,9 @@ if (newsList.length) {
   setForm({});
   openSheet('news');
 }
+
+// Data brought from the old address waits for the person to confirm it.
+checkMove();
 
 persistStorage();
 registerSW();
