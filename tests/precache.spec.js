@@ -33,3 +33,18 @@ test('service worker precaches every app file', () => {
 test('sw.js BUILD matches the app files (run `npm run stamp` if this fails)', () => {
   expect(currentBuild()).toBe(buildId());
 });
+
+/** frata.cc publishes only what .assetsignore lets back in, so every app file must be on that list. */
+test('every app file is published to frata.cc', () => {
+  const allowed = fs
+    .readFileSync('.assetsignore', 'utf8')
+    .split('\n')
+    .filter((l) => l.startsWith('!/'))
+    .map((l) => l.slice(2));
+  const published = (f) => allowed.some((a) => (a.endsWith('/') ? f.startsWith(a) : f === a));
+  const files = ['sw.js', ...appFiles().filter((f) => f !== './')];
+  expect(
+    files.filter((f) => !published(f)),
+    'missing from .assetsignore',
+  ).toEqual([]);
+});

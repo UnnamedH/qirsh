@@ -10,7 +10,7 @@
  * then offers to reload. Run `npm run stamp` after changing app files; tests/precache.spec.js
  * fails if BUILD is out of date or a file is missing from APP.
  */
-const BUILD = 'd4a88d6c7b38';
+const BUILD = 'b52873fdc097';
 const CACHE = 'qirsh-' + BUILD;
 const APP = [
   './',
@@ -22,6 +22,7 @@ const APP = [
   'js/changelog.js',
   'js/config.js',
   'js/events.js',
+  'js/handoff.js',
   'js/icons.js',
   'js/ledger.js',
   'js/main.js',
@@ -92,9 +93,11 @@ self.addEventListener('activate', (e) => {
 self.addEventListener('fetch', (e) => {
   const req = e.request;
   if (req.method !== 'GET' || new URL(req.url).origin !== location.origin) return;
-  // Every page load is answered with the stored index.html; everything else with its stored copy.
+  // Every page load is answered with the stored app page; everything else with its stored copy.
   // Only a file that is not stored (which should not happen) goes to the network.
-  const key = req.mode === 'navigate' ? 'index.html' : req;
+  // The page is stored as './', not 'index.html': some hosts (Cloudflare) redirect index.html to the
+  // folder, and a browser refuses a page load answered with a redirected response.
+  const key = req.mode === 'navigate' ? './' : req;
   e.respondWith(
     caches
       .open(CACHE)

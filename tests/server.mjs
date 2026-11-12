@@ -7,6 +7,7 @@
  *   delay=<ms>   wait this long before answering every request
  *   release=<x>  serve sw.js with BUILD replaced by <x>, like a newly published version
  *   fail=<path>  answer <path> with a 404, like a file that failed to download
+ *   pretty=1     redirect index.html to the folder, as Cloudflare does
  * Without a prefix the app is served as is.
  */
 import fs from 'node:fs';
@@ -26,7 +27,7 @@ const TYPES = {
   '.woff2': 'font/woff2',
   '.txt': 'text/plain; charset=utf-8',
 };
-const settings = new Map(); // id -> { delay, release, fail }
+const settings = new Map(); // id -> { delay, release, fail, pretty }
 
 http
   .createServer((req, res) => {
@@ -46,6 +47,10 @@ http
     }
 
     const send = () => {
+      if (s.pretty && rel.endsWith('/index.html')) {
+        res.writeHead(307, { Location: './', 'Cache-Control': 'no-store' }).end();
+        return;
+      }
       if (rel.endsWith('/')) rel += 'index.html';
       const file = path.join(ROOT, rel);
       if (

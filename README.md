@@ -4,7 +4,7 @@ A small, phone-first budget tracker for living with two currencies: US dollars a
 
 Live at **https://unnamedh.github.io/qirsh/**. It can be installed to the home screen on iPhone and Android, and it always opens from the phone, with or without a connection.
 
-Plain HTML, CSS and JavaScript modules: no framework and no build step. GitHub Pages serves the files as they are.
+Plain HTML, CSS and JavaScript modules: no framework and no build step. The host serves the files as they are.
 
 ## Features
 
@@ -24,7 +24,7 @@ Plain HTML, CSS and JavaScript modules: no framework and no build step. GitHub P
 - **All data stays on the phone**, in the browser's `localStorage`. There is no account, no server, no analytics and no tracking. Nothing the user enters is ever sent anywhere, so neither the developer nor GitHub can see it.
 - **The app loads nothing from other websites.** Fonts are in `fonts/`, and a Content Security Policy in `index.html` makes the browser block scripts, fonts and requests to any other site. `tests/privacy.spec.js` checks both.
 - **Data isn't encrypted on the device.** Anyone who can unlock the phone and open the app can see it. Clearing the browser's data or removing the app deletes it, which is what backups are for.
-- **The code is what users trust.** GitHub Pages serves whatever is on `main`, so keep two-factor authentication on for the GitHub account and protect `main` so changes go through pull requests.
+- **The code is what users trust.** Cloudflare and GitHub Pages serve whatever is on `main`, so keep two-factor authentication on for the GitHub account and protect `main` so changes go through pull requests.
 
 ## Offline
 
@@ -80,6 +80,7 @@ js/templates.js         Quick add (frequent and recent entries)
 js/theme.js             Accent colour palette and light/dark theme
 js/changelog.js         Release notes for "What's new"
 js/backup.js            Export and import, saving generated files
+js/handoff.js           Moving data to frata.cc in a link, and reading it on arrival
 js/report/              Monthly report: the data (monthly.js) and a small .xlsx writer (xlsx.js)
 js/pwa.js               Install tip and service worker registration
 js/util.js, icons.js    Small helpers and SVG icons
@@ -87,6 +88,7 @@ js/ui/                  Rendering the current view, shared row/budget HTML, toas
 js/views/               Home, History, Budgets and Settings
 js/sheets/              Bottom sheets: entry, payback, budget, "What's new"
 sw.js                   Service worker: offline-first, all-or-nothing updates
+wrangler.jsonc          Cloudflare deploy for frata.cc; .assetsignore lists the files it publishes
 manifest.webmanifest    Name, colours and icons for installing
 icons/                  App, maskable, Apple touch and favicon icons
 scripts/                `npm run stamp` and the BUILD fingerprint it writes into sw.js
@@ -95,7 +97,7 @@ tests/                  Playwright tests, and server.mjs, a test server that can
 
 ## Publishing updates
 
-The site is served by GitHub Pages from `main`. Work on a branch, open a pull request, and merge it when CI passes. To try a branch on a phone before merging, open `https://raw.githack.com/UnnamedH/qirsh/<branch>/index.html`.
+The site is served from `main` by Cloudflare at https://frata.cc/ and by GitHub Pages at the old address. Cloudflare also builds a preview of every pull request. Work on a branch, open a pull request, and merge it when CI passes. To try a branch on a phone before merging, open `https://raw.githack.com/UnnamedH/qirsh/<branch>/index.html`.
 
 For each release that users will notice:
 

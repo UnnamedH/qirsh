@@ -1,6 +1,7 @@
 # Qirsh — project instructions
 
-Phone-first USD/LL budget tracker. Installable PWA, served as-is by GitHub Pages from `main`.
+Phone-first USD/LL budget tracker. Installable PWA, served as-is from `main` by Cloudflare at frata.cc
+(and, until everyone has moved, by GitHub Pages at the old `unnamedh.github.io/qirsh/` address).
 README.md has the full feature list, privacy model and file layout; read it first.
 
 ## Tech stack
@@ -68,6 +69,8 @@ CI (`.github/workflows/ci.yml`) runs lint, format check and tests on every PR.
   `tests/privacy.spec.js` enforces this. Inline `style=` is allowed.
 - **New app file?** Add it to the `APP` list in `sw.js`, then `npm run stamp`.
   `tests/precache.spec.js` fails if a file is missing from `APP` or `BUILD` is stale.
+- **frata.cc** is deployed by Cloudflare from `main` (`wrangler.jsonc`, no build step). Only the paths
+  let back in by `.assetsignore` are published; a new top-level app file or folder must be added there.
 - **User-visible change?** Add an entry at the top of `CHANGELOG` in `js/changelog.js` (next `v`, today's
   date, short plain bullets). It shows in the "What's new" sheet.
 
