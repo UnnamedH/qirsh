@@ -1,6 +1,7 @@
 # Qirsh — project instructions
 
-Phone-first USD/LL budget tracker. Installable PWA, served as-is by GitHub Pages from `main`.
+Phone-first USD/LL budget tracker. Installable PWA, served as-is from `main` by Cloudflare at frata.cc
+(and, until everyone has moved, by GitHub Pages at the old `unnamedh.github.io/qirsh/` address).
 README.md has the full feature list, privacy model and file layout; read it first.
 
 ## Tech stack
