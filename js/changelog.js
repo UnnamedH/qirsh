@@ -8,7 +8,8 @@ export const CHANGELOG = [
     date: '2026-11-13',
     items: [
       'Tap the eye next to Wallet on Home to blur your balances, so you can show the app to someone without showing what you have. Tap it again to see them.',
-      'Tap Savings or Whish on Home to spend from it or add money to it directly, without moving it to your Wallet first. Moving money and correcting the balance are there too.',
+      'Tap Savings or Whish on Home to spend from it or add money to it directly, without moving it to your Wallet first. Moving money is there too.',
+      'Correcting a balance has moved from Settings to Home: tap Wallet, Savings or Whish and choose Correct balance.',
     ],
   },
   {

@@ -383,6 +383,18 @@ main .wrap {
   height: 16px;
   color: var(--muted);
 }
+.acc-open {
+  background: none;
+  border: 0;
+  padding: 6px 0;
+  display: inline-flex;
+  align-items: center;
+  gap: 4px;
+}
+.acc-open svg {
+  width: 14px;
+  height: 14px;
+}
 .balance-head {
   display: flex;
   justify-content: space-between;

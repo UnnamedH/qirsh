@@ -192,7 +192,7 @@ document.addEventListener('click', (e) => {
       commit();
       break;
     case 'transferTo':
-      setForm(newTxForm('transfer', { from: 'wallet', to: id || v }));
+      setForm(newTxForm('transfer', { from: 'wallet', to: (id || v) === 'wallet' ? 'savings' : id || v }));
       openSheet('tx');
       break;
     case 'editTx': {

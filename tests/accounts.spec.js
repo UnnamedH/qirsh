@@ -91,3 +91,21 @@ test('the hide setting is checked when data is loaded', async ({ page }) => {
   ]);
   expect(out).toEqual([false, true]);
 });
+
+test('Wallet opens its own sheet, to move money or correct it', async ({ page }) => {
+  await setUp(page);
+  await page.click('[data-act=accMenu][data-id=wallet]');
+  await expect(page.locator('#sheet h2')).toHaveText('Wallet');
+  await expect(page.locator('#sheet [data-act=accTx]')).toHaveCount(0);
+  await page.click('#sheet [data-act=transferTo]');
+  await expect(page.locator('#f-from')).toHaveValue('wallet');
+  await expect(page.locator('#f-to')).toHaveValue('savings');
+  await page.click('#sheet [data-act=close]');
+  await page.click('[data-act=accMenu][data-id=wallet]');
+  await page.click('#sheet [data-act=newAdjust]');
+  await expect(page.locator('#a-acct')).toHaveValue('wallet');
+  // Settings no longer has its own Correct buttons.
+  await page.click('#sheet [data-act=close]');
+  await page.click('.tabs [data-act=nav][data-v=settings]');
+  await expect(page.locator('#v-settings [data-act=newAdjust]')).toHaveCount(0);
+});

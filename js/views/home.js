@@ -39,7 +39,9 @@ export function renderHome() {
     h +=
       '<div class="banner"><p>These are example transactions so you can see how it works.</p><button class="btn sm primary" data-act="clearSample">Start fresh</button></div>';
   h +=
-    '<section class="balance" aria-label="Wallet balance"><div class="balance-head"><p class="label">Wallet</p>' +
+    '<section class="balance" aria-label="Wallet balance"><div class="balance-head"><button class="label acc-open" data-act="accMenu" data-id="wallet">Wallet' +
+    ICON.right +
+    '</button>' +
     '<button class="icon-btn" data-act="toggleHide" aria-pressed="' +
     state.settings.hide +
     '" aria-label="' +

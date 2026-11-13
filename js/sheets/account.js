@@ -1,4 +1,4 @@
-/* Sheet opened by tapping Savings or Whish on Home: spend, add or move money with that account. */
+/* Sheet opened by tapping an account on Home: spend, add, move or correct money in that account. */
 import { accName } from '../config.js';
 import { ICON } from '../icons.js';
 import { balances } from '../ledger.js';
@@ -33,8 +33,10 @@ export function accountSheet() {
     (Math.abs(b.LBP) > 0 ? ' · ' + fmt(b.LBP, 'LBP') : '') +
     '</p>' +
     '<div class="list">' +
-    action('accTx', 'expense', 'Spend from ' + name, 'An expense paid straight from ' + name) +
-    action('accTx', 'income', 'Money into ' + name, 'Income that lands in ' + name) +
+    (id === 'wallet'
+      ? ''
+      : action('accTx', 'expense', 'Spend from ' + name, 'An expense paid straight from ' + name) +
+        action('accTx', 'income', 'Money into ' + name, 'Income that lands in ' + name)) +
     action('transferTo', id, 'Move money', 'Between ' + name + ' and your other accounts') +
     action('newAdjust', id, 'Correct balance', 'Set what ' + name + ' really holds') +
     '</div>'
