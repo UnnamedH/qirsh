@@ -59,7 +59,8 @@ export function rowSub(t) {
   }
   if (t.correction)
     return (t.note ? txTitle(t) + ' · ' : '') + 'Balance correction · ' + accName(t.account || 'wallet');
-  return t.note ? txTitle(t) : cap(t.type);
+  const where = t.account && t.account !== 'wallet' ? accName(t.account) : '';
+  return [t.note ? txTitle(t) : cap(t.type), where].filter(Boolean).join(' · ');
 }
 
 export function txGlyph(t) {

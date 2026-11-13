@@ -1,5 +1,6 @@
 /* Bottom sheet: opening, closing and drawing whichever form is active. */
 import { markSeen } from '../changelog.js';
+import { accountSheet } from './account.js';
 import { adjustSheet, updateAdjustPreview } from './adjust.js';
 import { budgetSheet } from './budget.js';
 import { demoSheet, markPriceTipDone } from './demo.js';
@@ -47,7 +48,9 @@ export function drawSheet() {
             ? demoSheet()
             : sheetKind === 'adjust'
               ? adjustSheet()
-              : budgetSheet());
+              : sheetKind === 'acct'
+                ? accountSheet()
+                : budgetSheet());
   fitAllThousands(el);
   if (sheetKind === 'tx') updatePreview();
   if (sheetKind === 'adjust') updateAdjustPreview();

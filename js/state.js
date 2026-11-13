@@ -9,7 +9,14 @@ export function blankState() {
     app: 'qirsh',
     version: 1,
     rate: 89500,
-    settings: { display: 'USD', weekStart: 1, accent: null, theme: 'system', entryStyle: 'paid' },
+    settings: {
+      display: 'USD',
+      weekStart: 1,
+      accent: null,
+      theme: 'system',
+      entryStyle: 'paid',
+      hide: false,
+    },
     opening: { wallet: { USD: 0, LBP: 0 }, savings: { USD: 0, LBP: 0 }, whish: { USD: 0, LBP: 0 } },
     categories: DEFAULT_CATS.map((c) => Object.assign({}, c)),
     tx: [],
@@ -42,6 +49,8 @@ function normalizeSettings(st, defaults) {
     theme: ['system', 'light', 'dark'].includes(st.theme) ? st.theme : defaults.theme,
     // How expenses are typed in: 'price' first with "Paid with", or 'paid' amounts plus change back.
     entryStyle: st.entryStyle === 'price' ? 'price' : defaults.entryStyle,
+    // Balances blurred on Home, for showing the app to someone.
+    hide: st.hide === true,
   };
 }
 

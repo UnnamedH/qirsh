@@ -4,6 +4,14 @@ import { KEY } from './state.js';
 /* Newest first. Each release adds an entry here with the next v, then runs `npm run stamp` for sw.js. */
 export const CHANGELOG = [
   {
+    v: 14,
+    date: '2026-11-13',
+    items: [
+      'Tap the eye next to Wallet on Home to blur your balances, so you can show the app to someone without showing what you have. Tap it again to see them.',
+      'Tap Savings or Whish on Home to spend from it or add money to it directly, without moving it to your Wallet first. Moving money and correcting the balance are there too.',
+    ],
+  },
+  {
     v: 13,
     date: '2026-11-12',
     items: [

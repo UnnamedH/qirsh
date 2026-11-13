@@ -174,8 +174,25 @@ document.addEventListener('click', (e) => {
       form.setRate = !form.setRate;
       updatePreview();
       break;
+    case 'accMenu':
+      setForm({ account: id, noFocus: true });
+      openSheet('acct');
+      break;
+    case 'accTx':
+      setForm(newTxForm(v, { account: form.account }));
+      openSheet('tx');
+      break;
+    case 'fwallet':
+      readForm();
+      form.account = 'wallet';
+      drawSheet();
+      break;
+    case 'toggleHide':
+      state.settings.hide = !state.settings.hide;
+      commit();
+      break;
     case 'transferTo':
-      setForm(newTxForm('transfer', { from: 'wallet', to: id }));
+      setForm(newTxForm('transfer', { from: 'wallet', to: id || v }));
       openSheet('tx');
       break;
     case 'editTx': {

@@ -15,6 +15,7 @@ import { renderSettings } from '../views/settings.js';
 
 export function render() {
   applyTheme();
+  document.documentElement.classList.toggle('hide-amounts', state.settings.hide);
   renderAlerts();
   ['home', 'history', 'budgets', 'settings'].forEach((v) => {
     $('#v-' + v).hidden = v !== view;

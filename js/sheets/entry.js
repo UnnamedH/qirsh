@@ -57,6 +57,7 @@ export function newTxForm(type, extra) {
       paid: null,
       adj: null,
       adj2: null,
+      account: 'wallet',
     },
     extra || {},
   );
@@ -224,6 +225,14 @@ export function txSheet() {
       )
       .join('') +
     '</div>';
+  // Paid from Savings or Whish (opened from that account on Home). Shown only when it isn't the Wallet.
+  if (!isT && f.account && f.account !== 'wallet' && !f.correction)
+    h +=
+      '<p class="note">' +
+      (f.type === 'income' ? 'Into ' : 'Paid from ') +
+      '<strong>' +
+      esc(accName(f.account)) +
+      '</strong> · <button class="link" data-act="fwallet">Use Wallet</button></p>';
   if (isT && !isX)
     h +=
       '<div class="grid2"><label class="field"><span>From</span><select id="f-from">' +
@@ -697,10 +706,10 @@ export function saveTx() {
   } else if (isA) {
     const who = (f.who || '').trim();
     if (!who) return fail('Who will pay you back?');
-    Object.assign(t, { who, account: 'wallet', rate: state.rate });
+    Object.assign(t, { who, account: f.account || 'wallet', rate: state.rate });
   } else {
     if (!f.categoryId) return fail('Pick a category.');
-    Object.assign(t, { categoryId: f.categoryId, account: 'wallet' });
+    Object.assign(t, { categoryId: f.categoryId, account: f.account || 'wallet' });
     if (isE && f.paid) {
       const p = pricePayment(f);
       if (typeof p === 'string') return fail(p);
