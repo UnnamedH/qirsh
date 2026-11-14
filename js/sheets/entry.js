@@ -57,6 +57,7 @@ export function newTxForm(type, extra) {
       paid: null,
       adj: null,
       adj2: null,
+      account: 'wallet',
     },
     extra || {},
   );
@@ -224,6 +225,24 @@ export function txSheet() {
       )
       .join('') +
     '</div>';
+  // Which account the money leaves or lands in. Wallet is chosen unless changed; a balance correction
+  // keeps its own account, so it has no choice here.
+  if (!isT && !f.correction)
+    h +=
+      '<div class="acct-pick"><span class="label">' +
+      (f.type === 'income' ? 'Into' : 'From') +
+      '</span><div class="seg wide">' +
+      ACCOUNTS.map(
+        (a) =>
+          '<button data-act="facct" data-v="' +
+          a.id +
+          '" aria-pressed="' +
+          ((f.account || 'wallet') === a.id) +
+          '">' +
+          a.name +
+          '</button>',
+      ).join('') +
+      '</div></div>';
   if (isT && !isX)
     h +=
       '<div class="grid2"><label class="field"><span>From</span><select id="f-from">' +
@@ -697,10 +716,10 @@ export function saveTx() {
   } else if (isA) {
     const who = (f.who || '').trim();
     if (!who) return fail('Who will pay you back?');
-    Object.assign(t, { who, account: 'wallet', rate: state.rate });
+    Object.assign(t, { who, account: f.account || 'wallet', rate: state.rate });
   } else {
     if (!f.categoryId) return fail('Pick a category.');
-    Object.assign(t, { categoryId: f.categoryId, account: 'wallet' });
+    Object.assign(t, { categoryId: f.categoryId, account: f.account || 'wallet' });
     if (isE && f.paid) {
       const p = pricePayment(f);
       if (typeof p === 'string') return fail(p);

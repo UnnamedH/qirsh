@@ -378,10 +378,65 @@ main .wrap {
   align-items: center;
   gap: 6px;
 }
-.acc-name .move {
-  font-size: 12.5px;
-  color: var(--accent);
-  font-weight: 600;
+.acc-name svg {
+  width: 16px;
+  height: 16px;
+  color: var(--muted);
+}
+.acc-open {
+  background: none;
+  border: 0;
+  padding: 6px 0;
+  display: inline-flex;
+  align-items: center;
+  gap: 4px;
+}
+.acc-open svg {
+  width: 14px;
+  height: 14px;
+}
+.balance-head {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  margin: -8px 0 -6px;
+}
+/* "Hide amounts": balances blurred, for showing the app to someone. */
+.priv {
+  transition: filter 0.15s;
+}
+.hide-amounts .priv {
+  filter: blur(9px);
+  user-select: none;
+}
+/* Which account an entry is paid from or lands in. */
+.acct-pick {
+  display: flex;
+  align-items: center;
+  gap: 10px;
+  margin: 12px 0 4px;
+}
+.acct-pick .seg {
+  flex: 1;
+}
+/* History showing one account. */
+.acct-head {
+  display: flex;
+  align-items: center;
+  gap: 10px;
+  margin-bottom: 12px;
+}
+.acct-name {
+  flex: 1;
+  min-width: 0;
+}
+.acct-name h2 {
+  margin: 0;
+  font-size: 20px;
+}
+.acct-name p {
+  margin: 2px 0 0;
+  color: var(--muted);
 }
 
 /* segmented */

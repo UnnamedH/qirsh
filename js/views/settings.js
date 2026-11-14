@@ -2,8 +2,8 @@
 import { APP_VERSION } from '../changelog.js';
 import { ACCOUNTS, PROTECTED } from '../config.js';
 import { ICON } from '../icons.js';
-import { balances, catName } from '../ledger.js';
-import { fmt, toInput } from '../money.js';
+import { catName } from '../ledger.js';
+import { toInput } from '../money.js';
 import { IOS } from '../pwa.js';
 import { rescuedData, state } from '../state.js';
 import { ACCENTS, DEFAULT_ACCENT } from '../theme.js';
@@ -139,21 +139,8 @@ export function renderSettings() {
     (preset ? '' : check) +
     '</label></div>' +
     '<p class="note">Pick any colour. Backgrounds, lines and dark mode follow it, and the accent is adjusted so text on it stays readable.</p></div></section>';
-  const bal = balances();
   h +=
-    '<section class="sec"><h2>Balances</h2><div class="card"><p class="note">Missed some entries? Correct an account to what it really holds, and Frata records the difference.</p>' +
-    ACCOUNTS.map(
-      (a) =>
-        '<div class="set-row"><span>' +
-        a.name +
-        '<br><span class="muted num">' +
-        fmt(bal[a.id].USD, 'USD') +
-        ' · ' +
-        fmt(bal[a.id].LBP, 'LBP') +
-        '</span></span><button class="btn sm" data-act="newAdjust" data-v="' +
-        a.id +
-        '">Correct</button></div>',
-    ).join('') +
+    '<section class="sec"><h2>Balances</h2><div class="card"><p class="note">Missed some entries? Tap Wallet, Savings or Whish on Home, then Correct balance.</p>' +
     '<div class="links"><button class="link" data-act="toggleOpening" aria-expanded="' +
     showOpening +
     '">' +

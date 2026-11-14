@@ -59,9 +59,10 @@ export const inRange = (t, r) => {
  * `cur`. Each entry counts at the rate saved on it, so the total doesn't move when the app's rate does.
  * Spending includes the part of a closed advance that was never paid back.
  */
-export function sumIn(r, type, catId, cur) {
+export function sumIn(r, type, catId, cur, account) {
   let s = 0;
   for (const t of state.tx) {
+    if (account && (t.account || 'wallet') !== account) continue;
     if (type === 'expense' && t.type === 'advance') {
       if (
         t.closed &&

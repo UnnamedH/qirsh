@@ -8,6 +8,7 @@ function tplKey(t) {
     t.type,
     t.categoryId || '',
     t.who || '',
+    t.type === 'transfer' ? '' : t.account || 'wallet',
     t.amount,
     t.currency,
     (t.note || '').trim().toLowerCase(),

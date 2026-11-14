@@ -39,32 +39,43 @@ export function renderHome() {
     h +=
       '<div class="banner"><p>These are example transactions so you can see how it works.</p><button class="btn sm primary" data-act="clearSample">Start fresh</button></div>';
   h +=
-    '<section class="balance" aria-label="Wallet balance"><p class="label">Wallet</p>' +
-    '<button class="balance-total" data-act="toggleDisplay" title="Switch currency">' +
+    '<section class="balance" aria-label="Wallet balance"><div class="balance-head"><button class="label acc-open" data-act="accView" data-id="wallet">Wallet' +
+    ICON.right +
+    '</button>' +
+    '<button class="icon-btn" data-act="toggleHide" aria-pressed="' +
+    state.settings.hide +
+    '" aria-label="' +
+    (state.settings.hide ? 'Show amounts' : 'Hide amounts') +
+    '">' +
+    (state.settings.hide ? ICON.eyeOff : ICON.eye) +
+    '</button></div>' +
+    '<button class="balance-total priv" data-act="toggleDisplay" title="Switch currency">' +
     fmtDisp(combinedUSD(w)) +
     '<small>total</small></button>' +
-    '<div class="balance-split"><span>' +
+    '<div class="balance-split priv"><span>' +
     fmt(w.USD, 'USD') +
     '<em>cash USD</em></span><span>' +
     fmt(w.LBP, 'LBP') +
     '<em>cash LL</em></span></div>' +
-    '<div class="moves"><button class="btn sm" data-act="newMove" data-v="exchange"><b aria-hidden="true">⇄</b>Exchange</button><button class="btn sm" data-act="newMove" data-v="transfer"><b aria-hidden="true">→</b>Transfer</button></div></section>';
+    '<div class="moves"><button class="btn sm" data-act="newMove" data-v="exchange"><b aria-hidden="true">⇄</b>Exchange</button></div></section>';
   h +=
     '<div class="accounts">' +
     ['savings', 'whish']
       .map((id) => {
         const x = b[id];
         return (
-          '<button class="acc" data-act="transferTo" data-id="' +
+          '<button class="acc" data-act="accView" data-id="' +
           id +
           '"><span class="acc-name"><span class="label">' +
           accName(id) +
-          '</span><span class="move">Move</span></span>' +
-          '<span class="amt" style="text-align:left">' +
+          '</span>' +
+          ICON.right +
+          '</span>' +
+          '<span class="amt priv" style="text-align:left">' +
           fmt(x.USD, 'USD') +
           '</span>' +
           (Math.abs(x.LBP) > 0
-            ? '<span class="amt sub" style="text-align:left">' + fmt(x.LBP, 'LBP') + '</span>'
+            ? '<span class="amt sub priv" style="text-align:left">' + fmt(x.LBP, 'LBP') + '</span>'
             : '') +
           '</button>'
         );
@@ -78,7 +89,7 @@ export function renderHome() {
     .sort((a, c) => c.t.date.localeCompare(a.t.date));
   if (open.length)
     h +=
-      '<section class="sec"><div class="sec-head"><h2>Owed to you</h2><span class="num muted">' +
+      '<section class="sec"><div class="sec-head"><h2>Owed to you</h2><span class="num muted priv">' +
       fmtDisp(open.reduce((s, x) => s + x.o.left, 0)) +
       '</span></div><div class="list">' +
       open
@@ -97,7 +108,7 @@ export function renderHome() {
                 (o.back > 0 ? ' · ' + fmtAdv(t, o.back) + ' back so far' : ''),
             ) +
             '</span></span>' +
-            '<span class="amt">' +
+            '<span class="amt priv">' +
             fmtAdv(t, o.left) +
             '</span></button><button class="btn sm" data-act="newRepay" data-id="' +
             esc(t.id) +
@@ -164,7 +175,7 @@ export function renderHome() {
     '<section class="sec"><div class="sec-head"><h2>' +
     MONTHS[new Date().getMonth()] +
     '</h2><button class="link" data-act="nav" data-v="history">History</button></div>' +
-    '<div class="stats"><div class="stat"><span class="label">Spent</span><span class="amt">' +
+    '<div class="stats priv"><div class="stat"><span class="label">Spent</span><span class="amt">' +
     fmtTotal(spent) +
     '</span></div>' +
     '<div class="stat"><span class="label">Earned</span><span class="amt in">' +

@@ -26,7 +26,11 @@ const money = (page) =>
     };
   });
 
-const correct = (page, account) => page.click(`[data-act=newAdjust][data-v=${account}]`);
+async function correct(page, account) {
+  await page.click('.tabs [data-act=nav][data-v=home]');
+  await page.click(`[data-act=accView][data-id=${account}]`);
+  await page.click('#v-history .acct-head [data-act=newAdjust]');
+}
 
 test('“Just fix the balance” sets the balance without counting it as spending', async ({ page }) => {
   await setUp(page);
@@ -126,7 +130,6 @@ test('the account can be switched, and an unchanged balance is not saved', async
 test('starting balances are hidden until asked for', async ({ page }) => {
   await setUp(page);
   await expect(page.locator('[data-open]')).toHaveCount(0);
-  await expect(page.locator('#v-settings')).toContainText('$100 · 500,000 LL');
   await page.click('[data-act=toggleOpening]');
   await expect(page.locator('[data-open]')).toHaveCount(6);
   await page.fill('[data-open=wallet][data-cur=USD]', '120');

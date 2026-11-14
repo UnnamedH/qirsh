@@ -84,13 +84,15 @@ document.addEventListener('click', (e) => {
     setArmed(null);
   switch (act) {
     case 'nav':
+      hist.account = null;
       setView(v);
       closeSheet();
       render();
       window.scrollTo(0, 0);
       break;
     case 'new':
-      setForm(newTxForm(view === 'home' || view === 'history' ? 'expense' : 'expense'));
+      // On an account's page, a new entry starts in that account.
+      setForm(newTxForm('expense', view === 'history' && hist.account ? { account: hist.account } : {}));
       openSheet('tx');
       break;
     case 'close':
@@ -174,9 +176,30 @@ document.addEventListener('click', (e) => {
       form.setRate = !form.setRate;
       updatePreview();
       break;
-    case 'transferTo':
-      setForm(newTxForm('transfer', { from: 'wallet', to: id }));
-      openSheet('tx');
+    case 'accView':
+      // An account's page is History showing only that account, with its balance and Correct balance.
+      setView('history');
+      hist.account = id;
+      hist.filter = 'all';
+      hist.month = new Date(new Date().getFullYear(), new Date().getMonth(), 1);
+      closeSheet();
+      render();
+      window.scrollTo(0, 0);
+      break;
+    case 'accAll':
+      hist.account = null;
+      setView('home');
+      render();
+      window.scrollTo(0, 0);
+      break;
+    case 'facct':
+      readForm();
+      form.account = v;
+      drawSheet();
+      break;
+    case 'toggleHide':
+      state.settings.hide = !state.settings.hide;
+      commit();
       break;
     case 'editTx': {
       const t = state.tx.find((x) => x.id === id);
