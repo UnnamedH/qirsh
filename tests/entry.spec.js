@@ -371,3 +371,27 @@ test('a mistyped starting balance is refused, not saved as zero', async ({ page 
   await page.locator('[data-open=wallet][data-cur=USD]').blur();
   expect((await appState(page)).opening.wallet.USD).toBe(0);
 });
+
+test('a field tapped quickly keeps the cursor when a delayed focus fires', async ({ page }) => {
+  await freshWallet(page);
+  await startExpense(page, 'LBP', '385');
+  // Hold back timers, as a slow phone does, so the app's delayed focus fires after the next tap.
+  await page.clock.install();
+  await page.click('[data-act=paidAdd]');
+  await page.fill('#f-paid', '10');
+  await page.focus('#f-adj');
+  await page.clock.runFor(500);
+  expect(await page.evaluate(() => document.activeElement.id)).toBe('f-adj');
+  await page.keyboard.press('Control+A');
+  await page.keyboard.type('500');
+  await expect(page.locator('#f-paid')).toHaveValue('10');
+  await expect(page.locator('#f-adj')).toHaveValue('500');
+});
+
+test('opening a sheet or adding a line still puts the cursor in the new field', async ({ page }) => {
+  await freshWallet(page);
+  await page.click('#fab');
+  await expect(page.locator('#f-pay0')).toBeFocused();
+  await page.click('[data-act=paidAdd]');
+  await expect(page.locator('#f-paid')).toBeFocused();
+});

@@ -51,14 +51,24 @@ export function drawSheet() {
   fitAllThousands(el);
   if (sheetKind === 'tx') updatePreview();
   if (sheetKind === 'adjust') updateAdjustPreview();
-  const a = el.querySelector('#f-pay0');
-  if (a && !form.id && !form.noFocus)
-    setTimeout(() => {
-      try {
-        a.focus();
-      } catch (e) {}
-    }, 60);
+  if (el.querySelector('#f-pay0') && !form.id && !form.noFocus) focusSoon('#f-pay0', 60);
   form.noFocus = true;
+}
+
+/**
+ * Puts the cursor in a field once the sheet has settled. If the person has already tapped into a
+ * field by then (quick typists, slow phones), it stays where they put it: moving it would send what
+ * they type next into the wrong field.
+ */
+export function focusSoon(selector, ms = 40) {
+  setTimeout(() => {
+    const active = document.activeElement;
+    if (active && active.matches && active.matches('input, textarea, select')) return;
+    const n = $(selector);
+    try {
+      if (n) n.focus();
+    } catch (e) {}
+  }, ms);
 }
 
 export function setForm(value) {

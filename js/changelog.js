@@ -4,6 +4,13 @@ import { KEY } from './state.js';
 /* Newest first. Each release adds an entry here with the next v, then runs `npm run stamp` for sw.js. */
 export const CHANGELOG = [
   {
+    v: 16,
+    date: '2026-11-14',
+    items: [
+      'Fixed: on a slow phone, quickly tapping into “Change back” after typing what you paid could send the next digits into the wrong field.',
+    ],
+  },
+  {
     v: 15,
     date: '2026-11-14',
     items: [

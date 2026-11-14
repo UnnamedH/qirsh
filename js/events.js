@@ -39,7 +39,7 @@ import {
 import { markPriceTipDone } from './sheets/demo.js';
 import { setNewsList } from './sheets/news.js';
 import { afterRepay, repayForm, saveRepay } from './sheets/payback.js';
-import { closeSheet, drawSheet, form, openSheet, setForm, sheetKind } from './sheets/sheet.js';
+import { closeSheet, drawSheet, focusSoon, form, openSheet, setForm, sheetKind } from './sheets/sheet.js';
 import { KEY, blankState, discardRescued, save, setState, state, syncFromStorage } from './state.js';
 import { cloneForToday, templates } from './templates.js';
 import { DEFAULT_ACCENT, applyTheme, hexRgb } from './theme.js';
@@ -278,10 +278,7 @@ document.addEventListener('click', (e) => {
       const cur = ls.length ? other(ls[0].cur) : form.pay.length > 1 ? 'LBP' : other(form.pay[0].cur);
       ls.push({ cur, v: '' });
       drawSheet();
-      setTimeout(() => {
-        const n = $('#f-' + k + (ls.length - 1));
-        if (n) n.focus();
-      }, 40);
+      focusSoon('#f-' + k + (ls.length - 1));
       break;
     }
     case 'lrm': {
@@ -294,20 +291,14 @@ document.addEventListener('click', (e) => {
       readForm();
       openPaid(form);
       drawSheet();
-      setTimeout(() => {
-        const n = $('#f-paid');
-        if (n) n.focus();
-      }, 40);
+      focusSoon('#f-paid');
       break;
     case 'adj2Add':
       readForm();
       form.adj2 = { cur: other(form.adj.cur), v: '' };
       form.adj.touched = false;
       drawSheet();
-      setTimeout(() => {
-        const n = $('#f-adj2');
-        if (n) n.focus();
-      }, 40);
+      focusSoon('#f-adj2');
       break;
     case 'adj2Rm':
       readForm();
