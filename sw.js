@@ -10,7 +10,7 @@
  * then offers to reload. Run `npm run stamp` after changing app files; tests/precache.spec.js
  * fails if BUILD is out of date or a file is missing from APP.
  */
-const BUILD = '92a6a315f856';
+const BUILD = '8f96ccdbc7f9';
 const CACHE = 'qirsh-' + BUILD;
 const APP = [
   './',

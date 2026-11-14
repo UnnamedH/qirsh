@@ -46,7 +46,7 @@ import { DEFAULT_ACCENT, applyTheme, hexRgb } from './theme.js';
 import { amountText, txTitle } from './ui/format.js';
 import { fitThousands } from './ui/amount.js';
 import { commit, render } from './ui/render.js';
-import { slideIn, swipeEnd, swipeMove, swipeStart } from './ui/swipe.js';
+import { swipeEnd, swipeMove, swipeStart } from './ui/swipe.js';
 import { setUndoFn, toast, undoFn } from './ui/toast.js';
 import {
   armed,
@@ -66,14 +66,13 @@ import { isSampleBudget, isSampleTx } from './sample.js';
 import { $, firstGlyph, uid, ymd } from './util.js';
 import { historyList, historyTxs } from './views/history.js';
 
-/* Shows a tab, from the tab bar or a swipe (`from` is the side the page slides in from). */
-function goTab(v, from) {
+/* Shows a tab, from the tab bar or at the end of a swipe. */
+function goTab(v) {
   hist.account = null;
   setView(v);
   closeSheet();
   render();
   window.scrollTo(0, 0);
-  if (from) slideIn($('#v-' + v), from);
 }
 
 document.addEventListener('click', (e) => {

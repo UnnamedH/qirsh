@@ -1,6 +1,7 @@
 /* Touch gestures that make Frata feel like an app: drag a sheet down to close it, swipe sideways between tabs. */
 import { closeSheet } from '../sheets/sheet.js';
 import { $ } from '../util.js';
+import { drawView } from './render.js';
 import { view } from './ui-state.js';
 
 /* The tab bar's order, so a swipe moves to the tab next to the current one. */
@@ -12,6 +13,8 @@ const EDGE = 24;
 const SLOP = 10;
 
 let g = null;
+/* True while pages finish sliding after a swipe; a new swipe waits until they've settled. */
+let busy = false;
 
 const reduced = () => matchMedia('(prefers-reduced-motion: reduce)').matches;
 
@@ -29,7 +32,7 @@ function scrollsSideways(el, stop) {
 
 export function swipeStart(e) {
   g = null;
-  if (e.touches.length !== 1) return;
+  if (busy || e.touches.length !== 1) return;
   const t = e.touches[0],
     target = e.target;
   if (!(target instanceof Element) || isField(target)) return;
@@ -66,21 +69,57 @@ export function swipeMove(e) {
   if (g.mode === 'sheet') {
     g.el.style.transform = 'translate(-50%, ' + Math.max(0, g.dy) + 'px)';
     $('#scrim').style.opacity = String(Math.max(0.2, 1 - g.dy / g.el.offsetHeight));
-  } else {
-    // The page follows the finger a little, and less where there is no tab to go to.
-    const i = TABS.indexOf(view),
-      edge = (g.dx > 0 && i === 0) || (g.dx < 0 && i === TABS.length - 1);
-    g.el.style.transform = 'translateX(' + g.dx * (edge ? 0.08 : 0.25) + 'px)';
-  }
+  } else pageTo(g.dx);
 }
 
-/** Ends a gesture. `goTab(view, from)` switches tabs; `from` is the side the new page slides in from. */
+/* Tabs move like pages side by side: the tab in the swipe's direction is drawn next to the current
+   one, and both follow the finger exactly. Where there is no tab to go to, the page only gives a little. */
+function pageTo(dx) {
+  const dir = dx < 0 ? 1 : -1,
+    next = TABS[TABS.indexOf(view) + dir];
+  if (g.next && g.next.id !== 'v-' + next) dropNext(); // the finger changed direction
+  if (!next) {
+    g.el.style.transform = 'translateX(' + dx * 0.15 + 'px)';
+    return;
+  }
+  if (!g.next) g.next = showNext(next);
+  g.dir = dir;
+  g.el.style.transform = 'translateX(' + dx + 'px)';
+  g.next.style.transform = 'translateX(' + (dir * width() + dx) + 'px)';
+}
+
+/* How far a page travels to leave the screen: the whole screen, so it starts and ends out of sight. */
+const width = () => innerWidth;
+
+/* Draws the incoming tab and lays it over the current one, lined up with what the screen will show
+   once the swipe is done: the new tab opens at its top. */
+function showNext(v) {
+  const el = $('#v-' + v);
+  drawView(v);
+  el.hidden = false;
+  el.classList.add('paging');
+  el.style.top = g.el.offsetTop + scrollY + 'px';
+  el.style.transition = 'none';
+  return el;
+}
+
+function dropNext() {
+  const el = g.next;
+  g.next = null;
+  if (!el) return;
+  el.hidden = true;
+  el.classList.remove('paging');
+  el.style.cssText = '';
+}
+
+/** Ends a gesture. `goTab(view)` switches to the tab a swipe finished on. */
 export function swipeEnd(goTab) {
   if (!g || !g.mode) {
     g = null;
     return;
   }
-  const { el, mode, dx, dy } = g,
+  const g2 = g,
+    { el, mode, dx, dy } = g,
     ms = Math.max(1, Date.now() - g.at);
   g = null;
   const settle = () => {
@@ -109,18 +148,27 @@ export function swipeEnd(goTab) {
     }
     return;
   }
-  settle();
-  const i = TABS.indexOf(view),
-    next = TABS[i + (dx < 0 ? 1 : -1)];
-  if (next && (Math.abs(dx) > 70 || (Math.abs(dx) > 35 && Math.abs(dx) / ms > 0.4)))
-    goTab(next, dx < 0 ? 'right' : 'left');
-}
-
-/** Slides a newly shown tab in from the side the swipe came from. */
-export function slideIn(el, from) {
-  if (reduced() || !el) return;
-  el.classList.remove('in-left', 'in-right');
-  void el.offsetWidth; // restart the animation if the same tab slides in twice
-  el.classList.add('in-' + from);
-  setTimeout(() => el.classList.remove('in-' + from), 220);
+  // Past about a third of the screen, or a quick flick, finishes the move; otherwise both pages go back.
+  const next = g2.next,
+    done = next && (Math.abs(dx) > width() * 0.33 || (Math.abs(dx) > 35 && Math.abs(dx) / ms > 0.4));
+  const end = () => {
+    busy = false;
+    settle();
+    if (next) {
+      next.classList.remove('paging');
+      next.style.cssText = '';
+      next.hidden = true;
+    }
+    if (done) goTab(next.id.slice(2));
+  };
+  if (reduced()) return end();
+  busy = true;
+  const ease = 'transform 0.2s ease-out';
+  el.style.transition = ease;
+  el.style.transform = done ? 'translateX(' + -g2.dir * width() + 'px)' : '';
+  if (next) {
+    next.style.transition = ease;
+    next.style.transform = done ? 'translateX(0)' : 'translateX(' + g2.dir * width() + 'px)';
+  }
+  setTimeout(end, 200);
 }
