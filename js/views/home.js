@@ -39,7 +39,7 @@ export function renderHome() {
     h +=
       '<div class="banner"><p>These are example transactions so you can see how it works.</p><button class="btn sm primary" data-act="clearSample">Start fresh</button></div>';
   h +=
-    '<section class="balance" aria-label="Wallet balance"><div class="balance-head"><button class="label acc-open" data-act="accMenu" data-id="wallet">Wallet' +
+    '<section class="balance" aria-label="Wallet balance"><div class="balance-head"><button class="label acc-open" data-act="accView" data-id="wallet">Wallet' +
     ICON.right +
     '</button>' +
     '<button class="icon-btn" data-act="toggleHide" aria-pressed="' +
@@ -57,14 +57,14 @@ export function renderHome() {
     '<em>cash USD</em></span><span>' +
     fmt(w.LBP, 'LBP') +
     '<em>cash LL</em></span></div>' +
-    '<div class="moves"><button class="btn sm" data-act="newMove" data-v="exchange"><b aria-hidden="true">⇄</b>Exchange</button><button class="btn sm" data-act="newMove" data-v="transfer"><b aria-hidden="true">→</b>Transfer</button></div></section>';
+    '<div class="moves"><button class="btn sm" data-act="newMove" data-v="exchange"><b aria-hidden="true">⇄</b>Exchange</button></div></section>';
   h +=
     '<div class="accounts">' +
     ['savings', 'whish']
       .map((id) => {
         const x = b[id];
         return (
-          '<button class="acc" data-act="accMenu" data-id="' +
+          '<button class="acc" data-act="accView" data-id="' +
           id +
           '"><span class="acc-name"><span class="label">' +
           accName(id) +

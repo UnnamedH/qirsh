@@ -225,14 +225,24 @@ export function txSheet() {
       )
       .join('') +
     '</div>';
-  // Paid from Savings or Whish (opened from that account on Home). Shown only when it isn't the Wallet.
-  if (!isT && f.account && f.account !== 'wallet' && !f.correction)
+  // Which account the money leaves or lands in. Wallet is chosen unless changed; a balance correction
+  // keeps its own account, so it has no choice here.
+  if (!isT && !f.correction)
     h +=
-      '<p class="note">' +
-      (f.type === 'income' ? 'Into ' : 'Paid from ') +
-      '<strong>' +
-      esc(accName(f.account)) +
-      '</strong> · <button class="link" data-act="fwallet">Use Wallet</button></p>';
+      '<div class="acct-pick"><span class="label">' +
+      (f.type === 'income' ? 'Into' : 'From') +
+      '</span><div class="seg wide">' +
+      ACCOUNTS.map(
+        (a) =>
+          '<button data-act="facct" data-v="' +
+          a.id +
+          '" aria-pressed="' +
+          ((f.account || 'wallet') === a.id) +
+          '">' +
+          a.name +
+          '</button>',
+      ).join('') +
+      '</div></div>';
   if (isT && !isX)
     h +=
       '<div class="grid2"><label class="field"><span>From</span><select id="f-from">' +

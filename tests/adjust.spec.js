@@ -28,8 +28,8 @@ const money = (page) =>
 
 async function correct(page, account) {
   await page.click('.tabs [data-act=nav][data-v=home]');
-  await page.click(`[data-act=accMenu][data-id=${account}]`);
-  await page.click('#sheet [data-act=newAdjust]');
+  await page.click(`[data-act=accView][data-id=${account}]`);
+  await page.click('#v-history .acct-head [data-act=newAdjust]');
 }
 
 test('“Just fix the balance” sets the balance without counting it as spending', async ({ page }) => {

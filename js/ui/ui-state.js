@@ -7,6 +7,8 @@ export const hist = {
   month: new Date(new Date().getFullYear(), new Date().getMonth(), 1),
   filter: 'all',
   q: '',
+  // Set when an account is tapped on Home: History then shows only that account's entries.
+  account: null,
 };
 
 export let pendingImport = null,

@@ -140,7 +140,7 @@ export function renderSettings() {
     '</label></div>' +
     '<p class="note">Pick any colour. Backgrounds, lines and dark mode follow it, and the accent is adjusted so text on it stays readable.</p></div></section>';
   h +=
-    '<section class="sec"><h2>Balances</h2><div class="card"><p class="note">Missed some entries? Tap Wallet, Savings or Whish on Home and choose Correct balance.</p>' +
+    '<section class="sec"><h2>Balances</h2><div class="card"><p class="note">Missed some entries? Tap Wallet, Savings or Whish on Home, then Correct balance.</p>' +
     '<div class="links"><button class="link" data-act="toggleOpening" aria-expanded="' +
     showOpening +
     '">' +

@@ -409,14 +409,34 @@ main .wrap {
   filter: blur(9px);
   user-select: none;
 }
-.acct-act {
-  width: 100%;
+/* Which account an entry is paid from or lands in. */
+.acct-pick {
+  display: flex;
+  align-items: center;
+  gap: 10px;
+  margin: 12px 0 4px;
 }
-.acct-act svg {
-  width: 16px;
-  height: 16px;
+.acct-pick .seg {
+  flex: 1;
+}
+/* History showing one account. */
+.acct-head {
+  display: flex;
+  align-items: center;
+  gap: 10px;
+  margin-bottom: 12px;
+}
+.acct-name {
+  flex: 1;
+  min-width: 0;
+}
+.acct-name h2 {
+  margin: 0;
+  font-size: 20px;
+}
+.acct-name p {
+  margin: 2px 0 0;
   color: var(--muted);
-  flex: none;
 }
 
 /* segmented */

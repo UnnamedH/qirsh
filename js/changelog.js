@@ -8,8 +8,9 @@ export const CHANGELOG = [
     date: '2026-11-13',
     items: [
       'Tap the eye next to Wallet on Home to blur your balances, so you can show the app to someone without showing what you have. Tap it again to see them.',
-      'Tap Savings or Whish on Home to spend from it or add money to it directly, without moving it to your Wallet first. Moving money is there too.',
-      'Correcting a balance has moved from Settings to Home: tap Wallet, Savings or Whish and choose Correct balance.',
+      'Spend from Savings or Whish, or put income straight into them: choose the account at the top of a new entry. Wallet is chosen unless you change it.',
+      'Tap Wallet, Savings or Whish on Home to see that account’s entries and balance. Correct balance is there too: it has moved from Settings.',
+      'Moving money between accounts is under + → Transfer. The extra Transfer button on Home is gone; Exchange stays.',
     ],
   },
   {

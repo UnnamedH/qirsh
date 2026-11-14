@@ -10,7 +10,8 @@ Plain HTML, CSS and JavaScript modules: no framework and no build step. The host
 
 ## Features
 
-- Wallet, Savings and Whish accounts, each holding both USD and LL
+- Wallet, Savings and Whish accounts, each holding both USD and LL. Spend from or earn into any of them, and tap one on Home to see its own entries
+- Hide amounts on Home with one tap, for showing the app to someone
 - Expenses entered as what you paid and the change you got back, or, if you turn it on, price first: say what you paid with and the change, or the rest paid on top, is worked out
 - LL typed in thousands everywhere (type 385 for 385,000 LL)
 - Transfers between accounts and exchanges between $ and LL at a rate you set

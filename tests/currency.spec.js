@@ -40,7 +40,8 @@ test('new entries start in the last used currency', async ({ page }) => {
       createdAt: Date.now() + 1000,
     }),
   );
-  await page.click('[data-act=newMove][data-v=transfer]');
+  await page.click('#fab');
+  await page.click('[data-act=ftype][data-v=transfer]');
   expect(await sheetCurrency(page)).toBe('LBP');
   await closeSheet(page);
   await page.click('[data-act=newMove][data-v=exchange]');
