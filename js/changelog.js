@@ -4,6 +4,14 @@ import { KEY } from './state.js';
 /* Newest first. Each release adds an entry here with the next v, then runs `npm run stamp` for sw.js. */
 export const CHANGELOG = [
   {
+    v: 15,
+    date: '2026-11-14',
+    items: [
+      'Swipe left or right to move between Home, History, Budgets and Settings.',
+      'Pull a sheet, like a new entry, down to close it.',
+    ],
+  },
+  {
     v: 14,
     date: '2026-11-13',
     items: [
