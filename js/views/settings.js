@@ -1,10 +1,10 @@
 /* Settings view. */
 import { APP_VERSION } from '../changelog.js';
-import { MAIN, MAX_ACCOUNTS, MAX_NAME, accName, accounts } from '../accounts.js';
+import { MAIN, MAX_ACCOUNTS, MAX_NAME, accounts } from '../accounts.js';
 import { PROTECTED } from '../config.js';
 import { ICON } from '../icons.js';
-import { balances, catName } from '../ledger.js';
-import { fmt, toInput } from '../money.js';
+import { catName } from '../ledger.js';
+import { toInput } from '../money.js';
 import { IOS } from '../pwa.js';
 import { rescuedData, state } from '../state.js';
 import { ACCENTS, DEFAULT_ACCENT } from '../theme.js';
@@ -143,7 +143,6 @@ export function renderSettings() {
   h +=
     '<section class="sec" id="accountsSec"><h2>Accounts</h2><div class="card">' +
     accountRows() +
-    '<p class="note">Savings accounts are added up as money set aside in the monthly report. Missed some entries? Tap an account on Home, then Correct balance.</p>' +
     '<div class="links"><button class="link" data-act="toggleOpening" aria-expanded="' +
     showOpening +
     '">' +
@@ -276,13 +275,10 @@ export function renderSettings() {
 
 /* Rename, mark as savings or remove each account in use, add more, and bring back removed ones. */
 function accountRows() {
-  const bal = balances();
   const list = accounts();
   let h = list
     .map((a) => {
       const main = a.id === MAIN,
-        b = bal[a.id] || { USD: 0, LBP: 0 },
-        left = [b.USD && fmt(b.USD, 'USD'), b.LBP && fmt(b.LBP, 'LBP')].filter(Boolean).join(' and '),
         sure = armed === 'acc:' + a.id;
       return (
         '<div class="acct-row"><input class="input" data-accname="' +
@@ -305,14 +301,9 @@ function accountRows() {
             '" data-act="accRemove" data-v="' +
             esc(a.id) +
             '">' +
-            (sure ? 'Remove' : 'Remove…') +
+            (sure ? 'Tap again' : 'Remove') +
             '</button>') +
-        '</div>' +
-        (sure
-          ? '<p class="note">' +
-            (left ? 'The ' + left + ' in it will move to ' + esc(accName(MAIN)) + '. ' : '') +
-            'Its past entries keep its name. Tap Remove again to confirm.</p>'
-          : '')
+        '</div>'
       );
     })
     .join('');

@@ -37,7 +37,6 @@ test('a new account shows on Home and in the entry form, and money can go into i
   // Three other accounts now, so they start folded into one row with their total.
   const head = page.locator('.accs-head');
   await expect(head).toHaveAttribute('aria-expanded', 'false');
-  await expect(head).toContainText('3');
   await expect(head).toContainText('$50');
   await head.click();
   await expect(page.locator(`.acc[data-id="${id}"]`)).toContainText('Bank');
@@ -108,9 +107,10 @@ test('removing a used account moves its money to Wallet and keeps its history', 
   await nav(page, 'settings');
   const remove = page.locator('#accountsSec [data-act=accRemove][data-v=whish]');
   await remove.click();
-  await expect(page.locator('#accountsSec')).toContainText('The $45 in it will move to Wallet');
+  await expect(remove).toHaveText('Tap again');
   await page.locator('#accountsSec [data-act=accRemove][data-v=whish]').click();
 
+  await expect(page.locator('#toast')).toContainText('Whish removed · $45 moved to Wallet');
   const b = await balances(page);
   expect(b.wallet.USD).toBe(145);
   expect(b.whish.USD).toBe(0);
@@ -141,7 +141,7 @@ test('removing an unused account deletes it, and Undo brings it back', async ({ 
   // Typing a new name, then tapping Remove straight away: the rename is kept and the tap counts.
   await nameField(page, id).fill('Spare cash');
   await page.click(`#accountsSec [data-act=accRemove][data-v="${id}"]`);
-  await expect(page.locator(`#accountsSec [data-act=accRemove][data-v="${id}"]`)).toHaveText('Remove');
+  await expect(page.locator(`#accountsSec [data-act=accRemove][data-v="${id}"]`)).toHaveText('Tap again');
   expect(await accountId(page, 'Spare cash')).toBe(id);
   await page.click(`#accountsSec [data-act=accRemove][data-v="${id}"]`);
   let s = await appState(page);

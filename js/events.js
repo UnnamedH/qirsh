@@ -22,8 +22,8 @@ import {
   restoreAccount,
   setSavings,
 } from './accounts.js';
-import { catName, catOf } from './ledger.js';
-import { other, parseAmt, parseInput, toInput } from './money.js';
+import { balances, catName, catOf } from './ledger.js';
+import { fmt, other, parseAmt, parseInput, toInput } from './money.js';
 import { HINT_KEY } from './pwa.js';
 import {
   adjustForm,
@@ -252,10 +252,15 @@ document.addEventListener('click', (e) => {
       }
       setArmed(null);
       const prev = structuredClone(state),
-        name = accName(v);
+        name = accName(v),
+        left = balances()[v] || { USD: 0, LBP: 0 },
+        moved = ['USD', 'LBP']
+          .filter((c) => Math.round(left[c] * 100))
+          .map((c) => fmt(left[c], c))
+          .join(' and ');
       removeAccount(v);
       commit();
-      toast(name + ' removed', () => {
+      toast(name + ' removed' + (moved ? ' · ' + moved + ' moved to ' + accName(MAIN) : ''), () => {
         setState(prev);
         commit();
         toast(name + ' is back.');

@@ -191,9 +191,7 @@ function otherAccounts(b) {
   let h =
     '<section class="accs"><button class="accs-head" data-act="toggleAccs" aria-expanded="' +
     open +
-    '"><span class="label">Other accounts</span><span class="muted">' +
-    list.length +
-    '</span><span class="amt priv">' +
+    '"><span class="label">Other accounts</span><span class="accs-total priv">' +
     fmtDisp(total) +
     '</span>' +
     ICON.right +

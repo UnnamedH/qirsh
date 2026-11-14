@@ -371,8 +371,12 @@ main .wrap {
   text-align: left;
   color: inherit;
 }
-.accs-head .amt {
+/* Quiet, like the label beside it: the tiles carry the amounts. */
+.accs-total {
   margin-left: auto;
+  font-size: 12.5px;
+  color: var(--muted);
+  font-variant-numeric: tabular-nums;
 }
 .accs-head svg {
   width: 16px;
