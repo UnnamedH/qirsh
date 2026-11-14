@@ -1,6 +1,6 @@
 /* Home view. */
 import { fmtAdv, owed } from '../advances.js';
-import { accName } from '../config.js';
+import { MAIN, accName, accounts } from '../accounts.js';
 import { ICON } from '../icons.js';
 import { balances, budgetStatus, combinedUSD, range, sumIn } from '../ledger.js';
 import { dispCur, fmt, fmtDisp, fmtTotal } from '../money.js';
@@ -14,7 +14,7 @@ import { $, MONTHS, cap, dayLabel, esc } from '../util.js';
 
 export function renderHome() {
   const b = balances(),
-    w = b.wallet,
+    w = b[MAIN],
     tpl = templates(),
     list = tpl[quickTab];
   const mr = range('month');
@@ -39,7 +39,12 @@ export function renderHome() {
     h +=
       '<div class="banner"><p>These are example transactions so you can see how it works.</p><button class="btn sm primary" data-act="clearSample">Start fresh</button></div>';
   h +=
-    '<section class="balance" aria-label="Wallet balance"><div class="balance-head"><button class="label acc-open" data-act="accView" data-id="wallet">Wallet' +
+    '<section class="balance" aria-label="' +
+    esc(accName(MAIN)) +
+    ' balance"><div class="balance-head"><button class="label acc-open" data-act="accView" data-id="' +
+    MAIN +
+    '">' +
+    esc(accName(MAIN)) +
     ICON.right +
     '</button>' +
     '<button class="icon-btn" data-act="toggleHide" aria-pressed="' +
@@ -58,30 +63,7 @@ export function renderHome() {
     fmt(w.LBP, 'LBP') +
     '<em>cash LL</em></span></div>' +
     '<div class="moves"><button class="btn sm" data-act="newMove" data-v="exchange"><b aria-hidden="true">⇄</b>Exchange</button></div></section>';
-  h +=
-    '<div class="accounts">' +
-    ['savings', 'whish']
-      .map((id) => {
-        const x = b[id];
-        return (
-          '<button class="acc" data-act="accView" data-id="' +
-          id +
-          '"><span class="acc-name"><span class="label">' +
-          accName(id) +
-          '</span>' +
-          ICON.right +
-          '</span>' +
-          '<span class="amt priv" style="text-align:left">' +
-          fmt(x.USD, 'USD') +
-          '</span>' +
-          (Math.abs(x.LBP) > 0
-            ? '<span class="amt sub priv" style="text-align:left">' + fmt(x.LBP, 'LBP') + '</span>'
-            : '') +
-          '</button>'
-        );
-      })
-      .join('') +
-    '</div>';
+  h += otherAccounts(b);
   const open = state.tx
     .filter((t) => t.type === 'advance')
     .map((t) => ({ t, o: owed(t) }))
@@ -197,4 +179,49 @@ export function renderHome() {
       '</div>';
   h += '</section>';
   $('#v-home').innerHTML = h;
+}
+
+/* Accounts besides the main one. They fold into one row so a long list doesn't push the rest of Home
+   down; with one or two they start open, and the choice is remembered once made. */
+function otherAccounts(b) {
+  const list = accounts().filter((a) => a.id !== MAIN);
+  if (!list.length) return '';
+  const open = state.settings.accountsOpen ?? list.length <= 2;
+  const total = list.reduce((s, a) => s + combinedUSD(b[a.id]), 0);
+  let h =
+    '<section class="accs"><button class="accs-head" data-act="toggleAccs" aria-expanded="' +
+    open +
+    '"><span class="label">Other accounts</span><span class="muted">' +
+    list.length +
+    '</span><span class="amt priv">' +
+    fmtDisp(total) +
+    '</span>' +
+    ICON.right +
+    '</button>';
+  if (open)
+    h +=
+      '<div class="accounts">' +
+      list
+        .map((a) => {
+          const x = b[a.id];
+          return (
+            '<button class="acc" data-act="accView" data-id="' +
+            esc(a.id) +
+            '"><span class="acc-name"><span class="label">' +
+            esc(a.name) +
+            '</span>' +
+            ICON.right +
+            '</span>' +
+            '<span class="amt priv" style="text-align:left">' +
+            fmt(x.USD, 'USD') +
+            '</span>' +
+            (Math.abs(x.LBP) > 0
+              ? '<span class="amt sub priv" style="text-align:left">' + fmt(x.LBP, 'LBP') + '</span>'
+              : '') +
+            '</button>'
+          );
+        })
+        .join('') +
+      '</div>';
+  return h + '</section>';
 }

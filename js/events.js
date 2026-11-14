@@ -12,7 +12,16 @@ import {
 import { csvName, monthlyCsv, monthlyWorkbook, reportName } from './report/monthly.js';
 import { CHANGELOG } from './changelog.js';
 import { FRATA_URL, checkMove, moveLink, snoozeMove } from './handoff.js';
-import { ACCOUNTS, accName } from './config.js';
+import {
+  MAIN,
+  accName,
+  addAccount,
+  otherAccount,
+  removeAccount,
+  renameAccount,
+  restoreAccount,
+  setSavings,
+} from './accounts.js';
 import { catName, catOf } from './ledger.js';
 import { other, parseAmt, parseInput, toInput } from './money.js';
 import { HINT_KEY } from './pwa.js';
@@ -40,7 +49,16 @@ import { markPriceTipDone } from './sheets/demo.js';
 import { setNewsList } from './sheets/news.js';
 import { afterRepay, repayForm, saveRepay } from './sheets/payback.js';
 import { closeSheet, drawSheet, focusSoon, form, openSheet, setForm, sheetKind } from './sheets/sheet.js';
-import { KEY, blankState, discardRescued, save, setState, state, syncFromStorage } from './state.js';
+import {
+  KEY,
+  blankState,
+  discardRescued,
+  normalize,
+  save,
+  setState,
+  state,
+  syncFromStorage,
+} from './state.js';
 import { cloneForToday, templates } from './templates.js';
 import { DEFAULT_ACCENT, applyTheme, hexRgb } from './theme.js';
 import { amountText, txTitle } from './ui/format.js';
@@ -89,6 +107,7 @@ document.addEventListener('click', (e) => {
     act !== 'rdel' &&
     act !== 'keepRest' &&
     act !== 'adel' &&
+    act !== 'accRemove' &&
     act !== 'discardRescued'
   )
     setArmed(null);
@@ -127,10 +146,11 @@ document.addEventListener('click', (e) => {
         rate: state.rate,
         settings: state.settings,
         categories: state.categories,
+        accounts: keptAccounts(),
         tx: own,
         budgets: state.budgets.filter((b) => !isSampleBudget(b)),
       };
-      setState(Object.assign(blankState(), keep));
+      setState(normalize(Object.assign(blankState(), keep)));
       commit();
       toast(
         own.length
@@ -174,7 +194,7 @@ document.addEventListener('click', (e) => {
               pay: [{ cur: 'USD', v: '' }],
               toCurrency: 'LBP',
             })
-          : newTxForm('transfer', { from: 'wallet', to: 'savings' }),
+          : newTxForm('transfer', { from: MAIN, to: otherAccount(MAIN) }),
       );
       openSheet('tx');
       break;
@@ -202,6 +222,49 @@ document.addEventListener('click', (e) => {
       readForm();
       form.account = v;
       drawSheet();
+      break;
+    case 'toggleAccs': {
+      const open = el.getAttribute('aria-expanded') === 'true';
+      state.settings.accountsOpen = !open;
+      commit();
+      break;
+    }
+    case 'accAdd': {
+      const id = addAccount('New account');
+      if (!id) {
+        toast('That’s as many accounts as Frata holds. Remove one to add another.');
+        break;
+      }
+      commit();
+      // Straight into naming it.
+      const n = $('[data-accname="' + id + '"]');
+      if (n) {
+        n.focus();
+        n.select();
+      }
+      break;
+    }
+    case 'accRemove': {
+      if (armed !== 'acc:' + v) {
+        setArmed('acc:' + v);
+        render();
+        break;
+      }
+      setArmed(null);
+      const prev = structuredClone(state),
+        name = accName(v);
+      removeAccount(v);
+      commit();
+      toast(name + ' removed', () => {
+        setState(prev);
+        commit();
+        toast(name + ' is back.');
+      });
+      break;
+    }
+    case 'accRestore':
+      if (restoreAccount(v)) commit();
+      else toast('That’s as many accounts as Frata holds. Remove one first.');
       break;
     case 'toggleHide':
       state.settings.hide = !state.settings.hide;
@@ -238,7 +301,7 @@ document.addEventListener('click', (e) => {
         autoTo();
       } else if (v === 'transfer') {
         form.pay = form.pay.slice(0, 1);
-        if (form.from === form.to) form.to = form.from === 'wallet' ? 'savings' : 'wallet';
+        if (form.from === form.to) form.to = otherAccount(form.from);
         form.toCurrency = form.pay[0].cur;
         form.toTouched = false;
         autoTo();
@@ -722,8 +785,13 @@ document.addEventListener('click', (e) => {
       {
         setArmed(null);
         const prev = state;
-        const keep = { rate: state.rate, settings: state.settings, categories: state.categories };
-        setState(Object.assign(blankState(), keep));
+        const keep = {
+          rate: state.rate,
+          settings: state.settings,
+          categories: state.categories,
+          accounts: keptAccounts(),
+        };
+        setState(normalize(Object.assign(blankState(), keep)));
         commit();
         toast('All data cleared', () => {
           setState(prev);
@@ -734,6 +802,9 @@ document.addEventListener('click', (e) => {
       break;
   }
 });
+
+/* Starting over keeps the accounts in use, like the categories; removed ones go, as their entries do. */
+const keptAccounts = () => state.accounts.filter((a) => !a.hidden).map((a) => Object.assign({}, a));
 
 /* Opens frata.cc carrying this copy's data. Too much for a link: off to the backup instead. */
 async function moveAway() {
@@ -823,7 +894,7 @@ document.addEventListener('change', (e) => {
   if (sheetKind === 'tx' && (t.id === 'f-from' || t.id === 'f-to')) {
     readForm();
     if (form.from === form.to) {
-      const pick = ACCOUNTS.find((a) => a.id !== t.value).id;
+      const pick = otherAccount(t.value);
       if (t.id === 'f-from') form.to = pick;
       else form.from = pick;
     }
@@ -855,6 +926,21 @@ document.addEventListener('change', (e) => {
       setArmed('rate:' + r);
       render();
     } else setRate(r);
+  }
+  if (t.dataset.accname) {
+    // Saved without redrawing: the field already shows the new name, and a redraw while the person is
+    // tapping the next button (the field loses focus first) would swallow that tap.
+    if (renameAccount(t.dataset.accname, t.value)) save();
+    else {
+      render();
+      toast('An account needs a name.');
+    }
+    return;
+  }
+  if (t.dataset.accsave) {
+    setSavings(t.dataset.accsave, t.checked);
+    commit();
+    return;
   }
   if (t.dataset.open) {
     // An empty field means zero; anything else that isn't a number is refused, not saved as zero.

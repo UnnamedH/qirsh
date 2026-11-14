@@ -1,9 +1,10 @@
 /* Settings view. */
 import { APP_VERSION } from '../changelog.js';
-import { ACCOUNTS, PROTECTED } from '../config.js';
+import { MAIN, MAX_ACCOUNTS, MAX_NAME, accName, accounts } from '../accounts.js';
+import { PROTECTED } from '../config.js';
 import { ICON } from '../icons.js';
-import { catName } from '../ledger.js';
-import { toInput } from '../money.js';
+import { balances, catName } from '../ledger.js';
+import { fmt, toInput } from '../money.js';
 import { IOS } from '../pwa.js';
 import { rescuedData, state } from '../state.js';
 import { ACCENTS, DEFAULT_ACCENT } from '../theme.js';
@@ -140,7 +141,9 @@ export function renderSettings() {
     '</label></div>' +
     '<p class="note">Pick any colour. Backgrounds, lines and dark mode follow it, and the accent is adjusted so text on it stays readable.</p></div></section>';
   h +=
-    '<section class="sec"><h2>Balances</h2><div class="card"><p class="note">Missed some entries? Tap Wallet, Savings or Whish on Home, then Correct balance.</p>' +
+    '<section class="sec" id="accountsSec"><h2>Accounts</h2><div class="card">' +
+    accountRows() +
+    '<p class="note">Savings accounts are added up as money set aside in the monthly report. Missed some entries? Tap an account on Home, then Correct balance.</p>' +
     '<div class="links"><button class="link" data-act="toggleOpening" aria-expanded="' +
     showOpening +
     '">' +
@@ -271,27 +274,90 @@ export function renderSettings() {
   $('#v-settings').innerHTML = h;
 }
 
+/* Rename, mark as savings or remove each account in use, add more, and bring back removed ones. */
+function accountRows() {
+  const bal = balances();
+  const list = accounts();
+  let h = list
+    .map((a) => {
+      const main = a.id === MAIN,
+        b = bal[a.id] || { USD: 0, LBP: 0 },
+        left = [b.USD && fmt(b.USD, 'USD'), b.LBP && fmt(b.LBP, 'LBP')].filter(Boolean).join(' and '),
+        sure = armed === 'acc:' + a.id;
+      return (
+        '<div class="acct-row"><input class="input" data-accname="' +
+        esc(a.id) +
+        '" value="' +
+        esc(a.name) +
+        '" maxlength="' +
+        MAX_NAME +
+        '" aria-label="Name of ' +
+        esc(a.name) +
+        '">' +
+        (main
+          ? '<span class="muted acct-main">Main</span>'
+          : '<label class="acct-save"><input type="checkbox" data-accsave="' +
+            esc(a.id) +
+            '"' +
+            (a.savings ? ' checked' : '') +
+            '> Savings</label><button class="btn sm danger' +
+            (sure ? ' armed' : '') +
+            '" data-act="accRemove" data-v="' +
+            esc(a.id) +
+            '">' +
+            (sure ? 'Remove' : 'Remove…') +
+            '</button>') +
+        '</div>' +
+        (sure
+          ? '<p class="note">' +
+            (left ? 'The ' + left + ' in it will move to ' + esc(accName(MAIN)) + '. ' : '') +
+            'Its past entries keep its name. Tap Remove again to confirm.</p>'
+          : '')
+      );
+    })
+    .join('');
+  if (list.length < MAX_ACCOUNTS)
+    h += '<div class="btn-row"><button class="btn sm" data-act="accAdd">+ Add account</button></div>';
+  const gone = state.accounts.filter((a) => a.hidden);
+  if (gone.length)
+    h +=
+      '<p class="note">Removed: ' +
+      gone
+        .map(
+          (a) =>
+            esc(a.name) +
+            ' <button class="link" data-act="accRestore" data-v="' +
+            esc(a.id) +
+            '">Restore</button>',
+        )
+        .join(' · ') +
+      '</p>';
+  return h;
+}
+
 /* Starting balances change every balance back to the first entry, so they sit behind a link. */
 function openingFields() {
   return (
-    '<p class="note">What each account held before your first entry. Changing these changes every balance from the start. To fix today’s balance, use Correct instead.</p>' +
-    ACCOUNTS.map(
-      (a) =>
-        '<div class="grid2"><label class="field"><span>' +
-        a.name +
-        ' USD</span><input class="num" data-open="' +
-        a.id +
-        '" data-cur="USD" inputmode="decimal" value="' +
-        (state.opening[a.id].USD || 0) +
-        '"></label><label class="field"><span>' +
-        a.name +
-        ' LL</span>' +
-        thousandsInput(
-          ' data-open="' + a.id + '" data-cur="LBP"',
-          toInput(state.opening[a.id].LBP || 0, 'LBP'),
-          a.name + ' LL',
-        ) +
-        '</label></div>',
-    ).join('')
+    '<p class="note">What each account held before your first entry. Changing these changes every balance from the start. To fix today’s balance, tap the account on Home and use Correct balance instead.</p>' +
+    accounts()
+      .map(
+        (a) =>
+          '<div class="grid2"><label class="field"><span>' +
+          esc(a.name) +
+          ' USD</span><input class="num" data-open="' +
+          esc(a.id) +
+          '" data-cur="USD" inputmode="decimal" value="' +
+          ((state.opening[a.id] || {}).USD || 0) +
+          '"></label><label class="field"><span>' +
+          a.name +
+          ' LL</span>' +
+          thousandsInput(
+            ' data-open="' + esc(a.id) + '" data-cur="LBP"',
+            toInput((state.opening[a.id] || {}).LBP || 0, 'LBP'),
+            a.name + ' LL',
+          ) +
+          '</label></div>',
+      )
+      .join('')
   );
 }

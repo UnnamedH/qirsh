@@ -10,7 +10,7 @@ Plain HTML, CSS and JavaScript modules: no framework and no build step. The host
 
 ## Features
 
-- Wallet, Savings and Whish accounts, each holding both USD and LL. Spend from or earn into any of them, and tap one on Home to see its own entries
+- Accounts that are yours to name: Wallet, Savings and Whish to start with, then add, rename or remove them. Each holds both USD and LL; spend from or earn into any of them, and tap one on Home to see its own entries
 - Hide amounts on Home with one tap, for showing the app to someone
 - Swipe sideways between tabs, and pull a sheet down to close it
 - Expenses entered as what you paid and the change you got back, or, if you turn it on, price first: say what you paid with and the change, or the rest paid on top, is worked out
@@ -77,7 +77,8 @@ js/main.js              Entry point: first render, "What's new", service worker
 js/events.js            Every tap, input and keypress, dispatched on the element's data-act
 js/state.js             The saved state: default shape, loading, saving, repairing old data
 js/sample.js            Example data for the first launch
-js/config.js            Accounts and built-in categories
+js/config.js            The accounts and categories a new user starts with
+js/accounts.js          Adding, renaming and removing accounts
 js/money.js             Formatting and parsing amounts, USD/LL conversion
 js/ledger.js            Balances, spending totals and budget progress
 js/advances.js          Money paid for others and its paybacks

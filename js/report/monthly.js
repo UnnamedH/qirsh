@@ -4,7 +4,7 @@
  * paybacks are not income, but the part of an advance you chose to keep counts as spending.
  */
 import { owed, paybacksOf } from '../advances.js';
-import { accName } from '../config.js';
+import { accName, isSavings } from '../accounts.js';
 import { catName, inRange, sumIn, sumUSD } from '../ledger.js';
 import { backVec, other, toUSD, txCostUSD } from '../money.js';
 import { state } from '../state.js';
@@ -72,8 +72,9 @@ export function monthlyData(month) {
   const inMonth = (type) => state.tx.filter((t) => t.type === type && inRange(t, r));
 
   const transfers = inMonth('transfer');
-  const intoSavings = transfers.filter((t) => t.to === 'savings' && t.from !== 'savings');
-  const outOfSavings = transfers.filter((t) => t.from === 'savings' && t.to !== 'savings');
+  // Money set aside: moved into an account marked as savings from one that isn't, and back out again.
+  const intoSavings = transfers.filter((t) => isSavings(t.to) && !isSavings(t.from));
+  const outOfSavings = transfers.filter((t) => isSavings(t.from) && !isSavings(t.to));
   const toSavingsUSD = intoSavings.reduce(
     (s, t) => s + toUSD(+t.toAmount || t.amount, t.toCurrency || t.currency),
     0,
@@ -168,8 +169,8 @@ function summarySheet(d) {
     [bold('Net (earned − spent)'), usd(net, true), lbp(net, true), usd(prevNet), null],
     [],
     head('Set aside', 'USD', 'LL'),
-    ['Moved into Savings', usd(d.toSavings), lbp(d.toSavings)],
-    ['Taken out of Savings', usd(d.fromSavings), lbp(d.fromSavings)],
+    ['Moved into savings', usd(d.toSavings), lbp(d.toSavings)],
+    ['Taken out of savings', usd(d.fromSavings), lbp(d.fromSavings)],
     [bold('Net set aside'), usd(d.toSavings - d.fromSavings, true), lbp(d.toSavings - d.fromSavings, true)],
     [],
     head('Paid for others', 'USD', 'LL'),

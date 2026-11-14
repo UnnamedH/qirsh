@@ -1,6 +1,6 @@
 /* Shared HTML snippets for transaction rows and budgets. */
 import { advanceOf, fmtAdv, owed } from '../advances.js';
-import { accName } from '../config.js';
+import { accName } from '../accounts.js';
 import { budgetName, budgetStatus, catName, catOf } from '../ledger.js';
 import { backParts, entryValueIn, fmt, payParts } from '../money.js';
 import { cap, esc } from '../util.js';

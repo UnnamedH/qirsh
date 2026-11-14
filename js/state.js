@@ -1,5 +1,5 @@
 /* The saved app state: shape, loading, saving and repairing data from older versions or backups. */
-import { ACCOUNTS, DEFAULT_CATS, PROTECTED } from './config.js';
+import { DEFAULT_ACCOUNTS, DEFAULT_CATS, PROTECTED } from './config.js';
 import { sampleState } from './sample.js';
 
 export const KEY = 'qirsh.v1';
@@ -16,7 +16,9 @@ export function blankState() {
       theme: 'system',
       entryStyle: 'paid',
       hide: false,
+      accountsOpen: null,
     },
+    accounts: DEFAULT_ACCOUNTS.map((a) => Object.assign({}, a)),
     opening: { wallet: { USD: 0, LBP: 0 }, savings: { USD: 0, LBP: 0 }, whish: { USD: 0, LBP: 0 } },
     categories: DEFAULT_CATS.map((c) => Object.assign({}, c)),
     tx: [],
@@ -51,6 +53,8 @@ function normalizeSettings(st, defaults) {
     entryStyle: st.entryStyle === 'price' ? 'price' : defaults.entryStyle,
     // Balances blurred on Home, for showing the app to someone.
     hide: st.hide === true,
+    // Other accounts on Home shown or folded away; null until chosen, then the number of accounts decides.
+    accountsOpen: typeof st.accountsOpen === 'boolean' ? st.accountsOpen : null,
   };
 }
 
@@ -67,13 +71,46 @@ const validBudget = (b) =>
   (b.period === 'week' || b.period === 'month') &&
   isCur(b.currency);
 
+const ACCOUNT_ID = /^[\w-]{1,40}$/;
+
+/* Accounts come from saved data or a backup, so each is checked. Data from before accounts could be
+   changed has none, and gets the original three. Wallet is always there and always first. When there
+   is a list, an account an entry or starting balance points to is kept even if the list lost it, so
+   no money goes missing; without one, the original three were all there was. */
+function normalizeAccounts(s, defaults) {
+  const list = Array.isArray(s.accounts) ? s.accounts : defaults;
+  const out = [],
+    seen = new Set();
+  const add = (a) => {
+    if (!isObj(a) || typeof a.id !== 'string' || !ACCOUNT_ID.test(a.id) || seen.has(a.id)) return;
+    seen.add(a.id);
+    const name = typeof a.name === 'string' ? a.name.trim().slice(0, 30) : '';
+    const x = { id: a.id, name: name || (a.id === 'wallet' ? 'Wallet' : a.id) };
+    if (a.savings === true && a.id !== 'wallet') x.savings = true;
+    if (a.hidden === true && a.id !== 'wallet') x.hidden = true;
+    out.push(x);
+  };
+  add(list.find((a) => isObj(a) && a.id === 'wallet') || defaults[0]);
+  list.forEach(add);
+  if (!Array.isArray(s.accounts)) return out;
+  const used = Object.keys(isObj(s.opening) ? s.opening : {});
+  (Array.isArray(s.tx) ? s.tx : []).forEach((t) => {
+    if (isObj(t)) used.push(t.account, t.from, t.to);
+  });
+  used.forEach((id) => {
+    if (typeof id === 'string') add({ id, name: id.charAt(0).toUpperCase() + id.slice(1) });
+  });
+  return out;
+}
+
 export function normalize(s) {
   const b = blankState();
   const out = Object.assign({}, b, s);
   out.rate = +s.rate > 0 ? +s.rate : b.rate;
   out.settings = normalizeSettings(s.settings, b.settings);
+  out.accounts = normalizeAccounts(s, b.accounts);
   out.opening = {};
-  ACCOUNTS.forEach((a) => {
+  out.accounts.forEach((a) => {
     const o = (s.opening || {})[a.id] || {};
     out.opening[a.id] = { USD: +o.USD || 0, LBP: +o.LBP || 0 };
   });
@@ -107,7 +144,7 @@ export function normalize(s) {
       if (RATED.includes(x.type) && !(+x.rate > 0)) x.rate = out.rate;
       // A balance correction belongs to one account and remembers the balance it was set to.
       if (x.type === 'adjust') {
-        if (!ACCOUNTS.some((a) => a.id === x.account)) x.account = 'wallet';
+        if (!out.accounts.some((a) => a.id === x.account)) x.account = 'wallet';
         if (x.target != null && x.target !== '' && isFinite(+x.target)) x.target = +x.target;
         else delete x.target;
       }

@@ -155,7 +155,7 @@ test('the Excel report has the summary and detail sheets with the right totals',
   expect(rowOf(s, 'Spent')[1]).toBeCloseTo(spent, 2);
   expect(rowOf(s, 'Spent')[3]).toBe(40);
   expect(rowOf(s, 'Net (earned − spent)')[1]).toBeCloseTo(650 - spent, 2);
-  expect(rowOf(s, 'Moved into Savings')[1]).toBe(150);
+  expect(rowOf(s, 'Moved into savings')[1]).toBe(150);
   expect(rowOf(s, 'Net set aside')[1]).toBe(150);
   expect(rowOf(s, 'Paid for others this month')[1]).toBe(100);
   expect(rowOf(s, 'Paid back to you this month')[1]).toBe(60);

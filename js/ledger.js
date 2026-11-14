@@ -1,13 +1,12 @@
 /* Account balances, spending totals and budget progress. */
 import { leftIn } from './advances.js';
-import { ACCOUNTS } from './config.js';
 import { backVec, entryValueIn, payVec } from './money.js';
 import { state } from './state.js';
 import { addDays, parseYmd, startOfDay } from './util.js';
 
 export function balances() {
   const b = {};
-  ACCOUNTS.forEach((a) => {
+  state.accounts.forEach((a) => {
     const o = state.opening[a.id] || {};
     b[a.id] = { USD: +o.USD || 0, LBP: +o.LBP || 0 };
   });

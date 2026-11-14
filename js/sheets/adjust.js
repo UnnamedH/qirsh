@@ -1,5 +1,6 @@
 /* Sheet for correcting an account's balance to what it really holds, e.g. after missed entries. */
-import { ACCOUNTS, accName } from '../config.js';
+import { accName } from '../accounts.js';
+import { accountOptions } from './entry.js';
 import { ICON } from '../icons.js';
 import { balances, catName } from '../ledger.js';
 import { fmt, parseInput, toInput } from '../money.js';
@@ -121,10 +122,7 @@ export function adjustSheet() {
     '<p class="note">Missed some entries? Enter what the account actually holds now, and Frata records the difference.</p>';
   h +=
     '<label class="field"><span>Account</span><select id="a-acct">' +
-    ACCOUNTS.map(
-      (a) =>
-        '<option value="' + a.id + '"' + (f.account === a.id ? ' selected' : '') + '>' + a.name + '</option>',
-    ).join('') +
+    accountOptions(f.account) +
     '</select></label>';
   h +=
     '<div class="grid2">' +
