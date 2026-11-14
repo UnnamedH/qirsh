@@ -30,9 +30,14 @@ export function render() {
     budgets: 'Budgets',
     settings: 'Settings',
   }[view];
-  ({ home: renderHome, history: renderHistory, budgets: renderBudgets, settings: renderSettings })[view]();
+  drawView(view);
   updateNotesList();
-  fitAllThousands($('main'));
+}
+
+/** Draws one tab's content. A swipe also uses it to draw the tab coming in next to the current one. */
+export function drawView(v) {
+  ({ home: renderHome, history: renderHistory, budgets: renderBudgets, settings: renderSettings })[v]();
+  fitAllThousands($('#v-' + v));
 }
 
 /* Warnings shown above every view while there is a problem with saved data. */

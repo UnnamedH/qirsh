@@ -253,7 +253,12 @@ h2 {
   color: var(--muted);
 }
 
+/* A page following a sideways swipe must not make the screen scroll sideways. */
+main {
+  overflow-x: clip;
+}
 main .wrap {
+  position: relative;
   padding-block: 6px calc(130px + env(safe-area-inset-bottom, 0px));
   display: flex;
   flex-direction: column;
@@ -263,6 +268,12 @@ main .wrap {
   display: flex;
   flex-direction: column;
   gap: 26px;
+}
+/* The tab coming in next to the current one during a swipe (js/ui/swipe.js). */
+.view.paging {
+  position: absolute;
+  left: max(16px, env(safe-area-inset-left, 0px));
+  right: max(16px, env(safe-area-inset-right, 0px));
 }
 .sec {
   display: flex;
@@ -1070,6 +1081,8 @@ button.row:first-child {
   flex-direction: column;
   gap: 14px;
   animation: up 0.18s ease-out;
+  /* Pulling the sheet down mustn't scroll the page behind it or trigger pull-to-refresh. */
+  overscroll-behavior: contain;
 }
 @keyframes up {
   from {
