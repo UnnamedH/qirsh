@@ -920,6 +920,7 @@ a.btn {
 .link {
   border: 0;
   background: none;
+  text-decoration: none;
   color: var(--accent);
   font-weight: 600;
   font-size: 14px;
