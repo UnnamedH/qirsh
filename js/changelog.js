@@ -6,9 +6,7 @@ export const CHANGELOG = [
   {
     v: 18,
     date: '2026-11-15',
-    items: [
-      'Ideas or bugs? Tap the chat button at the top of any page to send them by WhatsApp or email.',
-    ],
+    items: ['Ideas or bugs? Tap the chat button at the top of any page to send them by WhatsApp or email.'],
   },
   {
     v: 17,
