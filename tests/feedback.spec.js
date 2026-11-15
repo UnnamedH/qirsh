@@ -32,3 +32,42 @@ test('the phone is described from the browser, never from the person’s data', 
   });
   expect(labels).toEqual(['Android, Chrome', 'Android, Samsung Internet', 'computer, Firefox']);
 });
+
+test('a one-time note on Home says feedback can be sent', async ({ page }) => {
+  await openApp(page, { showTips: true });
+  const tip = page.locator('#alerts .banner', { hasText: 'report bugs' });
+  // Not over the example data, and not next to the price-first tip.
+  await expect(tip).toHaveCount(0);
+  await page.click('[data-act=clearSample]');
+  await expect(
+    page.locator('[data-act=showDemo], .banner', { hasText: 'type the price' }).first(),
+  ).toBeVisible();
+  await expect(tip).toHaveCount(0);
+  await page.evaluate(() => localStorage.setItem('qirsh.tipPriceFirst', 'done'));
+  await page.click('.tabs [data-act=nav][data-v=history]');
+  await page.click('.tabs [data-act=nav][data-v=home]');
+  await expect(tip).toBeVisible();
+  // Only on Home.
+  await page.click('.tabs [data-act=nav][data-v=history]');
+  await expect(tip).toHaveCount(0);
+  await page.click('.tabs [data-act=nav][data-v=home]');
+
+  // "Send feedback" goes to the section, and the note doesn't come back.
+  await page.click('[data-act=feedbackOpen]');
+  await expect(page.locator('#feedbackSec')).toBeInViewport();
+  await page.click('.tabs [data-act=nav][data-v=home]');
+  await expect(tip).toHaveCount(0);
+  await page.reload();
+  await page.waitForFunction(() => window.__qirsh);
+  await expect(tip).toHaveCount(0);
+});
+
+test('"Got it" puts the feedback note away for good', async ({ page }) => {
+  await openApp(page, { showTips: true, storage: { 'qirsh.tipPriceFirst': 'done' } });
+  await page.click('[data-act=clearSample]');
+  await page.click('[data-act=feedbackTipDone]');
+  await expect(page.locator('#alerts .banner', { hasText: 'report bugs' })).toHaveCount(0);
+  await page.reload();
+  await page.waitForFunction(() => window.__qirsh);
+  await expect(page.locator('#alerts .banner', { hasText: 'report bugs' })).toHaveCount(0);
+});

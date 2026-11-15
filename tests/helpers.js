@@ -12,11 +12,15 @@ export const test = base.extend({
 export { expect };
 
 /**
- * Opens the app. By default the "What's new" sheet is suppressed so it does not cover the page.
- * `storage` seeds localStorage once, before the first load.
+ * Opens the app. By default the "What's new" sheet and the one-time feedback tip are suppressed so
+ * they don't cover the page or fill the alerts. `storage` seeds localStorage once, before the first load.
  */
-export async function openApp(page, { storage = {}, showNews = false } = {}) {
-  const seed = showNews ? storage : { 'qirsh.seenVersion': '9999', ...storage };
+export async function openApp(page, { storage = {}, showNews = false, showTips = false } = {}) {
+  const quiet = {
+    ...(showNews ? {} : { 'qirsh.seenVersion': '9999' }),
+    ...(showTips ? {} : { 'qirsh.feedbackTip': 'seen' }),
+  };
+  const seed = { ...quiet, ...storage };
   await page.addInitScript((s) => {
     if (sessionStorage.getItem('seeded')) return;
     sessionStorage.setItem('seeded', '1');

@@ -1,5 +1,6 @@
 /* Draws the current view. */
 import { backupDue } from '../backup.js';
+import { feedbackTipDue } from '../feedback.js';
 import { moveDue } from '../handoff.js';
 import { IOS, updateReady } from '../pwa.js';
 import { isSampleTx } from '../sample.js';
@@ -64,6 +65,11 @@ function renderAlerts() {
           ? 'It’s been over a month since your last backup.'
           : 'You haven’t made a backup yet.') +
         ' Your entries live only on this phone.</p><button class="btn sm primary" data-act="backupNow">Back up</button><button class="btn sm" data-act="backupLater">Later</button></div>',
+    );
+  // One nudge at a time: the backup reminder matters more.
+  else if (view === 'home' && feedbackTipDue())
+    alerts.push(
+      '<div class="banner"><p><strong>New:</strong> suggest ideas and report bugs from Settings.</p><button class="btn sm primary" data-act="feedbackOpen">Send feedback</button><button class="btn sm" data-act="feedbackTipDone">Got it</button></div>',
     );
   if (updateReady)
     alerts.push(
