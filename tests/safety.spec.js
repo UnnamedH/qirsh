@@ -164,6 +164,7 @@ test('a malformed backup imports without breaking the app', async ({ page }) => 
     theme: 'system',
     entryStyle: 'paid',
     hide: false,
+    accountsOpen: null,
   });
   expect(s.rate).toBe(89500);
   expect(s.tx.map((t) => t.id)).toEqual(['ok']);

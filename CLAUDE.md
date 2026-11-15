@@ -37,6 +37,10 @@ CI (`.github/workflows/ci.yml`) runs lint, format check and tests on every PR.
 ## Data model rules
 
 - Currencies are `'USD'` and `'LBP'` internally; the UI says "LL". Conversion uses `state.rate`.
+- Accounts live in `state.accounts` (`js/accounts.js`): the main one has the id `wallet` (renamable, never
+  removed); others can be added, renamed, marked `savings` or removed. A removed account that has entries
+  is only `hidden`, so History keeps its name. Pick accounts with `accounts()` / `pickable()`, never a
+  fixed list, and escape account names: people type them.
 - LL is **typed in thousands** ("385" = 385,000 LL). Every amount field goes through `parseInput()` /
   `toInput()` in `money.js` and is drawn with `amountField()` / `thousandsInput()` from `js/ui/amount.js`,
   which add the fixed ",000". Only the exchange-rate fields are typed literally.

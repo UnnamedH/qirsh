@@ -4,6 +4,16 @@ import { KEY } from './state.js';
 /* Newest first. Each release adds an entry here with the next v, then runs `npm run stamp` for sw.js. */
 export const CHANGELOG = [
   {
+    v: 16,
+    date: '2026-11-15',
+    items: [
+      'Make the accounts your own in Settings → Accounts: rename them, add more, like a bank or another wallet, or remove ones you don’t use. Removing one moves what’s left in it to your Wallet, and its past entries keep its name.',
+      'Mark which accounts are savings, and the monthly report adds up what you set aside in all of them.',
+      'On Home, your other accounts fold into one row with their total. Tap it to open or close the list.',
+      'Found a bug or have an idea? Settings → Feedback & bugs opens a WhatsApp chat or an email to me.',
+    ],
+  },
+  {
     v: 15,
     date: '2026-11-14',
     items: [

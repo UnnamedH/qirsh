@@ -10,9 +10,10 @@ Plain HTML, CSS and JavaScript modules: no framework and no build step. The host
 
 ## Features
 
-- Wallet, Savings and Whish accounts, each holding both USD and LL. Spend from or earn into any of them, and tap one on Home to see its own entries
+- Accounts that are yours to name: Wallet, Savings and Whish to start with, then add, rename or remove them. Each holds both USD and LL; spend from or earn into any of them, and tap one on Home to see its own entries
 - Hide amounts on Home with one tap, for showing the app to someone
 - Swipe sideways between tabs, and pull a sheet down to close it
+- Feedback and bug reports from Settings, by WhatsApp or email, with the version and phone filled in
 - Expenses entered as what you paid and the change you got back, or, if you turn it on, price first: say what you paid with and the change, or the rest paid on top, is worked out
 - LL typed in thousands everywhere (type 385 for 385,000 LL)
 - Transfers between accounts and exchanges between $ and LL at a rate you set
@@ -77,7 +78,8 @@ js/main.js              Entry point: first render, "What's new", service worker
 js/events.js            Every tap, input and keypress, dispatched on the element's data-act
 js/state.js             The saved state: default shape, loading, saving, repairing old data
 js/sample.js            Example data for the first launch
-js/config.js            Accounts and built-in categories
+js/config.js            The accounts and categories a new user starts with
+js/accounts.js          Adding, renaming and removing accounts
 js/money.js             Formatting and parsing amounts, USD/LL conversion
 js/ledger.js            Balances, spending totals and budget progress
 js/advances.js          Money paid for others and its paybacks
@@ -85,6 +87,7 @@ js/templates.js         Quick add (frequent and recent entries)
 js/theme.js             Accent colour palette and light/dark theme
 js/changelog.js         Release notes for "What's new"
 js/backup.js            Export and import, saving generated files
+js/feedback.js          The WhatsApp and email feedback links
 js/handoff.js           Moving data to frata.cc in a link, and reading it on arrival
 js/report/              Monthly report: the data (monthly.js) and a small .xlsx writer (xlsx.js)
 js/pwa.js               Install tip and service worker registration

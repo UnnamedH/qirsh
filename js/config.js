@@ -1,12 +1,15 @@
-/* Fixed accounts and the built-in categories. */
+/* The accounts and categories a new user starts with. */
 
-export const ACCOUNTS = [
+/* Where feedback and bug reports go (Settings → Feedback & bugs). The number is in international
+   format without the +, as WhatsApp links need it. */
+export const CONTACT = { whatsapp: '96181457620', email: 'support@frata.cc' };
+
+/* People can rename these, add more and remove all but the first (see js/accounts.js). */
+export const DEFAULT_ACCOUNTS = [
   { id: 'wallet', name: 'Wallet' },
-  { id: 'savings', name: 'Savings' },
+  { id: 'savings', name: 'Savings', savings: true },
   { id: 'whish', name: 'Whish' },
 ];
-
-export const accName = (id) => (ACCOUNTS.find((a) => a.id === id) || { name: id }).name;
 
 export const DEFAULT_CATS = [
   ['food', 'Food', 'expense', '🍽️'],

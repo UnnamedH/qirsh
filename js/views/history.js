@@ -2,7 +2,7 @@
 import { ICON } from '../icons.js';
 import { balances, inRange, sumIn } from '../ledger.js';
 import { dispCur, entryValueIn, fmt, fmtTotal } from '../money.js';
-import { accName } from '../config.js';
+import { accName } from '../accounts.js';
 import { state } from '../state.js';
 import { rowSub, txAmt, txGlyph, txTitle } from '../ui/format.js';
 import { hist } from '../ui/ui-state.js';
@@ -116,7 +116,7 @@ export function historyList(txs) {
   if (!txs.length)
     return (
       '<div class="list"><p class="empty">Nothing here for ' +
-      (hist.account ? accName(hist.account) + ' ' : '') +
+      (hist.account ? esc(accName(hist.account)) + ' ' : '') +
       'this month.</p></div>'
     );
   let h = '',

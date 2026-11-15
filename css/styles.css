@@ -355,6 +355,44 @@ main .wrap {
   font-size: 12px;
   color: var(--muted);
 }
+/* Accounts besides the main one, folded into one row on Home until opened. */
+.accs {
+  display: flex;
+  flex-direction: column;
+  gap: 10px;
+}
+.accs-head {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  background: none;
+  border: 0;
+  padding: 4px 0;
+  text-align: left;
+  color: inherit;
+}
+/* Quiet, like the label beside it: the tiles carry the amounts. */
+.accs-total {
+  margin-left: auto;
+  font-size: 12.5px;
+  color: var(--muted);
+  font-variant-numeric: tabular-nums;
+}
+.accs-head svg {
+  width: 16px;
+  height: 16px;
+  color: var(--muted);
+  transition: transform 0.15s;
+}
+.accs-head[aria-expanded='true'] svg {
+  transform: rotate(90deg);
+}
+.acc-name .label {
+  min-width: 0;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
 .accounts {
   display: grid;
   grid-template-columns: 1fr 1fr;
@@ -419,6 +457,30 @@ main .wrap {
 .hide-amounts .priv {
   filter: blur(9px);
   user-select: none;
+}
+/* Settings → Accounts: a name to edit, a savings switch and Remove on each line. */
+.acct-row {
+  display: flex;
+  align-items: center;
+  gap: 10px;
+}
+.acct-row .input {
+  flex: 1;
+  min-width: 0;
+}
+.acct-save {
+  display: flex;
+  align-items: center;
+  gap: 4px;
+  font-size: 13.5px;
+  color: var(--muted);
+}
+.acct-save input {
+  accent-color: var(--accent);
+}
+.acct-main {
+  font-size: 13.5px;
+  padding: 0 6px;
 }
 /* Which account an entry is paid from or lands in. */
 .acct-pick {
@@ -743,6 +805,13 @@ button.row:first-child {
   border-radius: 11px;
   font-weight: 550;
   font-size: 14.5px;
+}
+/* Links that look like buttons, such as the feedback links. */
+a.btn {
+  display: inline-flex;
+  align-items: center;
+  color: inherit;
+  text-decoration: none;
 }
 .btn.primary {
   background: var(--accent);

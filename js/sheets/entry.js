@@ -1,6 +1,6 @@
 /* Sheet for adding and editing entries: expense, income, transfer, exchange, paid for others. */
 import { paybacksOf } from '../advances.js';
-import { ACCOUNTS, accName } from '../config.js';
+import { MAIN, accName, otherAccount, pickable } from '../accounts.js';
 import { ICON } from '../icons.js';
 import {
   backVec,
@@ -47,8 +47,8 @@ export function newTxForm(type, extra) {
       who: '',
       note: '',
       date: ymd(new Date()),
-      from: 'wallet',
-      to: 'savings',
+      from: MAIN,
+      to: otherAccount(MAIN),
       toAmount: '',
       toCurrency: c,
       toTouched: false,
@@ -109,8 +109,8 @@ export function formFromTx(t, mode) {
     who: t.who || '',
     note: t.note || '',
     date: mode === 'edit' ? t.date : ymd(new Date()),
-    from: t.from || 'wallet',
-    to: t.to || 'savings',
+    from: t.from || MAIN,
+    to: t.to || otherAccount(t.from || MAIN),
     toAmount: t.toAmount != null ? toInput(t.toAmount, t.toCurrency || t.currency) : '',
     toCurrency: t.toCurrency || t.currency,
     toTouched: t.type === 'transfer' && t.toCurrency !== t.currency,
@@ -192,6 +192,42 @@ export function moneyLines(kind, lines) {
   );
 }
 
+/** `<option>`s for the accounts in use, keeping `sel` if it's a removed account an entry still uses. */
+export const accountOptions = (sel) =>
+  pickable(sel)
+    .map(
+      (a) =>
+        '<option value="' +
+        esc(a.id) +
+        '"' +
+        (a.id === sel ? ' selected' : '') +
+        '>' +
+        esc(a.name) +
+        '</option>',
+    )
+    .join('');
+
+/* Which account an entry's money leaves or lands in: a segmented control while the names fit on one
+   line, wrapping buttons once there are more. */
+function accountPicker(sel) {
+  const list = pickable(sel);
+  const btn = (a, cls) =>
+    '<button' +
+    cls +
+    ' data-act="facct" data-v="' +
+    esc(a.id) +
+    '" aria-pressed="' +
+    (a.id === sel) +
+    '">' +
+    esc(a.name) +
+    '</button>';
+  return list.length <= 3
+    ? '<div class="seg wide">' + list.map((a) => btn(a, '')).join('') + '</div>'
+    : '<div class="chips" role="group" aria-label="Account">' +
+        list.map((a) => btn(a, ' class="chip"')).join('') +
+        '</div>';
+}
+
 export function txSheet() {
   const f = form,
     isX = f.type === 'exchange',
@@ -231,31 +267,16 @@ export function txSheet() {
     h +=
       '<div class="acct-pick"><span class="label">' +
       (f.type === 'income' ? 'Into' : 'From') +
-      '</span><div class="seg wide">' +
-      ACCOUNTS.map(
-        (a) =>
-          '<button data-act="facct" data-v="' +
-          a.id +
-          '" aria-pressed="' +
-          ((f.account || 'wallet') === a.id) +
-          '">' +
-          a.name +
-          '</button>',
-      ).join('') +
-      '</div></div>';
+      '</span>' +
+      accountPicker(f.account || MAIN) +
+      '</div>';
   if (isT && !isX)
     h +=
       '<div class="grid2"><label class="field"><span>From</span><select id="f-from">' +
-      ACCOUNTS.map(
-        (a) =>
-          '<option value="' + a.id + '"' + (f.from === a.id ? ' selected' : '') + '>' + a.name + '</option>',
-      ).join('') +
+      accountOptions(f.from) +
       '</select></label>' +
       '<label class="field"><span>To</span><select id="f-to">' +
-      ACCOUNTS.map(
-        (a) =>
-          '<option value="' + a.id + '"' + (f.to === a.id ? ' selected' : '') + '>' + a.name + '</option>',
-      ).join('') +
+      accountOptions(f.to) +
       '</select></label></div>';
   if (isX) h += '<span class="sub-label" style="margin-bottom:-12px">You give</span>';
   if (isE && f.paid) h += '<span class="sub-label" style="margin-bottom:-12px">Price</span>';
@@ -310,10 +331,7 @@ export function txSheet() {
       '</span></div></div>';
     h +=
       '<div class="grid2"><label class="field"><span>Account</span><select id="f-acct">' +
-      ACCOUNTS.map(
-        (a) =>
-          '<option value="' + a.id + '"' + (f.from === a.id ? ' selected' : '') + '>' + a.name + '</option>',
-      ).join('') +
+      accountOptions(f.from) +
       '</select></label>' +
       '<label class="field"><span>Rate</span><span class="rate-in"><span>$1 =</span><input id="f-xrate" class="input num" inputmode="numeric" autocomplete="off" value="' +
       esc(f.xrate) +
@@ -333,14 +351,12 @@ export function txSheet() {
         small: true,
       }) +
       curToggle('ftocur', f.toCurrency) +
-      '</div></div>' +
-      '<p class="note">Same currency moves it as is. Pick the other currency to exchange on the way, like cash dollars into Whish.</p>';
+      '</div></div>';
   } else if (isA)
     h +=
       '<label class="field"><span>Who will pay you back?</span><input id="f-who" list="whoList" autocomplete="off" value="' +
       esc(f.who) +
-      '" placeholder="e.g. Scouts"></label>' +
-      '<p class="note" style="margin-top:-6px">Not counted in your budgets or spending. Record paybacks as they come in.</p>';
+      '" placeholder="e.g. Scouts"></label>';
   else
     h +=
       '<div class="chips" role="group" aria-label="Category">' +
@@ -716,10 +732,10 @@ export function saveTx() {
   } else if (isA) {
     const who = (f.who || '').trim();
     if (!who) return fail('Who will pay you back?');
-    Object.assign(t, { who, account: f.account || 'wallet', rate: state.rate });
+    Object.assign(t, { who, account: f.account || MAIN, rate: state.rate });
   } else {
     if (!f.categoryId) return fail('Pick a category.');
-    Object.assign(t, { categoryId: f.categoryId, account: f.account || 'wallet' });
+    Object.assign(t, { categoryId: f.categoryId, account: f.account || MAIN });
     if (isE && f.paid) {
       const p = pricePayment(f);
       if (typeof p === 'string') return fail(p);
