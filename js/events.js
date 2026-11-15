@@ -25,7 +25,7 @@ import {
 } from './accounts.js';
 import { balances, catName, catOf } from './ledger.js';
 import { fmt, other, parseAmt, parseInput, toInput } from './money.js';
-import { HINT_KEY } from './pwa.js';
+import { dismissSafariTip } from './pwa.js';
 import {
   adjustForm,
   adjustView,
@@ -673,14 +673,12 @@ document.addEventListener('click', (e) => {
       toast('Deleted ' + c.name);
       break;
     }
-    case 'feedbackOpen': {
+    case 'feedbackOpen':
       feedbackTipSeen();
-      setView('settings');
       render();
-      const sec = $('#feedbackSec');
-      if (sec) sec.scrollIntoView();
+      setForm({});
+      openSheet('feedback');
       break;
-    }
     case 'feedbackTipDone':
       feedbackTipSeen();
       render();
@@ -720,10 +718,8 @@ document.addEventListener('click', (e) => {
       commit();
       toast('Price first is on. Tap + to try it.');
       break;
-    case 'hideInstallHint':
-      try {
-        localStorage.setItem(HINT_KEY, 'dismissed');
-      } catch (e) {}
+    case 'safariTipDone':
+      dismissSafariTip(v);
       render();
       break;
     case 'exportSave':

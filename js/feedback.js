@@ -4,6 +4,7 @@ import { CONTACT } from './config.js';
 import { IOS, STANDALONE } from './pwa.js';
 import { showPriceTip } from './sheets/demo.js';
 import { state } from './state.js';
+import { view } from './ui/ui-state.js';
 
 /* Which phone and browser, so a bug can be reproduced. Only this goes in the message: never
    entries, balances or anything else from the person's data. */
@@ -23,7 +24,21 @@ export function deviceLabel(ua = navigator.userAgent) {
   return phone + ', ' + (STANDALONE ? 'installed app' : browser);
 }
 
-const intro = () => 'Frata feedback (version ' + APP_VERSION + ', ' + deviceLabel() + '):\n\n';
+const TAB_NAMES = { home: 'Home', history: 'History', budgets: 'Budgets', settings: 'Settings' };
+
+/* Also the screen size and the tab it was sent from, which help to reproduce a layout bug. */
+export const intro = () =>
+  'Frata feedback (version ' +
+  APP_VERSION +
+  ', ' +
+  deviceLabel() +
+  ', ' +
+  innerWidth +
+  '×' +
+  innerHeight +
+  ', on ' +
+  (TAB_NAMES[view] || view) +
+  '):\n\n';
 
 export const whatsappLink = () =>
   'https://wa.me/' + CONTACT.whatsapp + '?text=' + encodeURIComponent(intro());
