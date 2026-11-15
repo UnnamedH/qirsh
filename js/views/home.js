@@ -2,7 +2,7 @@
 import { fmtAdv, owed } from '../advances.js';
 import { MAIN, accName, accounts } from '../accounts.js';
 import { ICON } from '../icons.js';
-import { balances, budgetStatus, combinedUSD, range, sumIn } from '../ledger.js';
+import { balances, budgetName, budgetStatus, combinedUSD, range, sumIn } from '../ledger.js';
 import { dispCur, fmt, fmtDisp, fmtTotal } from '../money.js';
 import { showInstallHint } from '../pwa.js';
 import { priceTipBanner, showPriceTip } from '../sheets/demo.js';
@@ -23,11 +23,11 @@ export function renderHome() {
   const overall =
     state.budgets.find((x) => !x.categoryId && x.period === 'month') ||
     state.budgets.find((x) => !x.categoryId);
-  const watch = state.budgets
+  const watchAll = state.budgets
     .filter((x) => x.categoryId)
     .map((x) => ({ b: x, s: budgetStatus(x) }))
-    .sort((a, c) => c.s.pct - a.s.pct)
-    .slice(0, 3);
+    .sort((a, c) => c.s.pct - a.s.pct);
+  const watch = watchAll.slice(0, 3);
   let h = '';
   if (showInstallHint())
     h +=
@@ -70,58 +70,47 @@ export function renderHome() {
     .filter((x) => !x.o.settled)
     .sort((a, c) => c.t.date.localeCompare(a.t.date));
   if (open.length)
-    h +=
-      '<section class="sec"><div class="sec-head"><h2>Owed to you</h2><span class="num muted priv">' +
-      fmtDisp(open.reduce((s, x) => s + x.o.left, 0)) +
-      '</span></div><div class="list">' +
-      open
-        .map(
-          ({ t, o }) =>
-            '<div class="row"><button class="row-btn" data-act="editTx" data-id="' +
-            esc(t.id) +
-            '">' +
-            txGlyph(t) +
-            '<span class="row-main"><span class="row-title">' +
-            esc(t.who || 'Someone') +
-            '</span><span class="row-sub">' +
-            esc(
-              (t.note ? t.note + ' · ' : '') +
-                dayLabel(t.date) +
-                (o.back > 0 ? ' · ' + fmtAdv(t, o.back) + ' back so far' : ''),
-            ) +
-            '</span></span>' +
-            '<span class="amt priv">' +
-            fmtAdv(t, o.left) +
-            '</span></button><button class="btn sm" data-act="newRepay" data-id="' +
-            esc(t.id) +
-            '">Paid back</button></div>',
-        )
-        .join('') +
-      '</div></section>';
-  h +=
-    '<section class="sec"><div class="sec-head"><h2>Quick add</h2><div class="seg" role="tablist">' +
-    ['frequent', 'recent']
-      .map(
-        (k) =>
-          '<button data-act="quickTab" data-v="' +
-          k +
-          '" aria-pressed="' +
-          (quickTab === k) +
-          '">' +
-          cap(k) +
-          '</button>',
-      )
-      .join('') +
-    '</div></div>';
+    h += fold(
+      'owed',
+      'Owed to you',
+      '<span class="num priv">' + fmtDisp(open.reduce((s, x) => s + x.o.left, 0)) + '</span>',
+      '',
+      '<div class="list">' +
+        open
+          .map(
+            ({ t, o }) =>
+              '<div class="row"><button class="row-btn" data-act="editTx" data-id="' +
+              esc(t.id) +
+              '">' +
+              txGlyph(t) +
+              '<span class="row-main"><span class="row-title">' +
+              esc(t.who || 'Someone') +
+              '</span><span class="row-sub">' +
+              esc(
+                (t.note ? t.note + ' · ' : '') +
+                  dayLabel(t.date) +
+                  (o.back > 0 ? ' · ' + fmtAdv(t, o.back) + ' back so far' : ''),
+              ) +
+              '</span></span>' +
+              '<span class="amt priv">' +
+              fmtAdv(t, o.left) +
+              '</span></button><button class="btn sm" data-act="newRepay" data-id="' +
+              esc(t.id) +
+              '">Paid back</button></div>',
+          )
+          .join('') +
+        '</div>',
+    );
+  let quickBody = '';
   if (!list.length)
-    h +=
+    quickBody +=
       '<div class="list"><p class="empty">' +
       (quickTab === 'frequent'
         ? 'Anything you add twice shows up here, ready to repeat with one tap.'
         : 'Your latest transactions will show up here.') +
       '</p></div>';
   else
-    h +=
+    quickBody +=
       '<div class="list">' +
       list
         .map((e) => {
@@ -152,32 +141,63 @@ export function renderHome() {
         })
         .join('') +
       '</div>';
-  h += '</section>';
-  h +=
-    '<section class="sec"><div class="sec-head"><h2>' +
-    MONTHS[new Date().getMonth()] +
-    '</h2><button class="link" data-act="nav" data-v="history">History</button></div>' +
+  h += fold(
+    'quick',
+    'Quick add',
+    [...new Set(tpl.frequent.map((e) => txGlyph(e.tx)))].slice(0, 5).join(''),
+    '<div class="seg" role="tablist">' +
+      ['frequent', 'recent']
+        .map(
+          (k) =>
+            '<button data-act="quickTab" data-v="' +
+            k +
+            '" aria-pressed="' +
+            (quickTab === k) +
+            '">' +
+            cap(k) +
+            '</button>',
+        )
+        .join('') +
+      '</div>',
+    quickBody,
+  );
+  const net = inc - spent;
+  h += fold(
+    'month',
+    MONTHS[new Date().getMonth()],
+    '<span class="mini-stats priv" aria-label="' +
+      esc('Spent ' + fmtTotal(spent) + ', earned ' + fmtTotal(inc) + ', net ' + fmtTotal(net)) +
+      '"><span aria-hidden="true">' +
+      fmtTotal(spent, { whole: true }) +
+      '</span><span class="in" aria-hidden="true">' +
+      fmtTotal(inc, { whole: true }) +
+      '</span><span aria-hidden="true">' +
+      fmtTotal(net, { sign: net > 0, whole: true }) +
+      '</span></span>',
+    '<button class="link" data-act="nav" data-v="history">History</button>',
     '<div class="stats priv"><div class="stat"><span class="label">Spent</span><span class="amt">' +
-    fmtTotal(spent) +
-    '</span></div>' +
-    '<div class="stat"><span class="label">Earned</span><span class="amt in">' +
-    fmtTotal(inc) +
-    '</span></div>' +
-    '<div class="stat"><span class="label">Net</span><span class="amt">' +
-    fmtTotal(inc - spent, { sign: inc - spent > 0 }) +
-    '</span></div></div></section>';
-  h +=
-    '<section class="sec"><div class="sec-head"><h2>Budgets</h2><button class="link" data-act="nav" data-v="budgets">All budgets</button></div>';
-  if (!overall && !watch.length)
-    h +=
-      '<div class="list"><p class="empty">No budgets yet. <button class="link" data-act="newBudget">Add one</button></p></div>';
-  else
-    h +=
-      '<div class="list">' +
-      (overall ? budgetHtml(overall, true) : '') +
-      watch.map((x) => budgetHtml(x.b, true)).join('') +
-      '</div>';
-  h += '</section>';
+      fmtTotal(spent) +
+      '</span></div>' +
+      '<div class="stat"><span class="label">Earned</span><span class="amt in">' +
+      fmtTotal(inc) +
+      '</span></div>' +
+      '<div class="stat"><span class="label">Net</span><span class="amt">' +
+      fmtTotal(net, { sign: net > 0 }) +
+      '</span></div></div>',
+  );
+  const rings = (overall ? [overall] : []).concat(watchAll.map((x) => x.b)).slice(0, 5);
+  h += fold(
+    'budgets',
+    'Budgets',
+    rings.map(budgetRing).join(''),
+    '<button class="link" data-act="nav" data-v="budgets">All budgets</button>',
+    !overall && !watch.length
+      ? '<div class="list"><p class="empty">No budgets yet. <button class="link" data-act="newBudget">Add one</button></p></div>'
+      : '<div class="list">' +
+          (overall ? budgetHtml(overall, true) : '') +
+          watch.map((x) => budgetHtml(x.b, true)).join('') +
+          '</div>',
+  );
   $('#v-home').innerHTML = h;
 }
 
@@ -222,4 +242,55 @@ function otherAccounts(b) {
         .join('') +
       '</div>';
   return h + '</section>';
+}
+
+/* A Home section whose header folds it down to a one-line summary of what's inside. `extra` (a link
+   or tabs) shows in the header only while open; the summary only while folded, except where the
+   header always had it (the total owed). */
+function fold(key, title, summary, extra, body) {
+  const shut = !!state.settings.homeFold[key],
+    always = key === 'owed';
+  return (
+    '<section class="sec fold' +
+    (shut ? ' shut' : '') +
+    '"><div class="sec-head"><h2 class="fold-title"><button class="fold-head" data-act="fold" data-v="' +
+    key +
+    '" aria-expanded="' +
+    !shut +
+    '"><span>' +
+    title +
+    '</span>' +
+    ICON.right +
+    (summary && (shut || always) ? '<span class="fold-sum">' + summary + '</span>' : '') +
+    '</button></h2>' +
+    (shut ? '' : extra) +
+    '</div>' +
+    (shut ? '' : body) +
+    '</section>'
+  );
+}
+
+/* A budget as a tiny ring for a folded Budgets section, coloured like its bar. */
+function budgetRing(b) {
+  const s = budgetStatus(b),
+    r = 7,
+    len = 2 * Math.PI * r,
+    filled = Math.min(1, Math.max(0, s.pct)) * len;
+  return (
+    '<svg class="ring ' +
+    s.state +
+    '" viewBox="0 0 18 18" role="img" aria-label="' +
+    esc(budgetName(b)) +
+    ' ' +
+    Math.round(s.pct * 100) +
+    '%"><circle cx="9" cy="9" r="' +
+    r +
+    '"/><circle class="fill" cx="9" cy="9" r="' +
+    r +
+    '" stroke-dasharray="' +
+    filled.toFixed(2) +
+    ' ' +
+    len.toFixed(2) +
+    '"/></svg>'
+  );
 }

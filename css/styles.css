@@ -355,6 +355,76 @@ main .wrap {
   font-size: 12px;
   color: var(--muted);
 }
+/* Home sections fold down to their header and a tiny summary of what's inside (js/views/home.js). */
+.fold-title {
+  flex: 1;
+  min-width: 0;
+}
+.fold-head {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  width: 100%;
+  background: none;
+  border: 0;
+  padding: 0;
+  font: inherit;
+  color: inherit;
+  text-align: left;
+}
+.fold-head > svg {
+  width: 16px;
+  height: 16px;
+  color: var(--muted);
+  flex: none;
+  transition: transform 0.15s;
+}
+.fold-head[aria-expanded='true'] > svg {
+  transform: rotate(90deg);
+}
+.fold-sum {
+  margin-left: auto;
+  display: flex;
+  align-items: center;
+  gap: 4px;
+  min-width: 0;
+  font-size: 13px;
+  font-weight: 400;
+  color: var(--muted);
+}
+.fold-sum .glyph {
+  width: 20px;
+  height: 20px;
+  font-size: 11px;
+}
+.mini-stats {
+  display: flex;
+  gap: 10px;
+  font-variant-numeric: tabular-nums;
+}
+.mini-stats .in {
+  color: var(--accent);
+}
+.ring {
+  width: 18px;
+  height: 18px;
+  transform: rotate(-90deg);
+}
+.ring circle {
+  fill: none;
+  stroke: var(--line);
+  stroke-width: 3;
+}
+.ring .fill {
+  stroke: var(--accent);
+  stroke-linecap: round;
+}
+.ring.warn .fill {
+  stroke: var(--warn);
+}
+.ring.over .fill {
+  stroke: var(--bad);
+}
 /* Accounts besides the main one, folded into one row on Home until opened. */
 .accs {
   display: flex;

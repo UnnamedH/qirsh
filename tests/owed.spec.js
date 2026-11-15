@@ -10,7 +10,9 @@ const money = (page) =>
       wallet: Math.round(q.combinedUSD(q.balances().wallet) * 100) / 100,
       walletLBP: q.balances().wallet.LBP,
       spent: overall ? Math.round(q.budgetStatus(overall).spent * 100) / 100 : 0,
-      owedShown: [...document.querySelectorAll('#v-home h2')].some((h) => h.textContent === 'Owed to you'),
+      owedShown: [...document.querySelectorAll('#v-home h2')].some((h) =>
+        h.textContent.startsWith('Owed to you'),
+      ),
     };
   });
 const owedList = (page) =>
