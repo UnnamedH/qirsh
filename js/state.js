@@ -17,6 +17,7 @@ export function blankState() {
       entryStyle: 'paid',
       hide: false,
       accountsOpen: null,
+      homeFold: {},
     },
     accounts: DEFAULT_ACCOUNTS.map((a) => Object.assign({}, a)),
     opening: { wallet: { USD: 0, LBP: 0 }, savings: { USD: 0, LBP: 0 }, whish: { USD: 0, LBP: 0 } },
@@ -55,6 +56,10 @@ function normalizeSettings(st, defaults) {
     hide: st.hide === true,
     // Other accounts on Home shown or folded away; null until chosen, then the number of accounts decides.
     accountsOpen: typeof st.accountsOpen === 'boolean' ? st.accountsOpen : null,
+    // Home sections folded down to a one-line summary; anything else in a backup is dropped.
+    homeFold: Object.fromEntries(
+      HOME_SECTIONS.filter((k) => isObj(st.homeFold) && st.homeFold[k] === true).map((k) => [k, true]),
+    ),
   };
 }
 
@@ -70,6 +75,9 @@ const validBudget = (b) =>
   +b.amount > 0 &&
   (b.period === 'week' || b.period === 'month') &&
   isCur(b.currency);
+
+/* Sections on Home that can be folded (js/views/home.js). */
+export const HOME_SECTIONS = ['owed', 'quick', 'month', 'budgets'];
 
 const ACCOUNT_ID = /^[\w-]{1,40}$/;
 

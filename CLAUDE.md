@@ -73,6 +73,9 @@ CI (`.github/workflows/ci.yml`) runs lint, format check and tests on every PR.
   `tests/privacy.spec.js` enforces this. Inline `style=` is allowed.
 - **New app file?** Add it to the `APP` list in `sw.js`, then `npm run stamp`.
   `tests/precache.spec.js` fails if a file is missing from `APP` or `BUILD` is stale.
+- **App icons** come from `scripts/icon.svg` via `npm run icons`, which also writes `icons/<colour>/` and
+  `manifest-<colour>.webmanifest` for each preset accent. Rerun it after changing the icon, the presets or
+  `manifest.webmanifest`; `tests/precache.spec.js` checks the copies match.
 - **frata.cc** is deployed by Cloudflare from `main` (`wrangler.jsonc`, no build step). Only the paths
   let back in by `.assetsignore` are published; a new top-level app file or folder must be added there.
 - **User-visible change?** Add an entry at the top of `CHANGELOG` in `js/changelog.js` (next `v`, today's

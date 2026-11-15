@@ -4,6 +4,14 @@ import { KEY } from './state.js';
 /* Newest first. Each release adds an entry here with the next v, then runs `npm run stamp` for sw.js. */
 export const CHANGELOG = [
   {
+    v: 17,
+    date: '2026-11-15',
+    items: [
+      'Tap a heading on Home, like Quick add or Budgets, to fold it away. Folded, it still shows a glimpse: your budgets as little rings, and the month’s spent, earned and net.',
+      'The app icon now matches the colour you pick in Settings → Appearance. Pick it before adding Frata to your Home Screen, or add it again to update the icon. Your own custom colour keeps the green icon.',
+    ],
+  },
+  {
     v: 16,
     date: '2026-11-15',
     items: [

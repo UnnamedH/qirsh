@@ -13,6 +13,7 @@ Plain HTML, CSS and JavaScript modules: no framework and no build step. The host
 - Accounts that are yours to name: Wallet, Savings and Whish to start with, then add, rename or remove them. Each holds both USD and LL; spend from or earn into any of them, and tap one on Home to see its own entries
 - Hide amounts on Home with one tap, for showing the app to someone
 - Swipe sideways between tabs, and pull a sheet down to close it
+- Fold any section on Home down to a glimpse: budgets as little rings, the month as three numbers
 - Feedback and bug reports from Settings, by WhatsApp or email, with the version and phone filled in
 - Expenses entered as what you paid and the change you got back, or, if you turn it on, price first: say what you paid with and the change, or the rest paid on top, is worked out
 - LL typed in thousands everywhere (type 385 for 385,000 LL)
@@ -97,8 +98,8 @@ js/views/               Home, History, Budgets and Settings
 js/sheets/              Bottom sheets: entry, payback, budget, "What's new"
 sw.js                   Service worker: offline-first, all-or-nothing updates
 wrangler.jsonc          Cloudflare deploy for frata.cc; .assetsignore lists the files it publishes
-manifest.webmanifest    Name, colours and icons for installing
-icons/                  App, maskable, Apple touch and favicon icons
+manifest.webmanifest    Name, colours and icons for installing (manifest-<colour> copies for each preset colour)
+icons/                  App, maskable, Apple touch and favicon icons; icons/<colour>/ for each preset colour
 scripts/                `npm run stamp` and the BUILD fingerprint; `npm run icons` and the icon's source, icon.svg
 tests/                  Playwright tests, and server.mjs, a test server that can be slow or publish a fake release
 ```

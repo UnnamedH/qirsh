@@ -224,6 +224,12 @@ document.addEventListener('click', (e) => {
       form.account = v;
       drawSheet();
       break;
+    case 'fold':
+      // Folded sections are kept as true; open ones are simply left out.
+      if (state.settings.homeFold[v]) delete state.settings.homeFold[v];
+      else state.settings.homeFold[v] = true;
+      commit();
+      break;
     case 'toggleAccs': {
       const open = el.getAttribute('aria-expanded') === 'true';
       state.settings.accountsOpen = !open;

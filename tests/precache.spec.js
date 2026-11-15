@@ -16,7 +16,9 @@ test('service worker precaches every app file', () => {
     'manifest.webmanifest',
     ...walk('css'),
     ...walk('js'),
-    ...walk('icons'),
+    // Each preset colour's icons (icons/<colour>/) are only read when the app is installed, which
+    // needs a connection anyway, so phones don't store them.
+    ...walk('icons').filter((f) => f.split('/').length === 2),
     ...walk('fonts').filter((f) => f.endsWith('.woff2')),
   ];
   expect(
@@ -47,4 +49,26 @@ test('every app file is published to frata.cc', () => {
     files.filter((f) => !published(f)),
     'missing from .assetsignore',
   ).toEqual([]);
+});
+
+/** The home-screen icons for each preset colour exist, and frata.cc publishes them. */
+test('every preset colour has its manifest and icons, published to frata.cc', () => {
+  const sets = fs
+    .readdirSync('.')
+    .filter((f) => /^manifest-[a-z]+\.webmanifest$/.test(f))
+    .map((f) => f.slice(9, -12));
+  expect(sets.sort()).toEqual(['amber', 'blue', 'graphite', 'rose', 'teal', 'violet']);
+  const base = JSON.parse(fs.readFileSync('manifest.webmanifest', 'utf8'));
+  const ignore = fs.readFileSync('.assetsignore', 'utf8');
+  expect(ignore).toContain('!/manifest-*.webmanifest');
+  for (const set of sets) {
+    const m = JSON.parse(fs.readFileSync(`manifest-${set}.webmanifest`, 'utf8'));
+    // The same app, only with this colour's icons (`npm run icons` writes these).
+    expect({ ...m, icons: [] }).toEqual({ ...base, icons: [] });
+    expect(m.icons.map((i) => i.src)).toEqual(
+      base.icons.map((i) => i.src.replace('icons/', `icons/${set}/`)),
+    );
+    for (const i of m.icons) expect(fs.existsSync(i.src), i.src).toBe(true);
+    expect(fs.existsSync(`icons/${set}/apple-touch-icon.png`)).toBe(true);
+  }
 });
