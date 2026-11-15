@@ -5,7 +5,6 @@ import { PROTECTED } from '../config.js';
 import { ICON } from '../icons.js';
 import { catName } from '../ledger.js';
 import { toInput } from '../money.js';
-import { IOS } from '../pwa.js';
 import { rescuedData, state } from '../state.js';
 import { ACCENTS, DEFAULT_ACCENT } from '../theme.js';
 import { thousandsInput } from '../ui/amount.js';
@@ -31,7 +30,7 @@ export function renderSettings() {
         state.rate.toLocaleString('en-US') +
         '</button></div></div>'
       : '') +
-    '<p class="note">Used for the combined total, budgets and the suggested amount when you exchange money.</p></div></section>';
+    '</div></section>';
   h +=
     '<section class="sec"><h2>Display</h2><div class="card"><div class="set-row"><span>Show totals in</span><div class="seg">' +
     [
@@ -85,11 +84,7 @@ export function renderSettings() {
       )
       .join('') +
     '</div></div>' +
-    '<p class="note">' +
-    (s.entryStyle === 'price'
-      ? 'Type the price, then what you paid with. Frata works out the change.'
-      : 'Type what you paid in $ and LL, and any change you got back.') +
-    '</p></div></section>';
+    '</div></section>';
   const acc = (s.accent || DEFAULT_ACCENT).toUpperCase(),
     preset = ACCENTS.some(([c]) => c === acc);
   const check =
@@ -139,7 +134,7 @@ export function renderSettings() {
     '" aria-label="Custom colour">' +
     (preset ? '' : check) +
     '</label></div>' +
-    '<p class="note">Pick any colour. Backgrounds, lines and dark mode follow it, and the accent is adjusted so text on it stays readable.</p></div></section>';
+    '</div></section>';
   h +=
     '<section class="sec" id="accountsSec"><h2>Accounts</h2><div class="card">' +
     accountRows() +
@@ -152,7 +147,7 @@ export function renderSettings() {
     '</div></section>';
   const used = (id) => state.tx.filter((t) => t.categoryId === id).length;
   h +=
-    '<section class="sec"><h2>Categories</h2><div class="card"><p class="note">Set an emoji in the small box, edit names in place, and use the arrows to change the order they appear in when you add an entry.</p>' +
+    '<section class="sec"><h2>Categories</h2><div class="card">' +
     ['expense', 'income']
       .map((type) => {
         const list = state.categories.filter((c) => c.type === type);
@@ -227,17 +222,13 @@ export function renderSettings() {
     '<select class="input" id="newCatType" style="flex:0 0 auto;width:auto" aria-label="Type"><option value="expense">Spending</option><option value="income">Income</option></select></div>' +
     '<div class="btn-row"><button class="btn sm" data-act="addCat">Add category</button></div></div></section>';
   h +=
-    '<section class="sec"><h2>Reset</h2><div class="card"><p class="note">Deletes all entries, budgets and balances. Categories and rate stay.</p><div class="btn-row"><button class="btn danger' +
+    '<section class="sec"><h2>Reset</h2><div class="card"><div class="btn-row"><button class="btn danger' +
     (armed === 'wipe' ? ' armed' : '') +
     '" data-act="wipe">' +
     (armed === 'wipe' ? 'Tap again to delete everything' : 'Clear all data') +
     '</button></div></div></section>';
   h +=
-    '<section class="sec" id="backupSec"><h2>Backup</h2><div class="card"><p class="note">Your data lives only on this phone, in this browser. Export a JSON backup now and then, and before clearing browser data.' +
-    (IOS
-      ? ' On iPhone, Safari and the Home Screen app keep separate data, so use a backup to move between them.'
-      : '') +
-    ' ' +
+    '<section class="sec" id="backupSec"><h2>Backup</h2><div class="card"><p class="note">' +
     (state.lastExport ? 'Last export: ' + dayLabel(state.lastExport.slice(0, 10)) + '.' : 'No export yet.') +
     '</p>' +
     '<div class="btn-row"><button class="btn" data-act="exportShare">Share</button><button class="btn" data-act="exportSave">Save file</button><button class="btn" data-act="exportCopy">Copy JSON</button></div>' +
@@ -328,27 +319,24 @@ function accountRows() {
 
 /* Starting balances change every balance back to the first entry, so they sit behind a link. */
 function openingFields() {
-  return (
-    '<p class="note">What each account held before your first entry. Changing these changes every balance from the start. To fix today’s balance, tap the account on Home and use Correct balance instead.</p>' +
-    accounts()
-      .map(
-        (a) =>
-          '<div class="grid2"><label class="field"><span>' +
-          esc(a.name) +
-          ' USD</span><input class="num" data-open="' +
-          esc(a.id) +
-          '" data-cur="USD" inputmode="decimal" value="' +
-          ((state.opening[a.id] || {}).USD || 0) +
-          '"></label><label class="field"><span>' +
-          a.name +
-          ' LL</span>' +
-          thousandsInput(
-            ' data-open="' + esc(a.id) + '" data-cur="LBP"',
-            toInput((state.opening[a.id] || {}).LBP || 0, 'LBP'),
-            a.name + ' LL',
-          ) +
-          '</label></div>',
-      )
-      .join('')
-  );
+  return accounts()
+    .map(
+      (a) =>
+        '<div class="grid2"><label class="field"><span>' +
+        esc(a.name) +
+        ' USD</span><input class="num" data-open="' +
+        esc(a.id) +
+        '" data-cur="USD" inputmode="decimal" value="' +
+        ((state.opening[a.id] || {}).USD || 0) +
+        '"></label><label class="field"><span>' +
+        a.name +
+        ' LL</span>' +
+        thousandsInput(
+          ' data-open="' + esc(a.id) + '" data-cur="LBP"',
+          toInput((state.opening[a.id] || {}).LBP || 0, 'LBP'),
+          a.name + ' LL',
+        ) +
+        '</label></div>',
+    )
+    .join('');
 }

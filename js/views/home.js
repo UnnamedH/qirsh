@@ -97,7 +97,7 @@ export function renderHome() {
             '">Paid back</button></div>',
         )
         .join('') +
-      '</div><p class="note">Money you paid for others. It isn’t counted in your budgets or spending.</p></section>';
+      '</div></section>';
   h +=
     '<section class="sec"><div class="sec-head"><h2>Quick add</h2><div class="seg" role="tablist">' +
     ['frequent', 'recent']
@@ -152,7 +152,7 @@ export function renderHome() {
         })
         .join('') +
       '</div>';
-  h += '<p class="note">Tap to add again for today. Use the pencil to change the amount first.</p></section>';
+  h += '</section>';
   h +=
     '<section class="sec"><div class="sec-head"><h2>' +
     MONTHS[new Date().getMonth()] +

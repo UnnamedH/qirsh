@@ -99,8 +99,7 @@ function viewSheet(f) {
     '<strong>' +
     fmt(t.amount, t.currency, { sign: true }) +
     '</strong>. It changed the balance only and isn’t counted as spending or income.</p>' +
-    (t.note ? '<p class="note">' + esc(t.note) + '</p>' : '') +
-    '<p class="note">Deleting it puts the balance back to what it was.</p>';
+    (t.note ? '<p class="note">' + esc(t.note) + '</p>' : '');
   h +=
     '<div class="sheet-actions"><button class="btn danger' +
     (armed === 'adjust' ? ' armed' : '') +
@@ -118,8 +117,6 @@ export function adjustSheet() {
     '<div class="sheet-head"><h2>Correct balance</h2><button class="icon-btn" data-act="close" aria-label="Close">' +
     ICON.close +
     '</button></div>';
-  h +=
-    '<p class="note">Missed some entries? Enter what the account actually holds now, and Frata records the difference.</p>';
   h +=
     '<label class="field"><span>Account</span><select id="a-acct">' +
     accountOptions(f.account) +
@@ -163,12 +160,6 @@ export function adjustSheet() {
       )
       .join('') +
     '</div>';
-  h +=
-    '<p class="note">' +
-    (f.count
-      ? 'Missing money is added as an expense, and extra money as income, so your totals and budgets include it.'
-      : 'Only the balance changes. Spending, income and budgets stay as they are.') +
-    '</p>';
   if (f.count)
     h +=
       '<div id="a-exp" hidden><span class="sub-label">Count missing money as</span>' +

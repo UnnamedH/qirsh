@@ -351,14 +351,12 @@ export function txSheet() {
         small: true,
       }) +
       curToggle('ftocur', f.toCurrency) +
-      '</div></div>' +
-      '<p class="note">Same currency moves it as is. Pick the other currency to exchange on the way, like cash dollars into Whish.</p>';
+      '</div></div>';
   } else if (isA)
     h +=
       '<label class="field"><span>Who will pay you back?</span><input id="f-who" list="whoList" autocomplete="off" value="' +
       esc(f.who) +
-      '" placeholder="e.g. Scouts"></label>' +
-      '<p class="note" style="margin-top:-6px">Not counted in your budgets or spending. Record paybacks as they come in.</p>';
+      '" placeholder="e.g. Scouts"></label>';
   else
     h +=
       '<div class="chips" role="group" aria-label="Category">' +
