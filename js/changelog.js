@@ -8,7 +8,6 @@ export const CHANGELOG = [
     date: '2026-11-15',
     items: [
       'Ideas or bugs? Tap the chat button at the top of any page to send them by WhatsApp or email.',
-      'On iPhone, Frata now explains how to keep your entries safe by adding it to your Home Screen, since Safari can clear a website’s data after a week without a visit.',
     ],
   },
   {

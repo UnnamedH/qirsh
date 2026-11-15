@@ -78,8 +78,9 @@ CI (`.github/workflows/ci.yml`) runs lint, format check and tests on every PR.
   `manifest.webmanifest`; `tests/precache.spec.js` checks the copies match.
 - **frata.cc** is deployed by Cloudflare from `main` (`wrangler.jsonc`, no build step). Only the paths
   let back in by `.assetsignore` are published; a new top-level app file or folder must be added there.
-- **User-visible change?** Add an entry at the top of `CHANGELOG` in `js/changelog.js` (next `v`, today's
-  date, short plain bullets). It shows in the "What's new" sheet.
+- **New feature or substantial bug fix?** Add an entry at the top of `CHANGELOG` in `js/changelog.js`
+  (next `v`, today's date, short plain bullets). It pops up as "What's new" for everyone after the update,
+  so leave out small or hidden fixes, tips and notes that already explain themselves, and layout tweaks.
 
 ## Testing
 
