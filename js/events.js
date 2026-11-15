@@ -11,6 +11,7 @@ import {
 } from './backup.js';
 import { csvName, monthlyCsv, monthlyWorkbook, reportName } from './report/monthly.js';
 import { CHANGELOG } from './changelog.js';
+import { feedbackTipSeen } from './feedback.js';
 import { FRATA_URL, checkMove, moveLink, snoozeMove } from './handoff.js';
 import {
   MAIN,
@@ -666,6 +667,18 @@ document.addEventListener('click', (e) => {
       toast('Deleted ' + c.name);
       break;
     }
+    case 'feedbackOpen': {
+      feedbackTipSeen();
+      setView('settings');
+      render();
+      const sec = $('#feedbackSec');
+      if (sec) sec.scrollIntoView();
+      break;
+    }
+    case 'feedbackTipDone':
+      feedbackTipSeen();
+      render();
+      break;
     case 'backupNow': {
       setView('settings');
       render();
