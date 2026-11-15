@@ -3,6 +3,7 @@
 /*
 !/index.html
 !/manifest.webmanifest
+!/manifest-*.webmanifest
 !/sw.js
 !/css/
 !/js/

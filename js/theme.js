@@ -144,6 +144,7 @@ export function applyTheme() {
     : '';
   const bg = p ? { light: p.light.bg, dark: p.dark.bg } : BG_DEFAULT;
   applyFavicon(p);
+  applyAppIcon(s.accent);
   document.querySelectorAll('meta[name="theme-color"]').forEach((m) => {
     const dark = /dark/.test(m.media || '');
     m.content = s.theme === 'light' ? bg.light : s.theme === 'dark' ? bg.dark : dark ? bg.dark : bg.light;
@@ -166,7 +167,7 @@ export const isDark = () =>
 
 /**
  * The tab icon follows the accent and light/dark theme: the app's icon (scripts/icon.svg), drawn in the
- * logo's first coin colour. The home-screen icon can't follow it: it is read once when the app is installed.
+ * logo's first coin colour. The home-screen icon follows the preset colours only (see applyAppIcon).
  */
 function applyFavicon(p) {
   const mode = isDark() ? 'dark' : 'light';
@@ -183,6 +184,39 @@ function applyFavicon(p) {
   }
   const url = drawIcon(64, bg, mode === 'dark' ? '#0E1311' : '#E6F0EA', GOLD[mode]);
   if (url) link.href = url;
+}
+
+/* ---------- home-screen icon ---------- */
+
+/**
+ * The preset an accent has home-screen icons for, as the folder and manifest name ('amber'), or null for
+ * the default green and for custom colours, which use the original icons. `npm run icons` makes them.
+ */
+export function iconSet(accent) {
+  const a = (accent || DEFAULT_ACCENT).toUpperCase();
+  if (a === DEFAULT_ACCENT.toUpperCase()) return null;
+  const preset = ACCENTS.find(([c]) => c.toUpperCase() === a);
+  return preset ? preset[1].toLowerCase() : null;
+}
+
+/** The app icon's background for an accent: the logo's first coin, the same colour as the tab icon. */
+export const iconColour = (hex) => palette(hex).light['coin-1'];
+
+/**
+ * The home-screen icon is read from the manifest (Android) or the touch icon (iPhone) when the app is
+ * installed, so those links point at the chosen colour's files before that happens. An app installed
+ * earlier keeps its icon until the phone checks the manifest again, or until it's reinstalled.
+ */
+function applyAppIcon(accent) {
+  const set = iconSet(accent);
+  const want = {
+    manifest: set ? 'manifest-' + set + '.webmanifest' : 'manifest.webmanifest',
+    'apple-touch-icon': set ? 'icons/' + set + '/apple-touch-icon.png' : 'icons/apple-touch-icon.png',
+  };
+  for (const [rel, href] of Object.entries(want)) {
+    const link = document.querySelector('link[rel="' + rel + '"]');
+    if (link && link.getAttribute('href') !== href) link.setAttribute('href', href);
+  }
 }
 
 /** Draws the f-and-coin icon (same shapes as scripts/icon.svg, on a 120 grid) and returns a PNG data URL. */

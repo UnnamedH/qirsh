@@ -98,8 +98,8 @@ js/views/               Home, History, Budgets and Settings
 js/sheets/              Bottom sheets: entry, payback, budget, "What's new"
 sw.js                   Service worker: offline-first, all-or-nothing updates
 wrangler.jsonc          Cloudflare deploy for frata.cc; .assetsignore lists the files it publishes
-manifest.webmanifest    Name, colours and icons for installing
-icons/                  App, maskable, Apple touch and favicon icons
+manifest.webmanifest    Name, colours and icons for installing (manifest-<colour> copies for each preset colour)
+icons/                  App, maskable, Apple touch and favicon icons; icons/<colour>/ for each preset colour
 scripts/                `npm run stamp` and the BUILD fingerprint; `npm run icons` and the icon's source, icon.svg
 tests/                  Playwright tests, and server.mjs, a test server that can be slow or publish a fake release
 ```
