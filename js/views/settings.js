@@ -2,6 +2,7 @@
 import { APP_VERSION } from '../changelog.js';
 import { MAIN, MAX_ACCOUNTS, MAX_NAME, accounts } from '../accounts.js';
 import { PROTECTED } from '../config.js';
+import { emailLink, whatsappLink } from '../feedback.js';
 import { ICON } from '../icons.js';
 import { catName } from '../ledger.js';
 import { toInput } from '../money.js';
@@ -221,6 +222,14 @@ export function renderSettings() {
     '<p class="label">New category</p><div class="cat-row"><input class="input emoji" id="newCatIcon" placeholder="+" autocomplete="off" aria-label="Emoji for new category"><input class="input" id="newCatName" placeholder="Name" aria-label="New category name">' +
     '<select class="input" id="newCatType" style="flex:0 0 auto;width:auto" aria-label="Type"><option value="expense">Spending</option><option value="income">Income</option></select></div>' +
     '<div class="btn-row"><button class="btn sm" data-act="addCat">Add category</button></div></div></section>';
+  h +=
+    '<section class="sec" id="feedbackSec"><h2>Feedback &amp; bugs</h2><div class="card">' +
+    '<div class="btn-row"><a class="btn" href="' +
+    esc(whatsappLink()) +
+    '" target="_blank" rel="noopener">WhatsApp</a><a class="btn" href="' +
+    esc(emailLink()) +
+    '">Email</a></div>' +
+    '<p class="note">Attach a screenshot in the chat if it helps.</p></div></section>';
   h +=
     '<section class="sec"><h2>Reset</h2><div class="card"><div class="btn-row"><button class="btn danger' +
     (armed === 'wipe' ? ' armed' : '') +

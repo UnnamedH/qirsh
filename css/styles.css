@@ -806,6 +806,13 @@ button.row:first-child {
   font-weight: 550;
   font-size: 14.5px;
 }
+/* Links that look like buttons, such as the feedback links. */
+a.btn {
+  display: inline-flex;
+  align-items: center;
+  color: inherit;
+  text-decoration: none;
+}
 .btn.primary {
   background: var(--accent);
   border-color: var(--accent);
