@@ -1,8 +1,8 @@
 /* Settings view. */
 import { APP_VERSION } from '../changelog.js';
 import { MAIN, MAX_ACCOUNTS, MAX_NAME, accounts } from '../accounts.js';
-import { PROTECTED } from '../config.js';
-import { emailLink, whatsappLink } from '../feedback.js';
+import { PROTECTED, REPO_URL } from '../config.js';
+import { feedbackButtons } from '../sheets/feedback.js';
 import { ICON } from '../icons.js';
 import { catName } from '../ledger.js';
 import { toInput } from '../money.js';
@@ -224,18 +224,8 @@ export function renderSettings() {
     '<div class="btn-row"><button class="btn sm" data-act="addCat">Add category</button></div></div></section>';
   h +=
     '<section class="sec" id="feedbackSec"><h2>Feedback &amp; bugs</h2><div class="card">' +
-    '<div class="btn-row"><a class="btn" href="' +
-    esc(whatsappLink()) +
-    '" target="_blank" rel="noopener">WhatsApp</a><a class="btn" href="' +
-    esc(emailLink()) +
-    '">Email</a></div>' +
-    '<p class="note">Attach a screenshot in the chat if it helps.</p></div></section>';
-  h +=
-    '<section class="sec"><h2>Reset</h2><div class="card"><div class="btn-row"><button class="btn danger' +
-    (armed === 'wipe' ? ' armed' : '') +
-    '" data-act="wipe">' +
-    (armed === 'wipe' ? 'Tap again to delete everything' : 'Clear all data') +
-    '</button></div></div></section>';
+    feedbackButtons() +
+    '</div></section>';
   h +=
     '<section class="sec" id="backupSec"><h2>Backup</h2><div class="card"><p class="note">' +
     (state.lastExport ? 'Last export: ' + dayLabel(state.lastExport.slice(0, 10)) + '.' : 'No export yet.') +
@@ -263,13 +253,22 @@ export function renderSettings() {
     '<p class="note">Everything you enter stays on this phone, in this browser. Frata has no account and no server, and it never sends your data anywhere: the browser is set to block it from contacting any other website. Nobody else can see your data, not even the people who make Frata.</p>' +
     '<p class="note">Your data isn’t encrypted on the phone, so anyone who can unlock your phone and open Frata can see it. Clearing this browser’s data or removing the app deletes it, so keep a backup.</p>' +
     '</div></section>';
+  // Deleting everything sits last, out of the way of everyday settings.
+  h +=
+    '<section class="sec"><h2>Reset</h2><div class="card"><div class="btn-row"><button class="btn danger' +
+    (armed === 'wipe' ? ' armed' : '') +
+    '" data-act="wipe">' +
+    (armed === 'wipe' ? 'Tap again to delete everything' : 'Clear all data') +
+    '</button></div></div></section>';
   h +=
     '<p class="note" style="text-align:center">Frata · version ' +
     APP_VERSION +
     ' · ' +
     state.tx.length +
     (state.tx.length === 1 ? ' entry' : ' entries') +
-    ' saved on this device<br><button class="link" data-act="showNews">What’s new</button></p>';
+    ' saved on this device<br><button class="link" data-act="showNews">What’s new</button> · <a class="link" href="' +
+    REPO_URL +
+    '" target="_blank" rel="noopener">Source on GitHub</a></p>';
   $('#v-settings').innerHTML = h;
 }
 

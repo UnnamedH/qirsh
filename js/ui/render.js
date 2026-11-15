@@ -25,12 +25,14 @@ export function render() {
     if (b.dataset.v === view) b.setAttribute('aria-current', 'page');
     else b.removeAttribute('aria-current');
   });
-  $('#topSub').textContent = {
-    home: DAYS[new Date().getDay()] + ' ' + new Date().getDate() + ' ' + MONTHS[new Date().getMonth()],
-    history: 'History',
-    budgets: 'Budgets',
-    settings: 'Settings',
-  }[view];
+  // On Home, the date; a narrow screen shortens the month so it stays on one line beside the buttons.
+  const now = new Date(),
+    month = MONTHS[now.getMonth()],
+    narrow = !!window.matchMedia && matchMedia('(max-width: 359px)').matches;
+  $('#topSub').textContent =
+    view === 'home'
+      ? DAYS[now.getDay()] + ' ' + now.getDate() + ' ' + (narrow ? month.slice(0, 3) : month)
+      : { history: 'History', budgets: 'Budgets', settings: 'Settings' }[view];
   drawView(view);
   updateNotesList();
 }
@@ -69,7 +71,7 @@ function renderAlerts() {
   // One nudge at a time: the backup reminder matters more.
   else if (view === 'home' && feedbackTipDue())
     alerts.push(
-      '<div class="banner"><p><strong>New:</strong> suggest ideas and report bugs from Settings.</p><button class="btn sm primary" data-act="feedbackOpen">Send feedback</button><button class="btn sm" data-act="feedbackTipDone">Got it</button></div>',
+      '<div class="banner"><p><strong>New:</strong> suggest ideas and report bugs with the chat button at the top.</p><button class="btn sm primary" data-act="feedbackOpen">Send feedback</button><button class="btn sm" data-act="feedbackTipDone">Got it</button></div>',
     );
   if (updateReady)
     alerts.push(

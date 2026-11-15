@@ -4,6 +4,11 @@ import { KEY } from './state.js';
 /* Newest first. Each release adds an entry here with the next v, then runs `npm run stamp` for sw.js. */
 export const CHANGELOG = [
   {
+    v: 18,
+    date: '2026-11-15',
+    items: ['Ideas or bugs? Tap the chat button at the top of any page to send them by WhatsApp or email.'],
+  },
+  {
     v: 17,
     date: '2026-11-15',
     items: [

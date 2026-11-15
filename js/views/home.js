@@ -4,13 +4,17 @@ import { MAIN, accName, accounts } from '../accounts.js';
 import { ICON } from '../icons.js';
 import { balances, budgetName, budgetStatus, combinedUSD, range, sumIn } from '../ledger.js';
 import { dispCur, fmt, fmtDisp, fmtTotal } from '../money.js';
-import { showInstallHint } from '../pwa.js';
+import { safariTip } from '../pwa.js';
 import { priceTipBanner, showPriceTip } from '../sheets/demo.js';
 import { state } from '../state.js';
 import { templates } from '../templates.js';
 import { budgetHtml, txAmt, txGlyph, txTitle } from '../ui/format.js';
 import { quickTab } from '../ui/ui-state.js';
 import { $, MONTHS, cap, dayLabel, esc } from '../util.js';
+
+/* Safari's Share icon, so the note shows exactly what to tap. */
+const SHARE_ICON =
+  '<svg aria-hidden="true" viewBox="0 0 24 24" width="15" height="15" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" style="vertical-align:-2px"><path d="M12 3v12M8 7l4-4 4 4M6 11H5v9h14v-9h-1"/></svg>';
 
 export function renderHome() {
   const b = balances(),
@@ -29,9 +33,17 @@ export function renderHome() {
     .sort((a, c) => c.s.pct - a.s.pct);
   const watch = watchAll.slice(0, 3);
   let h = '';
-  if (showInstallHint())
+  const tip = safariTip();
+  if (tip === 'start')
     h +=
-      '<div class="banner"><p>Install Frata: tap <strong>Share</strong> <svg aria-hidden="true" viewBox="0 0 24 24" width="15" height="15" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" style="vertical-align:-2px"><path d="M12 3v12M8 7l4-4 4 4M6 11H5v9h14v-9h-1"/></svg> in Safari, then <strong>Add to Home Screen</strong>. It opens full screen and works offline.</p><button class="icon-btn" data-act="hideInstallHint" aria-label="Dismiss install tip">' +
+      '<div class="banner"><p><strong>Add Frata to your Home Screen</strong> before you start: Safari can clear a website’s data after a week without a visit. Tap <strong>Share</strong> ' +
+      SHARE_ICON +
+      ' then <strong>Add to Home Screen</strong>.</p><button class="icon-btn" data-act="safariTipDone" data-v="start" aria-label="Dismiss">' +
+      ICON.close +
+      '</button></div>';
+  else if (tip === 'move')
+    h +=
+      '<div class="banner"><p><strong>Keep your entries safe.</strong> Safari can clear them after a week without a visit. Back up, add Frata to your Home Screen, then import the backup there.</p><button class="btn sm primary" data-act="backupNow">Back up</button><button class="icon-btn" data-act="safariTipDone" data-v="move" aria-label="Dismiss">' +
       ICON.close +
       '</button></div>';
   if (showPriceTip()) h += priceTipBanner();

@@ -5,7 +5,8 @@ test('the feedback links open WhatsApp and email with the version and phone fill
   await openApp(page);
   await page.click('.tabs [data-act=nav][data-v=settings]');
   const version = await page.evaluate(() => window.__qirsh.APP_VERSION);
-  const intro = `Frata feedback (version ${version}, Android, Chrome):\n\n`;
+  const size = await page.evaluate(() => innerWidth + '×' + innerHeight);
+  const intro = `Frata feedback (version ${version}, Android, Chrome, ${size}, on Settings):\n\n`;
 
   const wa = new URL(await page.locator('#feedbackSec a', { hasText: 'WhatsApp' }).getAttribute('href'));
   expect(wa.origin + wa.pathname).toBe('https://wa.me/96181457620');
@@ -52,10 +53,10 @@ test('a one-time note on Home says feedback can be sent', async ({ page }) => {
   await expect(tip).toHaveCount(0);
   await page.click('.tabs [data-act=nav][data-v=home]');
 
-  // "Send feedback" goes to the section, and the note doesn't come back.
-  await page.click('[data-act=feedbackOpen]');
-  await expect(page.locator('#feedbackSec')).toBeInViewport();
-  await page.click('.tabs [data-act=nav][data-v=home]');
+  // "Send feedback" opens the feedback sheet, and the note doesn't come back.
+  await tip.locator('[data-act=feedbackOpen]').click();
+  await expect(page.locator('#sheet h2')).toHaveText('Feedback & bugs');
+  await page.click('#sheet [data-act=close]');
   await expect(tip).toHaveCount(0);
   await page.reload();
   await page.waitForFunction(() => window.__qirsh);
@@ -70,4 +71,17 @@ test('"Got it" puts the feedback note away for good', async ({ page }) => {
   await page.reload();
   await page.waitForFunction(() => window.__qirsh);
   await expect(page.locator('#alerts .banner', { hasText: 'report bugs' })).toHaveCount(0);
+});
+
+test('the button at the top opens Feedback & bugs from any tab, saying which tab', async ({ page }) => {
+  await openApp(page);
+  await page.click('.tabs [data-act=nav][data-v=budgets]');
+  await page.click('.top [data-act=feedbackOpen]');
+  await expect(page.locator('#sheet h2')).toHaveText('Feedback & bugs');
+  const wa = new URL(await page.locator('#sheet a', { hasText: 'WhatsApp' }).getAttribute('href'));
+  expect(wa.searchParams.get('text')).toMatch(/, \d+×\d+, on Budgets\):\n\n$/);
+  await expect(page.locator('#sheet a', { hasText: 'Email' })).toHaveAttribute(
+    'href',
+    /^mailto:support@frata\.cc\?/,
+  );
 });

@@ -4,6 +4,9 @@
    format without the +, as WhatsApp links need it. */
 export const CONTACT = { whatsapp: '96181457620', email: 'support@frata.cc' };
 
+/* Frata's code is public, so anyone can check what it does with their data (Settings, at the bottom). */
+export const REPO_URL = 'https://github.com/UnnamedH/qirsh';
+
 /* People can rename these, add more and remove all but the first (see js/accounts.js). */
 export const DEFAULT_ACCOUNTS = [
   { id: 'wallet', name: 'Wallet' },

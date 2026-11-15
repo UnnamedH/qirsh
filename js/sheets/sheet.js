@@ -3,6 +3,7 @@ import { markSeen } from '../changelog.js';
 import { adjustSheet, updateAdjustPreview } from './adjust.js';
 import { budgetSheet } from './budget.js';
 import { demoSheet, markPriceTipDone } from './demo.js';
+import { feedbackSheet } from './feedback.js';
 import { txSheet, updatePreview } from './entry.js';
 import { newsSheet } from './news.js';
 import { repaySheet } from './payback.js';
@@ -47,7 +48,9 @@ export function drawSheet() {
             ? demoSheet()
             : sheetKind === 'adjust'
               ? adjustSheet()
-              : budgetSheet());
+              : sheetKind === 'feedback'
+                ? feedbackSheet()
+                : budgetSheet());
   fitAllThousands(el);
   if (sheetKind === 'tx') updatePreview();
   if (sheetKind === 'adjust') updateAdjustPreview();

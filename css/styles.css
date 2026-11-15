@@ -252,10 +252,22 @@ h2 {
   font-size: 13px;
   color: var(--muted);
 }
+.top-sub {
+  white-space: nowrap;
+}
+.top-end {
+  display: flex;
+  align-items: center;
+  gap: 4px;
+  margin-right: -8px;
+}
 
-/* A page following a sideways swipe must not make the screen scroll sideways. */
+/* A page following a sideways swipe must not make the screen scroll sideways. The browser is also told
+   up front that pages only scroll up and down (pinch-zoom stays), so a sideways swipe goes straight to
+   the tab swipe in js/ui/swipe.js instead of the browser first trying to handle it. */
 main {
   overflow-x: clip;
+  touch-action: pan-y pinch-zoom;
 }
 main .wrap {
   position: relative;
@@ -908,6 +920,7 @@ a.btn {
 .link {
   border: 0;
   background: none;
+  text-decoration: none;
   color: var(--accent);
   font-weight: 600;
   font-size: 14px;
