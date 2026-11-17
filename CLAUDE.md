@@ -73,6 +73,10 @@ CI (`.github/workflows/ci.yml`) runs lint, format check and tests on every PR.
   `tests/privacy.spec.js` enforces this. Inline `style=` is allowed.
 - **New app file?** Add it to the `APP` list in `sw.js`, then `npm run stamp`.
   `tests/precache.spec.js` fails if a file is missing from `APP` or `BUILD` is stale.
+- **No `theme_color` in the manifests, on purpose.** Chrome colours an installed Android app's gesture bar
+  with it, there is no dark version, so a light one leaves a light strip under a dark app. Without it,
+  Android follows the phone's light or dark mode. The page's `<meta name="theme-color">` tags still colour
+  the status bar. Don't add it back.
 - **App icons** come from `scripts/icon.svg` via `npm run icons`, which also writes `icons/<colour>/` and
   `manifest-<colour>.webmanifest` for each preset accent. Rerun it after changing the icon, the presets or
   `manifest.webmanifest`; `tests/precache.spec.js` checks the copies match.
