@@ -1,8 +1,7 @@
 /* The accounts and categories a new user starts with. */
 
-/* Where feedback and bug reports go (Settings → Feedback & bugs). The number is in international
-   format without the +, as WhatsApp links need it. */
-export const CONTACT = { whatsapp: '96181457620', email: 'support@frata.cc' };
+/* Where feedback and bug reports go (Settings → Feedback & bugs). */
+export const CONTACT = { email: 'support@frata.cc' };
 
 /* Whish payment link for "Buy me a coffee" (Settings → Support Frata): the person picks the amount in
    Whish. It's the link inside the maker's Whish QR code. */

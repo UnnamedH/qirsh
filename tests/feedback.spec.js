@@ -1,17 +1,15 @@
-/* Settings → Feedback & bugs: WhatsApp and email links with the version and phone, and nothing else. */
+/* Settings → Feedback & bugs: an email link with the version and phone, and nothing else. */
 import { test, expect, openApp } from './helpers.js';
 
-test('the feedback links open WhatsApp and email with the version and phone filled in', async ({ page }) => {
+test('the feedback link opens an email with the version and phone filled in', async ({ page }) => {
   await openApp(page);
   await page.click('.tabs [data-act=nav][data-v=settings]');
   const version = await page.evaluate(() => window.__qirsh.APP_VERSION);
   const size = await page.evaluate(() => innerWidth + '×' + innerHeight);
   const intro = `Frata feedback (version ${version}, Android, Chrome, ${size}, on Settings):\n\n`;
 
-  const wa = new URL(await page.locator('#feedbackSec a', { hasText: 'WhatsApp' }).getAttribute('href'));
-  expect(wa.origin + wa.pathname).toBe('https://wa.me/96181457620');
-  expect(wa.searchParams.get('text')).toBe(intro);
-
+  // Email only: no phone number or chat link anywhere in the app.
+  await expect(page.locator('#feedbackSec a')).toHaveCount(1);
   const mail = await page.locator('#feedbackSec a', { hasText: 'Email' }).getAttribute('href');
   expect(mail.startsWith('mailto:support@frata.cc?')).toBe(true);
   const q = new URLSearchParams(mail.split('?')[1]);
@@ -78,12 +76,9 @@ test('the button at the top opens Feedback & bugs from any tab, saying which tab
   await page.click('.tabs [data-act=nav][data-v=budgets]');
   await page.click('.top [data-act=feedbackOpen]');
   await expect(page.locator('#sheet h2')).toHaveText('Feedback & bugs');
-  const wa = new URL(await page.locator('#sheet a', { hasText: 'WhatsApp' }).getAttribute('href'));
-  expect(wa.searchParams.get('text')).toMatch(/, \d+×\d+, on Budgets\):\n\n$/);
-  await expect(page.locator('#sheet a', { hasText: 'Email' })).toHaveAttribute(
-    'href',
-    /^mailto:support@frata\.cc\?/,
-  );
+  const mail = await page.locator('#sheet a', { hasText: 'Email' }).getAttribute('href');
+  expect(mail).toMatch(/^mailto:support@frata\.cc\?/);
+  expect(new URLSearchParams(mail.split('?')[1]).get('body')).toMatch(/, \d+×\d+, on Budgets\):\n\n$/);
 });
 
 test('Support Frata opens the maker’s Whish payment link', async ({ page }) => {
@@ -111,4 +106,16 @@ test('the heart at the top opens Support Frata, with the same coffee link as Set
   await expect(page.locator('#sheet')).toBeHidden();
   // Next to the feedback button, both in the header.
   await expect(page.locator('.top-end [data-act=feedbackOpen]')).toBeVisible();
+});
+
+test('the app holds no phone number or chat link', async ({ page }) => {
+  const files = ['js/config.js', 'js/feedback.js', 'js/sheets/feedback.js', 'js/sheets/support.js'];
+  const fs = await import('node:fs');
+  for (const f of files) {
+    const text = fs.readFileSync(f, 'utf8');
+    expect(text, f).not.toMatch(/wa\.me|whatsapp|\+?961\s?\d/i);
+  }
+  await openApp(page);
+  await page.click('.tabs [data-act=nav][data-v=settings]');
+  expect(await page.locator('#v-settings').innerHTML()).not.toMatch(/wa\.me|whatsapp/i);
 });
