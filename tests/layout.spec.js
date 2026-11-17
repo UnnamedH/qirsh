@@ -113,3 +113,34 @@ test('the header keeps its date, heart and chat buttons on one line, even at 320
     }
   }
 });
+
+test('the header’s date and icons are evenly spaced, level, and flush with the page edge', async ({
+  page,
+}) => {
+  await openApp(page);
+  for (const width of [320, 390, 430]) {
+    await page.setViewportSize({ width, height: 700 });
+    await page.click('.tabs [data-act=nav][data-v=budgets]');
+    const g = await page.evaluate(() => {
+      const rng = document.createRange();
+      rng.selectNodeContents(document.querySelector('#topSub'));
+      const date = rng.getBoundingClientRect();
+      const heart = document.querySelector('[data-act=supportOpen] path').getBoundingClientRect();
+      const chat = document.querySelector('[data-act=feedbackOpen] path').getBoundingClientRect();
+      return {
+        dateToHeart: heart.left - date.right,
+        heartToChat: chat.left - heart.right,
+        heartW: heart.width,
+        chatW: chat.width,
+        heartCy: (heart.top + heart.bottom) / 2,
+        chatCy: (chat.top + chat.bottom) / 2,
+        edge: chat.right - (innerWidth - 16),
+      };
+    });
+    const at = `at ${width}px`;
+    expect(Math.abs(g.dateToHeart - g.heartToChat), 'gaps even ' + at).toBeLessThanOrEqual(1);
+    expect(Math.abs(g.heartW - g.chatW), 'icons the same size ' + at).toBeLessThanOrEqual(0.5);
+    expect(Math.abs(g.heartCy - g.chatCy), 'icons level ' + at).toBeLessThanOrEqual(0.5);
+    expect(Math.abs(g.edge), 'flush with the page edge ' + at).toBeLessThanOrEqual(1);
+  }
+});
