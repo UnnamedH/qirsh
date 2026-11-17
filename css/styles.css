@@ -45,6 +45,7 @@
   padding-bottom: env(safe-area-inset-bottom, 0px);
 }
 html {
+  overflow-x: clip;
   scroll-padding-top: env(safe-area-inset-top, 0px);
 }
 body {
@@ -131,6 +132,12 @@ html {
   text-size-adjust: 100%;
 }
 body {
+  /* Every page is at least as tall as the screen (less the notch and home bar the root pads for), so a
+     short page fills it like a long one, and nothing depends on the page being scrollable. */
+  display: flex;
+  flex-direction: column;
+  min-height: calc(100vh - env(safe-area-inset-top, 0px) - env(safe-area-inset-bottom, 0px));
+  min-height: calc(100dvh - env(safe-area-inset-top, 0px) - env(safe-area-inset-bottom, 0px));
   background: var(--bg);
   color: var(--fg);
   font-family: var(--f-body);
@@ -262,6 +269,9 @@ h2 {
   margin-right: -8px;
 }
 
+main {
+  flex: 1;
+}
 /* A page following a sideways swipe must not make the screen scroll sideways. The browser is also told
    up front that pages only scroll up and down (pinch-zoom stays), so a sideways swipe goes straight to
    the tab swipe in js/ui/swipe.js instead of the browser first trying to handle it. */
@@ -620,7 +630,19 @@ main .wrap {
   display: flex;
 }
 .seg.wide button {
-  flex: 1;
+  flex: 1 1 0;
+  min-width: 0;
+  padding-inline: 4px;
+  white-space: nowrap;
+  overflow: hidden;
+  text-overflow: ellipsis;
+}
+/* The narrowest phones: four tabs such as Expense / Income / Transfer / Exchange still read in full. */
+@media (max-width: 359px) {
+  .seg.wide button {
+    font-size: 12.5px;
+    padding-inline: 2px;
+  }
 }
 
 /* lists */
@@ -949,6 +971,18 @@ a.btn {
   font-size: 16px;
   min-width: 0;
 }
+.field input[type='date'] {
+  /* Safari gives a date field a width of its own, wider than a half-width column; this lets it fit. */
+  -webkit-appearance: none;
+  appearance: none;
+  display: block;
+  max-width: 100%;
+  min-height: 44px;
+  text-align: left;
+}
+.field input[type='date']::-webkit-date-and-time-value {
+  text-align: left;
+}
 .field textarea {
   font-family: var(--f-num);
   font-size: 16px;
@@ -957,7 +991,7 @@ a.btn {
 }
 .grid2 {
   display: grid;
-  grid-template-columns: 1fr 1fr;
+  grid-template-columns: minmax(0, 1fr) minmax(0, 1fr);
   gap: 10px;
 }
 .card {
@@ -1174,11 +1208,14 @@ a.btn {
   width: 26px;
   height: 26px;
 }
+/* The tab bar is pinned to the bottom of the screen on every page. Its own layer keeps Safari from
+   moving it when the page is short or the browser's bars change. */
 .tabs {
   position: fixed;
   left: 0;
   right: 0;
   bottom: 0;
+  transform: translateZ(0);
   z-index: 24;
   background: var(--surface);
   border-top: 1px solid var(--line);
@@ -1214,6 +1251,8 @@ a.btn {
   inset: 0;
   background: var(--scrim);
   z-index: 40;
+  /* Dragging the dimmed page behind a sheet moves nothing. */
+  touch-action: none;
 }
 .sheet {
   position: fixed;
@@ -1224,7 +1263,11 @@ a.btn {
   width: 100%;
   max-width: 520px;
   max-height: 90vh;
-  overflow: auto;
+  max-height: 90dvh;
+  /* Up and down only: the sheet never moves sideways, however wide a field is in Safari. */
+  overflow-x: hidden;
+  overflow-y: auto;
+  touch-action: pan-y;
   background: var(--bg);
   border-radius: 20px 20px 0 0;
   padding: 8px max(16px, env(safe-area-inset-right, 0px)) calc(20px + env(safe-area-inset-bottom, 0px))
