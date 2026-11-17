@@ -85,3 +85,30 @@ test('the button at the top opens Feedback & bugs from any tab, saying which tab
     /^mailto:support@frata\.cc\?/,
   );
 });
+
+test('Support Frata opens the maker’s Whish payment link', async ({ page }) => {
+  await openApp(page);
+  await page.click('.tabs [data-act=nav][data-v=settings]');
+  const titles = await page.locator('#v-settings .sec > h2').allInnerTexts();
+  expect(titles.indexOf('Support Frata')).toBe(titles.indexOf('Feedback & bugs') + 1);
+  const link = page.locator('#supportSec a', { hasText: 'Buy me a coffee' });
+  await expect(link).toHaveAttribute('href', 'https://whish.money/app/pay/ynLO2j39h');
+  await expect(link).toHaveAttribute('target', '_blank');
+  await expect(link).toHaveAttribute('rel', 'noopener');
+});
+
+test('the heart at the top opens Support Frata, with the same coffee link as Settings', async ({ page }) => {
+  await openApp(page);
+  await page.click('.tabs [data-act=nav][data-v=history]');
+  const heart = page.locator('.top [data-act=supportOpen]');
+  await expect(heart).toHaveAttribute('aria-label', 'Support Frata');
+  await heart.click();
+  await expect(page.locator('#sheet h2')).toHaveText('Support Frata');
+  const link = page.locator('#sheet a', { hasText: 'Buy me a coffee' });
+  await expect(link).toHaveAttribute('href', 'https://whish.money/app/pay/ynLO2j39h');
+  await expect(link).toHaveAttribute('target', '_blank');
+  await page.click('#sheet [data-act=close]');
+  await expect(page.locator('#sheet')).toBeHidden();
+  // Next to the feedback button, both in the header.
+  await expect(page.locator('.top-end [data-act=feedbackOpen]')).toBeVisible();
+});

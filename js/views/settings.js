@@ -3,6 +3,7 @@ import { APP_VERSION } from '../changelog.js';
 import { MAIN, MAX_ACCOUNTS, MAX_NAME, accounts } from '../accounts.js';
 import { PROTECTED, REPO_URL } from '../config.js';
 import { feedbackButtons } from '../sheets/feedback.js';
+import { supportButtons } from '../sheets/support.js';
 import { ICON } from '../icons.js';
 import { catName } from '../ledger.js';
 import { toInput } from '../money.js';
@@ -225,6 +226,10 @@ export function renderSettings() {
   h +=
     '<section class="sec" id="feedbackSec"><h2>Feedback &amp; bugs</h2><div class="card">' +
     feedbackButtons() +
+    '</div></section>';
+  h +=
+    '<section class="sec" id="supportSec"><h2>Support Frata</h2><div class="card">' +
+    supportButtons() +
     '</div></section>';
   h +=
     '<section class="sec" id="backupSec"><h2>Backup</h2><div class="card"><p class="note">' +

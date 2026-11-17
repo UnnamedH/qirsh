@@ -4,6 +4,10 @@
    format without the +, as WhatsApp links need it. */
 export const CONTACT = { whatsapp: '96181457620', email: 'support@frata.cc' };
 
+/* Whish payment link for "Buy me a coffee" (Settings → Support Frata): the person picks the amount in
+   Whish. It's the link inside the maker's Whish QR code. */
+export const SUPPORT_URL = 'https://whish.money/app/pay/ynLO2j39h';
+
 /* Frata's code is public, so anyone can check what it does with their data (Settings, at the bottom). */
 export const REPO_URL = 'https://github.com/UnnamedH/qirsh';
 
