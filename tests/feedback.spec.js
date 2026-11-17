@@ -85,3 +85,14 @@ test('the button at the top opens Feedback & bugs from any tab, saying which tab
     /^mailto:support@frata\.cc\?/,
   );
 });
+
+test('Support Frata opens the maker’s Whish payment link', async ({ page }) => {
+  await openApp(page);
+  await page.click('.tabs [data-act=nav][data-v=settings]');
+  const titles = await page.locator('#v-settings .sec > h2').allInnerTexts();
+  expect(titles.indexOf('Support Frata')).toBe(titles.indexOf('Feedback & bugs') + 1);
+  const link = page.locator('#supportSec a', { hasText: 'Buy me a coffee' });
+  await expect(link).toHaveAttribute('href', 'https://whish.money/app/pay/ynLO2j39h');
+  await expect(link).toHaveAttribute('target', '_blank');
+  await expect(link).toHaveAttribute('rel', 'noopener');
+});
