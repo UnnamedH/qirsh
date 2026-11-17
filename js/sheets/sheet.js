@@ -7,6 +7,7 @@ import { feedbackSheet } from './feedback.js';
 import { txSheet, updatePreview } from './entry.js';
 import { newsSheet } from './news.js';
 import { repaySheet } from './payback.js';
+import { supportSheet } from './support.js';
 import { fitAllThousands } from '../ui/amount.js';
 import { render } from '../ui/render.js';
 import { $ } from '../util.js';
@@ -50,7 +51,9 @@ export function drawSheet() {
               ? adjustSheet()
               : sheetKind === 'feedback'
                 ? feedbackSheet()
-                : budgetSheet());
+                : sheetKind === 'support'
+                  ? supportSheet()
+                  : budgetSheet());
   fitAllThousands(el);
   if (sheetKind === 'tx') updatePreview();
   if (sheetKind === 'adjust') updateAdjustPreview();

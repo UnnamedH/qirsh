@@ -673,6 +673,10 @@ document.addEventListener('click', (e) => {
       toast('Deleted ' + c.name);
       break;
     }
+    case 'supportOpen':
+      setForm({});
+      openSheet('support');
+      break;
     case 'feedbackOpen':
       feedbackTipSeen();
       render();

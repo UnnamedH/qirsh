@@ -86,3 +86,30 @@ test('the feedback and correction sheets fit narrow phones too', async ({ page }
     0,
   );
 });
+
+test('the header keeps its date, heart and chat buttons on one line, even at 320px', async ({ page }) => {
+  await openApp(page);
+  for (const width of [320, 360, 412]) {
+    await page.setViewportSize({ width, height: 700 });
+    for (const v of ['home', 'history', 'budgets', 'settings']) {
+      await page.click(`.tabs [data-act=nav][data-v=${v}]`);
+      const m = await page.evaluate(() => {
+        const r = (s) => document.querySelector(s).getBoundingClientRect();
+        return {
+          brandRight: r('.brand').right,
+          endLeft: r('.top-end').left,
+          endRight: r('.top-end').right,
+          dateHeight: r('#topSub').height,
+          lineHeight: parseFloat(getComputedStyle(document.querySelector('#topSub')).lineHeight) || 20,
+          docWidth: document.documentElement.scrollWidth,
+          width: innerWidth,
+        };
+      });
+      const at = `${v} at ${width}px`;
+      expect(m.endLeft, at + ': buttons clear the logo').toBeGreaterThanOrEqual(m.brandRight);
+      expect(m.endRight, at).toBeLessThanOrEqual(m.width);
+      expect(m.dateHeight, at + ': the date is on one line').toBeLessThanOrEqual(m.lineHeight * 1.5);
+      expect(m.docWidth, at + ': nothing scrolls sideways').toBeLessThanOrEqual(m.width);
+    }
+  }
+});

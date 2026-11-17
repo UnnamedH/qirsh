@@ -14,7 +14,7 @@ Plain HTML, CSS and JavaScript modules: no framework and no build step. The host
 - Hide amounts on Home with one tap, for showing the app to someone
 - Swipe sideways between tabs, and pull a sheet down to close it
 - Fold any section on Home down to a glimpse: budgets as little rings, the month as three numbers
-- A "Buy me a coffee" link to support Frata through Whish (Settings → Support Frata)
+- A "Buy me a coffee" link to support Frata through Whish, from the heart at the top or Settings → Support Frata
 - Feedback and bug reports from the button at the top (or Settings), by WhatsApp or email, with the version, phone, screen size and tab filled in
 - Expenses entered as what you paid and the change you got back, or, if you turn it on, price first: say what you paid with and the change, or the rest paid on top, is worked out
 - LL typed in thousands everywhere (type 385 for 385,000 LL)
