@@ -71,6 +71,9 @@ CI (`.github/workflows/ci.yml`) runs lint, format check and tests on every PR.
 
 - **CSP** in `index.html`: no inline scripts, nothing from other origins (fonts are in `fonts/`).
   `tests/privacy.spec.js` enforces this. Inline `style=` is allowed.
+- **Bottom of the screen** (Chrome's edge-to-edge guide): size bottom-pinned things with `var(--safe-bottom)`
+  (the largest home/gesture bar) and move them with `bottom: calc(env(safe-area-inset-bottom, 0px) ± …)`.
+  Never size anything with the live `env(safe-area-inset-bottom)`; `tests/safe-area.spec.js` checks this.
 - **New app file?** Add it to the `APP` list in `sw.js`, then `npm run stamp`.
   `tests/precache.spec.js` fails if a file is missing from `APP` or `BUILD` is stale.
 - **App icons** come from `scripts/icon.svg` via `npm run icons`, which also writes `icons/<colour>/` and

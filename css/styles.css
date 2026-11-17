@@ -42,7 +42,12 @@
   color-scheme: light;
   box-sizing: border-box;
   padding-top: env(safe-area-inset-top, 0px);
-  padding-bottom: env(safe-area-inset-bottom, 0px);
+  /* The most room the home bar (iPhone) or gesture bar (Android) can take at the bottom. Bottom-pinned
+     things are sized with this up front, then moved with the live inset (see .tabs), as Chrome's
+     edge-to-edge guide recommends: sizing them with the live inset re-lays out the page on every frame
+     while Chrome's bottom bar slides away. 36px stands in where a browser has no maximum (Safari): it
+     covers the iPhone home bar, and the part not needed sits below the screen edge. */
+  --safe-bottom: env(safe-area-max-inset-bottom, 36px);
 }
 html {
   overflow-x: clip;
@@ -132,12 +137,13 @@ html {
   text-size-adjust: 100%;
 }
 body {
-  /* Every page is at least as tall as the screen (less the notch and home bar the root pads for), so a
-     short page fills it like a long one, and nothing depends on the page being scrollable. */
+  /* Every page is at least as tall as the screen (less the notch the root pads for), so a short page
+     fills it like a long one, and nothing depends on the page being scrollable. The tab bar covers the
+     home bar area, so the page runs under it. */
   display: flex;
   flex-direction: column;
-  min-height: calc(100vh - env(safe-area-inset-top, 0px) - env(safe-area-inset-bottom, 0px));
-  min-height: calc(100dvh - env(safe-area-inset-top, 0px) - env(safe-area-inset-bottom, 0px));
+  min-height: calc(100vh - env(safe-area-inset-top, 0px));
+  min-height: calc(100dvh - env(safe-area-inset-top, 0px));
   background: var(--bg);
   color: var(--fg);
   font-family: var(--f-body);
@@ -293,7 +299,7 @@ main {
 }
 main .wrap {
   position: relative;
-  padding-block: 6px calc(130px + env(safe-area-inset-bottom, 0px));
+  padding-block: 6px calc(130px + var(--safe-bottom));
   display: flex;
   flex-direction: column;
   gap: 26px;
@@ -1204,7 +1210,7 @@ a.btn {
 .fab {
   position: fixed;
   z-index: 25;
-  bottom: calc(76px + env(safe-area-inset-bottom, 0px));
+  bottom: calc(env(safe-area-inset-bottom, 0px) + 76px);
   right: max(calc(16px + env(safe-area-inset-right, 0px)), calc((100vw - 520px) / 2 + 16px));
   width: 58px;
   height: 58px;
@@ -1221,17 +1227,20 @@ a.btn {
   height: 26px;
 }
 /* The tab bar is pinned to the bottom of the screen on every page. Its own layer keeps Safari from
-   moving it when the page is short or the browser's bars change. */
+   moving it when the page is short or the browser's bars change. It always has room for the largest
+   home bar below its buttons, and is moved down by whatever of that room isn't needed right now, so
+   its buttons sit just above the home bar and its background reaches the screen edge. Chrome moves
+   it this way without laying the page out again (its fast path for this form of `bottom`). */
 .tabs {
   position: fixed;
   left: 0;
   right: 0;
-  bottom: 0;
+  bottom: calc(env(safe-area-inset-bottom, 0px) - var(--safe-bottom));
   transform: translateZ(0);
   z-index: 24;
   background: var(--surface);
   border-top: 1px solid var(--line);
-  padding-bottom: env(safe-area-inset-bottom, 0px);
+  padding-bottom: var(--safe-bottom);
 }
 .tabs .wrap {
   display: grid;
@@ -1270,7 +1279,8 @@ a.btn {
   position: fixed;
   z-index: 41;
   left: 50%;
-  bottom: 0;
+  /* Like the tab bar: room for the largest home bar, moved down by what isn't needed. */
+  bottom: calc(env(safe-area-inset-bottom, 0px) - var(--safe-bottom));
   transform: translateX(-50%);
   width: 100%;
   max-width: 520px;
@@ -1282,7 +1292,7 @@ a.btn {
   touch-action: pan-y;
   background: var(--bg);
   border-radius: 20px 20px 0 0;
-  padding: 8px max(16px, env(safe-area-inset-right, 0px)) calc(20px + env(safe-area-inset-bottom, 0px))
+  padding: 8px max(16px, env(safe-area-inset-right, 0px)) calc(20px + var(--safe-bottom))
     max(16px, env(safe-area-inset-left, 0px));
   display: flex;
   flex-direction: column;
@@ -1444,7 +1454,7 @@ a.btn {
   z-index: 50;
   left: 50%;
   transform: translateX(-50%);
-  bottom: calc(146px + env(safe-area-inset-bottom, 0px));
+  bottom: calc(env(safe-area-inset-bottom, 0px) + 146px);
   width: calc(100% - 32px);
   max-width: 488px;
   background: var(--fg);
