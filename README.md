@@ -15,7 +15,7 @@ Plain HTML, CSS and JavaScript modules: no framework and no build step. The host
 - Swipe sideways between tabs, and pull a sheet down to close it
 - Fold any section on Home down to a glimpse: budgets as little rings, the month as three numbers
 - A "Buy me a coffee" link to support Frata through Whish, from the heart at the top or Settings → Support Frata
-- Feedback and bug reports from the button at the top (or Settings), by WhatsApp or email, with the version, phone, screen size and tab filled in
+- Feedback and bug reports from the button at the top (or Settings), by email, with the version, phone, screen size and tab filled in
 - Expenses entered as what you paid and the change you got back, or, if you turn it on, price first: say what you paid with and the change, or the rest paid on top, is worked out
 - LL typed in thousands everywhere (type 385 for 385,000 LL)
 - Transfers between accounts and exchanges between $ and LL at a rate you set
@@ -89,7 +89,7 @@ js/templates.js         Quick add (frequent and recent entries)
 js/theme.js             Accent colour palette and light/dark theme
 js/changelog.js         Release notes for "What's new"
 js/backup.js            Export and import, saving generated files
-js/feedback.js          The WhatsApp and email feedback links (js/sheets/feedback.js shows them)
+js/feedback.js          The email feedback link (js/sheets/feedback.js shows it)
 js/handoff.js           Moving data to frata.cc in a link, and reading it on arrival
 js/report/              Monthly report: the data (monthly.js) and a small .xlsx writer (xlsx.js)
 js/pwa.js               Install tip and service worker registration

@@ -1,4 +1,4 @@
-/* Feedback links: a WhatsApp chat or an email to the maker, with the app version and phone filled in. */
+/* The feedback link: an email to the maker, with the app version and phone filled in. */
 import { APP_VERSION } from './changelog.js';
 import { CONTACT } from './config.js';
 import { IOS, STANDALONE } from './pwa.js';
@@ -39,9 +39,6 @@ export const intro = () =>
   ', on ' +
   (TAB_NAMES[view] || view) +
   '):\n\n';
-
-export const whatsappLink = () =>
-  'https://wa.me/' + CONTACT.whatsapp + '?text=' + encodeURIComponent(intro());
 
 export const emailLink = () =>
   'mailto:' +
