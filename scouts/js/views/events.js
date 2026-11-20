@@ -149,7 +149,7 @@ function renderEvent(e) {
   h +=
     '<section class="sec"><h2>Entries</h2><div class="list">' +
     (txs.length
-      ? txs.map((x) => txRow(x, true)).join('')
+      ? txs.map((x) => txRow(x, { event: true })).join('')
       : '<p class="empty">No entries for this event yet.</p>') +
     '</div></section>';
   return h;

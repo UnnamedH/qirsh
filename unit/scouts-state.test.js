@@ -97,6 +97,7 @@ test('a leader who paid and the claims a reimbursement covers are kept only when
   const tx = (o) => Object.assign({ type: 'expense', amount: 1, currency: 'USD', date: '2026-01-02' }, o);
   const s = normalize(
     base({
+      members: [{ id: 'm1', name: 'Leader' }],
       tx: [
         tx({ id: 'a', paidBy: 'm1', claimIds: ['c1', 'c1', '', 4, 'c2'] }),
         tx({ id: 'b', paidBy: 3, claimIds: 'c1' }),
@@ -115,6 +116,7 @@ test('links to events, members and fees survive when they are plain ids', () => 
   const s = normalize(
     base({
       events: [{ id: 'e', name: 'Camp' }],
+      members: [{ id: 'm', name: 'Maya' }],
       tx: [
         {
           id: 'a',
@@ -167,4 +169,68 @@ test('events are repaired, and entries lose links to events that are gone', () =
   assert.deepEqual([s.events[1].start, s.events[1].budget, s.events[1].closed], ['', null, false]);
   assert.equal(s.tx[0].eventId, 'camp');
   assert.equal('eventId' in s.tx[1], false);
+});
+
+test('members and fees are repaired, and links to ones that are gone are dropped', () => {
+  const s = normalize(
+    base({
+      events: [{ id: 'camp', name: 'Camp' }],
+      members: [
+        { id: 'ali', name: ' Ali ', role: 'leader', unit: 'Rovers', active: false },
+        { id: 'ali', name: 'Duplicate' },
+        { id: 'maya', role: 'chief', unit: 7 },
+        { name: 'No id' },
+      ],
+      fees: [
+        {
+          id: 'dues',
+          name: 'Dues',
+          amount: '50',
+          currency: 'USD',
+          due: '2026-03-01',
+          memberIds: ['ali', 'ali', 'gone', 'maya'],
+        },
+        { id: 'campfee', amount: 100, currency: 'USD', eventId: 'camp', memberIds: 'ali' },
+        { id: 'x', amount: 1, currency: 'USD', eventId: 'deleted', due: 'tomorrow', memberIds: [] },
+        { id: 'bad', name: 'No amount', amount: 0, currency: 'USD' },
+        { id: 'bad2', name: 'Odd currency', amount: 5, currency: 'EUR' },
+      ],
+      tx: [
+        {
+          id: 'a',
+          type: 'income',
+          amount: 50,
+          currency: 'USD',
+          date: '2026-01-02',
+          memberId: 'ali',
+          feeId: 'dues',
+        },
+        {
+          id: 'b',
+          type: 'income',
+          amount: 5,
+          currency: 'USD',
+          date: '2026-01-02',
+          memberId: 'gone',
+          feeId: 'bad',
+        },
+        { id: 'c', type: 'expense', amount: 5, currency: 'USD', date: '2026-01-02', paidBy: 'gone' },
+      ],
+    }),
+  );
+  assert.deepEqual(s.members, [
+    { id: 'ali', name: 'Ali', role: 'leader', unit: 'Rovers', active: false, createdAt: 0 },
+    { id: 'maya', name: 'Unnamed', role: 'scout', unit: '', active: true, createdAt: 0 },
+  ]);
+  assert.deepEqual(
+    s.fees.map((f) => [f.id, f.name, f.amount, f.due, f.eventId, f.memberIds]),
+    [
+      ['dues', 'Dues', 50, '2026-03-01', undefined, ['ali', 'maya']],
+      ['campfee', 'Fee', 100, '', 'camp', []],
+      ['x', 'Fee', 1, '', undefined, []],
+    ],
+  );
+  assert.deepEqual([s.tx[0].memberId, s.tx[0].feeId], ['ali', 'dues']);
+  assert.equal('memberId' in s.tx[1] || 'feeId' in s.tx[1], false);
+  assert.equal('paidBy' in s.tx[2], false);
 });

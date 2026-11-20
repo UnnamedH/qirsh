@@ -77,3 +77,57 @@
   font-size: 12.5px;
   margin: 24px 0 8px;
 }
+
+/* Five tabs. */
+.tabs .wrap {
+  grid-template-columns: repeat(5, 1fr);
+}
+
+/* Who pays a fee: a tick list of members. */
+.who-head {
+  display: flex;
+  justify-content: space-between;
+  align-items: baseline;
+  gap: 12px;
+}
+.who-head .links {
+  margin-top: 0;
+}
+.who {
+  display: flex;
+  flex-direction: column;
+  max-height: 40vh;
+  overflow-y: auto;
+  border: 1px solid var(--line);
+  border-radius: var(--r);
+  background: var(--surface);
+}
+.tick {
+  display: flex;
+  align-items: center;
+  gap: 10px;
+  padding: 10px 14px;
+  border-top: 1px solid var(--line);
+}
+.tick:first-child {
+  border-top: 0;
+}
+.tick input {
+  width: 18px;
+  height: 18px;
+  accent-color: var(--accent);
+  flex: none;
+}
+.tick em {
+  font-style: normal;
+  color: var(--muted);
+  font-size: 13px;
+}
+
+/* A member's status on a fee sits at the start of the line under their name. */
+.row-sub .pill {
+  font-size: 10px;
+  padding: 0 6px;
+  margin-right: 2px;
+  vertical-align: 1px;
+}

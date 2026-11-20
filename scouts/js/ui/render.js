@@ -7,11 +7,18 @@ import { applyTheme } from '../theme.js';
 import { renderEvents } from '../views/events.js';
 import { renderHistory } from '../views/history.js';
 import { renderHome } from '../views/home.js';
+import { renderMembers } from '../views/members.js';
 import { renderSettings } from '../views/settings.js';
 import { pendingImport, view } from './ui-state.js';
 
-const VIEWS = { home: renderHome, events: renderEvents, history: renderHistory, settings: renderSettings };
-const TITLES = { home: '', events: 'Events', history: 'History', settings: 'Settings' };
+const VIEWS = {
+  home: renderHome,
+  events: renderEvents,
+  members: renderMembers,
+  history: renderHistory,
+  settings: renderSettings,
+};
+const TITLES = { home: '', events: 'Events', members: 'Members', history: 'History', settings: 'Settings' };
 
 export function render() {
   applyTheme();

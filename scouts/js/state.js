@@ -120,6 +120,51 @@ function normalizeEvents(list) {
     });
 }
 
+/* Keeps the first record with each id, dropping anything without one. */
+function uniqueById(list) {
+  const seen = new Set();
+  return (Array.isArray(list) ? list : []).filter(
+    (r) => isObj(r) && typeof r.id === 'string' && r.id && !seen.has(r.id) && seen.add(r.id),
+  );
+}
+
+const text = (v, max) => (typeof v === 'string' ? v.trim().slice(0, max) : '');
+
+/* Members: scouts and leaders. Someone who left stays, inactive, so past payments keep their name. */
+function normalizeMembers(list) {
+  return uniqueById(list).map((m) => ({
+    id: m.id,
+    name: text(m.name, 60) || 'Unnamed',
+    role: m.role === 'leader' ? 'leader' : 'scout',
+    unit: text(m.unit, 30),
+    active: m.active !== false,
+    createdAt: +m.createdAt || 0,
+  }));
+}
+
+/* Fees: an amount each listed member owes. A fee without a usable amount can't be tracked, so it goes. */
+function normalizeFees(list, out) {
+  const members = new Set(out.members.map((m) => m.id)),
+    events = new Set(out.events.map((e) => e.id));
+  return uniqueById(list)
+    .filter((f) => +f.amount > 0 && isCur(f.currency))
+    .map((f) => {
+      const x = {
+        id: f.id,
+        name: text(f.name, 60) || 'Fee',
+        amount: +f.amount,
+        currency: f.currency,
+        due: typeof f.due === 'string' && YMD.test(f.due) ? f.due : '',
+        memberIds: [
+          ...new Set((Array.isArray(f.memberIds) ? f.memberIds : []).filter((id) => members.has(id))),
+        ],
+        createdAt: +f.createdAt || 0,
+      };
+      if (typeof f.eventId === 'string' && events.has(f.eventId)) x.eventId = f.eventId;
+      return x;
+    });
+}
+
 /** Repairs any parsed data into a state the app can use. It never throws on bad data. */
 export function normalize(s) {
   const b = blankState();
@@ -170,8 +215,15 @@ export function normalize(s) {
   out.tx.forEach((t) => {
     if (t.eventId && !eventIds.has(t.eventId)) delete t.eventId;
   });
-  ['members', 'fees'].forEach((k) => {
-    out[k] = Array.isArray(s[k]) ? s[k].filter((r) => isObj(r) && typeof r.id === 'string') : [];
+  out.members = normalizeMembers(s.members);
+  out.fees = normalizeFees(s.fees, out);
+  // Links to a member or fee that no longer exists are dropped, as for events.
+  const memberIds = new Set(out.members.map((m) => m.id)),
+    feeIds = new Set(out.fees.map((f) => f.id));
+  out.tx.forEach((t) => {
+    if (t.memberId && !memberIds.has(t.memberId)) delete t.memberId;
+    if (t.paidBy && !memberIds.has(t.paidBy)) delete t.paidBy;
+    if (t.feeId && !feeIds.has(t.feeId)) delete t.feeId;
   });
   out.lastExport = typeof s.lastExport === 'string' ? s.lastExport : null;
   delete out.exportedAt;
