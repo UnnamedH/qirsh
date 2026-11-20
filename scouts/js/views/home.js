@@ -4,6 +4,7 @@ import { balances, combinedUSD } from '../../../js/core/ledger.js';
 import { fmt } from '../../../js/core/money.js';
 import { $, esc } from '../../../js/util.js';
 import { state } from '../state.js';
+import { outstandingUSD } from '../../../js/core/fees.js';
 import { fmtDisp, txRow } from '../ui/format.js';
 
 export function renderHome() {
@@ -42,6 +43,13 @@ export function renderHome() {
       })
       .join('') +
     '</div></section>';
+  // What members still owe on their fees: money still to come in, so valued at today's rate.
+  const owed = outstandingUSD(state);
+  if (owed > 0)
+    h +=
+      '<div class="list"><div class="row"><button class="row-btn" data-act="nav" data-v="members"><span class="row-main"><span class="row-title">Still owed by members</span><span class="row-sub">On their fees</span></span><span class="amt priv">' +
+      fmtDisp(owed) +
+      '</span></button></div></div>';
   h +=
     '<div class="btn-row"><button class="btn primary" data-act="new" data-v="expense">Expense</button>' +
     '<button class="btn" data-act="new" data-v="income">Income</button>' +

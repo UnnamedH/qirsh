@@ -1,6 +1,7 @@
 /* Text and HTML for entries and amounts: titles, glyphs, and totals in the display currency. */
 import { accName } from '../../../js/core/accounts.js';
 import { eventOf } from '../../../js/core/events.js';
+import { memberOf } from '../../../js/core/fees.js';
 import { catName, catOf } from '../../../js/core/ledger.js';
 import { fmt, fromUSD, payParts } from '../../../js/core/money.js';
 import { dayLabel, esc } from '../../../js/util.js';
@@ -23,12 +24,16 @@ export function txTitle(t) {
   return t.note || catName(state, t.categoryId);
 }
 
-/** The line under an entry's title. `hideEvent` leaves out the event name, on that event's own page. */
-export function rowSub(t, hideEvent = false) {
+/**
+ * The line under an entry's title. `hide` leaves out what the page is already about: the event on an
+ * event's page ({ event: true }), the member on a member's page ({ member: true }).
+ */
+export function rowSub(t, hide = {}) {
   const where = t.type === 'transfer' ? '' : accName(state, t.account || 'wallet');
   const note = t.note && t.type !== 'transfer' ? catName(state, t.categoryId) : t.note || '';
-  const ev = hideEvent ? undefined : eventOf(state, t.eventId);
-  return [dayLabel(t.date), where, ev ? ev.name : '', note].filter(Boolean).join(' · ');
+  const ev = hide.event ? undefined : eventOf(state, t.eventId),
+    who = hide.member ? undefined : memberOf(state, t.memberId);
+  return [dayLabel(t.date), where, who ? who.name : '', ev ? ev.name : '', note].filter(Boolean).join(' · ');
 }
 
 export function txGlyph(t) {
@@ -65,7 +70,7 @@ export function txAmt(t) {
 }
 
 /** One tappable row of an entry, as in Frata's History. */
-export function txRow(t, hideEvent = false) {
+export function txRow(t, hide = {}) {
   return (
     '<div class="row"><button class="row-btn" data-act="editTx" data-id="' +
     esc(t.id) +
@@ -74,7 +79,7 @@ export function txRow(t, hideEvent = false) {
     '<span class="row-main"><span class="row-title">' +
     esc(txTitle(t)) +
     '</span><span class="row-sub">' +
-    esc(rowSub(t, hideEvent)) +
+    esc(rowSub(t, hide)) +
     '</span></span><span class="priv">' +
     txAmt(t) +
     '</span></button></div>'

@@ -4,8 +4,12 @@ import { $ } from '../../../js/util.js';
 import { adjustSheet, updateAdjustPreview } from './adjust.js';
 import { txSheet } from './entry.js';
 import { eventSheet } from './event.js';
+import { feeSheet } from './fee.js';
+import { memberSheet } from './member.js';
 
 export let form = null;
+
+const SHEETS = { tx: txSheet, adjust: adjustSheet, event: eventSheet, member: memberSheet, fee: feeSheet };
 
 export function openSheet(f) {
   form = f;
@@ -26,16 +30,16 @@ export const sheetOpen = () => !!form;
 export function drawSheet() {
   if (!form) return;
   const el = $('#sheet');
-  el.innerHTML =
-    '<div class="grab"></div>' +
-    (form.kind === 'adjust' ? adjustSheet(form) : form.kind === 'event' ? eventSheet(form) : txSheet(form));
+  el.innerHTML = '<div class="grab"></div>' + SHEETS[form.kind](form);
   fitAllThousands(el);
   if (form.kind === 'adjust') updateAdjustPreview(form);
   if (form.mode === 'new' && !form.focused) {
     form.focused = true;
     setTimeout(() => {
       const a = document.activeElement,
-        n = $(form.kind === 'event' ? '#f-name' : '#f-amount');
+        n = $(
+          form.kind === 'event' || form.kind === 'member' || form.kind === 'fee' ? '#f-name' : '#f-amount',
+        );
       if (a && a.matches && a.matches('input, textarea, select')) return;
       if (n) n.focus();
     }, 60);
