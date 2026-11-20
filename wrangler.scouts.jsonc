@@ -1,0 +1,14 @@
+// Cloudflare settings for scouts.frata.cc (Frata Scouts). It publishes the same files as frata.cc
+// (see .assetsignore), because the scouts app shares code and styles with Frata. The small Worker in
+// scouts-worker.js only sends the front page of scouts.frata.cc to the scouts app in /scouts/.
+{
+  "name": "frata-scouts",
+  "main": "scouts-worker.js",
+  "compatibility_date": "2026-11-10",
+  "assets": {
+    "directory": ".",
+    "binding": "ASSETS",
+    // Answer "/" with the Worker instead of Frata's own front page.
+    "run_worker_first": ["/"],
+  },
+}

@@ -1,12 +1,15 @@
-/* Writes the current fingerprint of the app's files into sw.js as BUILD. Run with `npm run stamp`. */
+/* Writes the current fingerprint of each app's files into its sw.js as BUILD. Run with `npm run stamp`. */
 import fs from 'node:fs';
-import { buildId, currentBuild, readSw } from './build-id.mjs';
+import { SW_FILES, buildId, currentBuild, readSw } from './build-id.mjs';
 
-const sw = readSw();
-const next = buildId(sw);
-if (currentBuild(sw) === next) {
-  console.log('sw.js is up to date: BUILD', next);
-} else {
-  fs.writeFileSync('sw.js', sw.replace(/const BUILD = '[^']*';/, `const BUILD = '${next}';`));
-  console.log('sw.js BUILD set to', next);
+for (const swPath of SW_FILES) {
+  if (!fs.existsSync(swPath)) continue;
+  const sw = readSw(swPath);
+  const next = buildId(sw, swPath);
+  if (currentBuild(sw) === next) {
+    console.log(swPath + ' is up to date: BUILD', next);
+  } else {
+    fs.writeFileSync(swPath, sw.replace(/const BUILD = '[^']*';/, `const BUILD = '${next}';`));
+    console.log(swPath + ' BUILD set to', next);
+  }
 }

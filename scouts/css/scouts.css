@@ -1,0 +1,84 @@
+/* Frata Scouts: the same look as Frata (../css/styles.css) in a blue palette, plus the few things that
+   are different here. */
+:root {
+  --bg: #f3f5fa;
+  --fg: #141a26;
+  --muted: #5a6577;
+  --line: #dce1ec;
+  --accent: #2457c5;
+  --accent-ink: #ffffff;
+  --accent-soft: #e1e8f8;
+  --coin-1: #2457c5;
+  --coin-2: #4a79db;
+  --coin-3: #c9a227;
+}
+@media (prefers-color-scheme: dark) {
+  :root:not([data-theme='light']) {
+    --bg: #0e1118;
+    --surface: #161b25;
+    --fg: #e6eaf2;
+    --muted: #93a0b5;
+    --line: #252c3a;
+    --accent: #7da2f0;
+    --accent-ink: #0a1226;
+    --accent-soft: #1b2745;
+    --coin-1: #7da2f0;
+    --coin-2: #9db8f4;
+    --coin-3: #d9b23a;
+  }
+}
+:root[data-theme='dark'] {
+  --bg: #0e1118;
+  --surface: #161b25;
+  --fg: #e6eaf2;
+  --muted: #93a0b5;
+  --line: #252c3a;
+  --accent: #7da2f0;
+  --accent-ink: #0a1226;
+  --accent-soft: #1b2745;
+  --coin-1: #7da2f0;
+  --coin-2: #9db8f4;
+  --coin-3: #d9b23a;
+}
+
+.brand-sub {
+  font-weight: 500;
+  color: var(--accent);
+  margin-left: 2px;
+}
+
+/* Three tabs instead of four. */
+.tabs .wrap {
+  grid-template-columns: repeat(3, 1fr);
+}
+
+.acc-row {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  padding: 6px 0;
+}
+.acc-row .input {
+  flex: 1;
+  min-width: 0;
+}
+.acc-row.gone .input {
+  text-decoration: line-through;
+  opacity: 0.6;
+}
+.open-pair {
+  display: inline-flex;
+  align-items: center;
+  gap: 6px;
+  flex-wrap: wrap;
+  justify-content: flex-end;
+}
+.open-pair > input.num {
+  width: 6.5em;
+}
+.foot {
+  text-align: center;
+  color: var(--muted);
+  font-size: 12.5px;
+  margin: 24px 0 8px;
+}

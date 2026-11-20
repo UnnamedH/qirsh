@@ -16,7 +16,8 @@ README.md has the full feature list, privacy model and file layout; read it firs
 - Test: `npm test` (Playwright; local runs use Windows' Edge via `channel: 'msedge'`, CI uses Chromium).
   Cloud sessions: `PW_CHROMIUM_PATH=/opt/pw-browsers/chromium npm test` to use the pre-installed Chromium.
 - Lint / format: `npm run lint`, `npm run format`, `npm run format:check`
-- After changing any app file: `npm run stamp` (rewrites `BUILD` in `sw.js`)
+- After changing any app file: `npm run stamp` (rewrites `BUILD` in `sw.js` and `scouts/sw.js`)
+- Unit tests and types for the shared core: `npm run test:unit`, `npm run typecheck`
 
 CI (`.github/workflows/ci.yml`) runs lint, format check and tests on every PR.
 
@@ -33,6 +34,23 @@ CI (`.github/workflows/ci.yml`) runs lint, format check and tests on every PR.
 - Domain logic is UI-free: `money.js` (fmt/parse/convert), `ledger.js` (balances, totals, budgets),
   `advances.js` (paid-for-others + paybacks), `templates.js` (quick add), `report/` (xlsx + csv).
 - A `storage` event listener syncs state between two open copies of the app.
+
+## Frata Scouts (`scouts/`)
+
+A second, separate PWA for a scout group's funds, in the same repo. Own `scouts/sw.js` (paths relative to its
+folder, so it can list the shared `../js/` and `../css/` files), manifest, cache and storage key
+(`frata-scouts.v1`, `app: 'frata-scouts'`). It reuses `js/core/*`, `js/util.js`, `js/icons.js`,
+`js/ui/amount.js`, `js/ui/toast.js` and `css/styles.css`, but **never** imports Frata's `js/state.js` or its
+wrappers (`js/money.js`, `ledger.js`, `accounts.js`, `advances.js`): they load the personal data.
+
+- **`js/core/` is pure**: functions take the state (or rate) as an argument and never touch the DOM, storage or
+  a global. Frata's top-level `money.js`/`ledger.js`/`accounts.js`/`advances.js` are thin wrappers that pass in
+  `state`. Put new shared logic in `js/core/`, with a unit test in `unit/` and JSDoc types (`npm run typecheck`).
+- The scouts main fund keeps the id `wallet` (shown as "Cash box") because the core defaults to that id.
+- New scouts file? Add it to `APP` in `scouts/sw.js`. `npm run stamp` stamps both service workers.
+- Frata's `sw.js` ignores requests under `scouts/`, so Frata's worker never answers for the scouts app.
+- Scouts tests are in `tests/scouts.spec.js`; the shared core's are in `unit/` (`npm run test:unit`).
+- scouts.frata.cc is deployed by `wrangler.scouts.jsonc` (a second Cloudflare project) from the same files.
 
 ## Data model rules
 
