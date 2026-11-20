@@ -1,5 +1,11 @@
 /* Currency amounts: formatting, parsing and USD/LL conversion. Pure: the rate is always passed in. */
 
+/**
+ * @param {number} n
+ * @param {string} cur
+ * @param {import("./types.js").FmtOptions} [o]
+ * @returns {string}
+ */
 export function fmt(n, cur, o) {
   o = o || {};
   const neg = n < 0,
@@ -20,17 +26,39 @@ export function fmt(n, cur, o) {
   return (neg && Math.abs(n) >= 0.005 ? '−' : o.sign ? '+' : '') + s;
 }
 
-/** @param {number} a @param {string} c @param {number} rate */
+/**
+ * @param {number} a @param {string} c @param {number} rate
+ * @param {number} a
+ * @param {string} c
+ * @param {number} rate
+ */
 export const toUSD = (a, c, rate) => (c === 'USD' ? a : a / rate);
 
-/** @param {number} u @param {string} c @param {number} rate */
+/**
+ * @param {number} u @param {string} c @param {number} rate
+ * @param {number} u
+ * @param {string} c
+ * @param {number} rate
+ */
 export const fromUSD = (u, c, rate) => (c === 'USD' ? u : u * rate);
 
+/**
+ * @param {import("./types.js").Cur} c
+ * @returns {import("./types.js").Cur}
+ */
 export const other = (c) => (c === 'USD' ? 'LBP' : 'USD');
 
-/** @param {{USD: number, LBP: number}} v @param {number} rate */
+/**
+ * @param {{USD: number, LBP: number}} v @param {number} rate
+ * @param {import("./types.js").Vec} v
+ * @param {number} rate
+ */
 export const vUSD = (v, rate) => v.USD + v.LBP / rate;
 
+/**
+ * @param {Pick<import("./types.js").Tx, "amount" | "currency" | "amount2">} t
+ * @returns {import("./types.js").Vec}
+ */
 export function payVec(t) {
   const v = { USD: 0, LBP: 0 };
   v[t.currency] += +t.amount || 0;
@@ -38,6 +66,10 @@ export function payVec(t) {
   return v;
 }
 
+/**
+ * @param {import("./types.js").Tx} t
+ * @returns {import("./types.js").Vec}
+ */
 export function backVec(t) {
   if (t.back) return { USD: +t.back.USD || 0, LBP: +t.back.LBP || 0 };
   const v = { USD: 0, LBP: 0 };
@@ -50,30 +82,45 @@ export function backVec(t) {
  * for income. An entry paid in both currencies is converted at the rate stored on it, which for a
  * price-first expense is the rate the shop used, so it keeps its exact price after the app's rate changes.
  * `rate0` is the app's rate, used only for an entry that has none of its own.
+ * @param {import("./types.js").Tx} t
+ * @param {string} cur
+ * @param {number} rate0
  */
 export function entryValueIn(t, cur, rate0) {
   const v = payVec(t),
     k = t.type === 'expense' ? backVec(t) : { USD: 0, LBP: 0 },
     net = { USD: v.USD - k.USD, LBP: v.LBP - k.LBP },
-    rate = +t.rate > 0 ? +t.rate : rate0;
+    rate = Number(t.rate) > 0 ? Number(t.rate) : rate0;
   return cur === 'USD' ? net.USD + net.LBP / rate : net.LBP + net.USD * rate;
 }
 
-/** The currency an entry is priced in: the price the user typed, or else the one they paid in. */
+/**
+ * The currency an entry is priced in: the price the user typed, or else the one they paid in.
+ * @param {import("./types.js").Tx} t
+ */
 export const priceCurrency = (t) => t.priceCur || t.currency;
 
-/** True when an entry's amounts are in both currencies, so its value depends on a rate. */
+/**
+ * True when an entry's amounts are in both currencies, so its value depends on a rate.
+ * @param {import("./types.js").Tx} t
+ */
 export function isMixed(t) {
   const k = backVec(t);
-  return !!(+t.amount2 > 0 || k[other(t.currency)] > 0 || (t.priceCur && t.priceCur !== t.currency));
+  return !!(Number(t.amount2) > 0 || k[other(t.currency)] > 0 || (t.priceCur && t.priceCur !== t.currency));
 }
 
+/**
+ * @param {import("./types.js").Tx} t
+ */
 export const payParts = (t) => {
   const p = [fmt(t.amount, t.currency)];
   if (t.amount2) p.push(fmt(+t.amount2, other(t.currency)));
   return p;
 };
 
+/**
+ * @param {import("./types.js").Tx} t
+ */
 export const backParts = (t) => {
   const b = backVec(t),
     p = [];
@@ -87,9 +134,11 @@ export const backParts = (t) => {
  * refused rather than guessed at, so a slip like "12abc" is never saved as 12.
  * Commas work both ways: "1,500" and "89,500" group thousands, while "4,50" is a decimal comma, as
  * typed on phones set to a region that writes decimals that way.
+ * @param {unknown} input
+ * @returns {number}
  */
-export function parseAmt(s) {
-  s = String(s == null ? '' : s)
+export function parseAmt(input) {
+  let s = String(input == null ? '' : input)
     .trim()
     .toLowerCase()
     .replace(/\s/g, '');
@@ -107,9 +156,12 @@ export function parseAmt(s) {
   return parseFloat(s) * m;
 }
 
-/*
+/**
  * Typed amounts. LL is always typed in thousands, so "385" means 385,000 LL and "0.5" means 500 LL.
  * Shortcuts stay literal: "385k" is 385,000 and "1.5m" is 1,500,000. Dollars are typed as they are.
+ * @param {unknown} s
+ * @param {string} cur
+ * @returns {number}
  */
 export function parseInput(s, cur) {
   const raw = String(s == null ? '' : s)
@@ -121,7 +173,12 @@ export function parseInput(s, cur) {
   return Math.round(/[km]$/.test(raw) ? n : n * 1000);
 }
 
-/** The text to show in an amount field for a stored amount. */
+/**
+ * The text to show in an amount field for a stored amount.
+ * @param {number | string | null | undefined} n
+ * @param {string} cur
+ * @returns {string}
+ */
 export function toInput(n, cur) {
   if (n == null || n === '' || !isFinite(+n)) return '';
   n = +n;

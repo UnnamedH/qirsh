@@ -90,6 +90,24 @@ test('a fund that entries or starting balances use is kept even if the list lost
   assert.deepEqual(s.opening.camp, { USD: 5, LBP: 0 });
 });
 
+test('a leader who paid and the claims a reimbursement covers are kept only when valid', () => {
+  const tx = (o) => Object.assign({ type: 'expense', amount: 1, currency: 'USD', date: '2026-01-02' }, o);
+  const s = normalize(
+    base({
+      tx: [
+        tx({ id: 'a', paidBy: 'm1', claimIds: ['c1', 'c1', '', 4, 'c2'] }),
+        tx({ id: 'b', paidBy: 3, claimIds: 'c1' }),
+        tx({ id: 'c', claimIds: [] }),
+      ],
+    }),
+  );
+  assert.equal(s.tx[0].paidBy, 'm1');
+  assert.deepEqual(s.tx[0].claimIds, ['c1', 'c2']);
+  assert.equal('paidBy' in s.tx[1], false);
+  assert.equal('claimIds' in s.tx[1], false);
+  assert.equal('claimIds' in s.tx[2], false);
+});
+
 test('links to events, members and fees survive when they are plain ids', () => {
   const s = normalize(
     base({

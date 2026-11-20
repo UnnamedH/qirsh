@@ -7,8 +7,7 @@
     "module": "es2022",
     "moduleResolution": "bundler",
     "lib": ["es2022", "dom"],
-    "strict": false,
-    "noImplicitAny": false
+    "strict": true
   },
   "include": ["js/core/**/*.js"]
 }

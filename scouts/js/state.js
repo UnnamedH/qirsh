@@ -27,7 +27,9 @@ const CURRENCIES = ['USD', 'LBP'];
 const TYPES = ['expense', 'income', 'transfer', 'adjust'];
 /* Entry types that save the rate of their day. Transfers store both amounts, so they need none. */
 const RATED = ['expense', 'income', 'adjust'];
-const LINKS = ['eventId', 'memberId', 'feeId'];
+/* Links from an entry to other records, by id: its event or camp, the member it is for, the fee it pays,
+   and the leader who paid out of pocket (`paidBy`). Reserved now so later versions need no migration. */
+const LINKS = ['eventId', 'memberId', 'feeId', 'paidBy'];
 const isCur = (c) => CURRENCIES.includes(c);
 const isObj = (x) => !!x && typeof x === 'object';
 const ACCOUNT_ID = /^[\w-]{1,40}$/;
@@ -86,6 +88,10 @@ function normalizeTx(t, out) {
   LINKS.forEach((k) => {
     if (typeof x[k] !== 'string' || !x[k]) delete x[k];
   });
+  // The leader expenses a reimbursement pays back.
+  const claims = Array.isArray(x.claimIds) ? x.claimIds.filter((id) => typeof id === 'string' && id) : [];
+  if (claims.length) x.claimIds = [...new Set(claims)];
+  else delete x.claimIds;
   return x;
 }
 
