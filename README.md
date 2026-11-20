@@ -61,9 +61,11 @@ Then open http://127.0.0.1:8765. The app has to be served over `http://`: browse
 | Command                | What it does                                              |
 | ---------------------- | --------------------------------------------------------- |
 | `npm start`            | Serves the app locally at http://127.0.0.1:8765           |
-| `npm run stamp`        | Updates `BUILD` in `sw.js` after you change app files     |
+| `npm run stamp`        | Updates `BUILD` in both `sw.js` files after app changes   |
 | `npm run icons`        | Makes the PNG icons in `icons/` from `scripts/icon.svg`   |
 | `npm test`             | Runs the browser tests in `tests/` (Playwright)           |
+| `npm run test:unit`    | Runs the unit tests in `unit/` (no browser needed)        |
+| `npm run typecheck`    | Checks the types of the shared core in `js/core/` (tsc)   |
 | `npm run lint`         | Checks the code for mistakes (ESLint)                     |
 | `npm run format`       | Reformats every file (Prettier)                           |
 | `npm run format:check` | Reports files that need formatting, without changing them |
@@ -81,10 +83,11 @@ js/events.js            Every tap, input and keypress, dispatched on the element
 js/state.js             The saved state: default shape, loading, saving, repairing old data
 js/sample.js            Example data for the first launch
 js/config.js            The accounts and categories a new user starts with
-js/accounts.js          Adding, renaming and removing accounts
-js/money.js             Formatting and parsing amounts, USD/LL conversion
-js/ledger.js            Balances, spending totals and budget progress
-js/advances.js          Money paid for others and its paybacks
+js/core/                The money logic as pure functions that take the state as an argument, shared with the scouts app
+js/accounts.js          Frata's accounts, bound to its saved state (wrapper around js/core/accounts.js)
+js/money.js             Frata's money helpers, bound to its rate and settings (wrapper around js/core/money.js)
+js/ledger.js            Frata's balances, totals and budget progress (wrapper around js/core/ledger.js)
+js/advances.js          Money paid for others and its paybacks (wrapper around js/core/advances.js)
 js/templates.js         Quick add (frequent and recent entries)
 js/theme.js             Accent colour palette and light/dark theme
 js/changelog.js         Release notes for "What's new"
@@ -98,12 +101,22 @@ js/ui/                  Rendering the current view, shared row/budget HTML, toas
 js/views/               Home, History, Budgets and Settings
 js/sheets/              Bottom sheets: entry, payback, budget, "What's new"
 sw.js                   Service worker: offline-first, all-or-nothing updates
+scouts/                 Frata Scouts, a separate installable app for a scout group's funds (see below)
+scouts-worker.js        Tiny Worker for scouts.frata.cc: sends its front page to /scouts/
+wrangler.scouts.jsonc   Cloudflare deploy for scouts.frata.cc
+unit/                   Unit tests for js/core/ and the scouts data (`npm run test:unit`)
 wrangler.jsonc          Cloudflare deploy for frata.cc; .assetsignore lists the files it publishes
 manifest.webmanifest    Name, colours and icons for installing (manifest-<colour> copies for each preset colour)
 icons/                  App, maskable, Apple touch and favicon icons; icons/<colour>/ for each preset colour
 scripts/                `npm run stamp` and the BUILD fingerprint; `npm run icons` and the icon's source, icon.svg
 tests/                  Playwright tests, and server.mjs, a test server that can be slow or publish a fake release
 ```
+
+## Frata Scouts
+
+`scouts/` is a second app for tracking a scout group's money: funds (cash box, bank), expenses, income, moves and exchanges in USD and LL. It is installed and updated on its own (its own `scouts/sw.js`, manifest and cache) and keeps its data under its own key, `frata-scouts.v1`, so it never touches the personal app's data. It shares the money logic in `js/core/`, the styles, the fonts and a few UI helpers with Frata, and follows the same rules: no framework, no build step, no network calls.
+
+Open it at `/scouts/` (`npm start`, then http://127.0.0.1:8765/scouts/). Events and camps, member fees, leader reimbursements and Google Sheets sync are planned next.
 
 ## Publishing updates
 

@@ -103,6 +103,9 @@ self.addEventListener('activate', (e) => {
 self.addEventListener('fetch', (e) => {
   const req = e.request;
   if (req.method !== 'GET' || new URL(req.url).origin !== location.origin) return;
+  // The scouts app (scouts/) shares this address but is a separate app with its own worker and cache.
+  // This worker's scope covers it, so without this a visitor with Frata installed would be shown Frata.
+  if (new URL(req.url).pathname.startsWith(new URL('scouts/', location).pathname)) return;
   // Every page load is answered with the stored app page; everything else with its stored copy.
   // Only a file that is not stored (which should not happen) goes to the network.
   // The page is stored as './', not 'index.html': some hosts (Cloudflare) redirect index.html to the
