@@ -97,6 +97,48 @@ test('changing the rate never changes past entries', async ({ page }) => {
   expect(await usd()).toBeCloseTo(895000 / 89500, 5);
 });
 
+test('a big change to the rate asks first, and any change can be undone', async ({ page }) => {
+  await openScouts(page);
+  await page.click('[data-act=nav][data-v=settings]');
+  await page.fill('#rate', '895'); // a slip for 89,500
+  await page.locator('#rate').blur();
+  await expect(page.locator('[data-act=rateConfirm]')).toBeVisible();
+  expect((await st(page)).rate).toBe(89500);
+  await page.click('[data-act=rateCancel]');
+  expect((await st(page)).rate).toBe(89500);
+  await expect(page.locator('#rate')).toHaveValue('89,500');
+
+  await page.fill('#rate', '90000'); // a small change goes through at once
+  await page.locator('#rate').blur();
+  expect((await st(page)).rate).toBe(90000);
+  await page.click('#toast [data-act=undo]');
+  expect((await st(page)).rate).toBe(89500);
+
+  await page.fill('#rate', '200000');
+  await page.locator('#rate').blur();
+  await page.click('[data-act=rateConfirm]');
+  expect((await st(page)).rate).toBe(200000);
+});
+
+test('renaming a fund doesn’t swallow the next tap', async ({ page }) => {
+  await openScouts(page);
+  await page.click('[data-act=nav][data-v=settings]');
+  await page.fill('[data-accname=bank]', 'Bank Audi');
+  // Tapping straight from the field to another button: the rename saves and the tap still works.
+  await page.click('[data-act=setTheme][data-v=dark]');
+  const s = await st(page);
+  expect(s.accounts.find((a) => a.id === 'bank').name).toBe('Bank Audi');
+  expect(s.settings.theme).toBe('dark');
+  await page.reload();
+  await page.waitForFunction(() => window.__scouts);
+  expect((await st(page)).accounts.find((a) => a.id === 'bank').name).toBe('Bank Audi');
+});
+
+test('the totals say which currency without repeating it', async ({ page }) => {
+  await openScouts(page);
+  await expect(page.locator('.balance-split')).not.toContainText('LL LL');
+});
+
 test('an entry can be edited, deleted and the delete undone', async ({ page }) => {
   await openScouts(page);
   await addEntry(page, { type: 'expense', amount: 12, note: 'Rope' });

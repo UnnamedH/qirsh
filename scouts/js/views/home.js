@@ -20,9 +20,9 @@ export function renderHome() {
     fmtDisp(combinedUSD(all, state.rate)) +
     '<small>in all funds</small></button><div class="balance-split priv"><span>' +
     fmt(all.USD, 'USD') +
-    '<em>USD</em></span><span>' +
+    '<em>in dollars</em></span><span>' +
     fmt(all.LBP, 'LBP') +
-    '<em>LL</em></span></div></section>';
+    '<em>in lira</em></span></div></section>';
   h +=
     '<section class="accs"><div class="accounts">' +
     list

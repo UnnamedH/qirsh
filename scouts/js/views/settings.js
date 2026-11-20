@@ -88,14 +88,28 @@ function openingFields() {
 }
 
 export function renderSettings() {
+  // A rate waiting for confirmation, set by a big change typed into the rate field (see events.js).
+  const pendingRate = armed && armed.startsWith('rate:') ? +armed.slice(5) : 0;
   let h =
     '<section class="sec"><h2>Group</h2><div class="card"><div class="set-row"><label class="field"><span>Group name</span><input id="groupName" class="input" maxlength="60" autocomplete="off" value="' +
     esc(state.group.name) +
     '" placeholder="e.g. Group 12"></label></div></div></section>';
   h +=
     '<section class="sec"><h2>Exchange rate</h2><div class="card"><div class="set-row"><label class="field"><span>LL for 1 USD</span><input id="rate" class="num" inputmode="numeric" value="' +
-    state.rate.toLocaleString('en-US') +
-    '"></label></div><p class="note">Each entry keeps the rate of the day it was saved, so changing this never changes past months.</p></div></section>';
+    (pendingRate ? pendingRate : state.rate).toLocaleString('en-US') +
+    '"></label></div>' +
+    (pendingRate
+      ? '<div class="banner bad" style="flex-direction:column;align-items:stretch"><p>That’s a big change from ' +
+        state.rate.toLocaleString('en-US') +
+        ' LL. Entries you add while it’s set keep this rate, so check it isn’t a typo.</p><div class="btn-row"><button class="btn sm primary" data-act="rateConfirm" data-v="' +
+        pendingRate +
+        '">Use ' +
+        pendingRate.toLocaleString('en-US') +
+        ' LL</button><button class="btn sm" data-act="rateCancel">Keep ' +
+        state.rate.toLocaleString('en-US') +
+        '</button></div></div>'
+      : '<p class="note">Each entry keeps the rate of the day it was saved, so changing this never changes past months.</p>') +
+    '</div></section>';
   h +=
     '<section class="sec"><h2>Display</h2><div class="card"><div class="set-row"><span>Show totals in</span>' +
     seg(

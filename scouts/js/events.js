@@ -6,7 +6,7 @@ import { fitThousands } from '../../js/ui/amount.js';
 import { setUndoFn, toast, undoFn } from '../../js/ui/toast.js';
 import { $ } from '../../js/util.js';
 import { exportSave, stageImport } from './backup.js';
-import { KEY, setState, state, syncFromStorage } from './state.js';
+import { KEY, save, setState, state, syncFromStorage } from './state.js';
 import { buildAdjust, adjustForm, adjustFromTx, updateAdjustPreview } from './sheets/adjust.js';
 import { buildTx, formFromTx, newTxForm } from './sheets/entry.js';
 import { closeSheet, drawSheet, form, openSheet, sheetOpen } from './sheets/sheet.js';
@@ -194,10 +194,30 @@ function click(e) {
       setPendingImport(null);
       render();
       break;
+    case 'rateConfirm':
+      setArmed(null);
+      setRate(+v);
+      break;
+    case 'rateCancel':
+      setArmed(null);
+      render();
+      break;
     case 'reloadApp':
       location.reload();
       break;
   }
+}
+
+/* Sets the app's rate, with Undo: entries saved while a wrong rate is set keep it. */
+function setRate(r) {
+  const prev = state.rate;
+  if (r === prev) return render();
+  state.rate = r;
+  commit();
+  toast('Rate set to ' + r.toLocaleString('en-US') + ' LL', () => {
+    state.rate = prev;
+    commit();
+  });
 }
 
 /* Fields of the open form update it as they are typed in, so a redraw never loses what was typed. */
@@ -216,16 +236,26 @@ function change(e) {
   if (t.id === 'importFile') {
     if (t.files && t.files[0]) stageImport(t.files[0]);
   } else if (t.id === 'rate') {
-    const n = Math.round(parseAmt(t.value));
-    if (n > 0 && isFinite(n)) state.rate = n;
-    else toast('That isn’t a usable rate.');
-    commit();
+    const r = Math.round(parseAmt(t.value));
+    if (!(r > 0) || !isFinite(r)) {
+      t.value = state.rate.toLocaleString('en-US');
+      toast('Enter a rate above zero.');
+    } else if (r !== state.rate && (r > state.rate * 2 || r < state.rate / 2)) {
+      // A slip like 895 for 89,500 would be stamped on entries saved before it is noticed, so ask first.
+      setArmed('rate:' + r);
+      render();
+    } else setRate(r);
   } else if (t.id === 'groupName') {
     state.group.name = t.value.trim().slice(0, 60);
     commit();
   } else if (t.dataset.accname) {
-    if (!renameAccount(state, t.dataset.accname, t.value)) toast('A fund needs a name.');
-    commit();
+    // Saved without redrawing: the field already shows the new name, and a redraw while the person is
+    // tapping the next button (the field loses focus first) would swallow that tap.
+    if (renameAccount(state, t.dataset.accname, t.value)) save();
+    else {
+      toast('A fund needs a name.');
+      render();
+    }
   } else if (t.dataset.open) {
     const cur = t.dataset.cur,
       n = parseInput(t.value, cur);
