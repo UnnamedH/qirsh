@@ -47,11 +47,6 @@
   margin-left: 2px;
 }
 
-/* Three tabs instead of four. */
-.tabs .wrap {
-  grid-template-columns: repeat(3, 1fr);
-}
-
 .acc-row {
   display: flex;
   align-items: center;

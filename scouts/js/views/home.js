@@ -53,7 +53,7 @@ export function renderHome() {
   h +=
     '<section class="sec"><h2>Latest</h2><div class="list">' +
     (recent.length
-      ? recent.map(txRow).join('')
+      ? recent.map((t) => txRow(t)).join('')
       : '<p class="empty">Add your first expense or income and it shows up here.</p>') +
     '</div></section>';
   $('#v-home').innerHTML = h;

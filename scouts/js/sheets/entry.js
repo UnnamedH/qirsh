@@ -1,5 +1,6 @@
 /* The entry form: an expense, income, a move between funds, or an exchange. */
 import { accounts, pickable } from '../../../js/core/accounts.js';
+import { eventOf, pickableEvents } from '../../../js/core/events.js';
 import { other, parseInput, toInput } from '../../../js/core/money.js';
 import { ICON } from '../../../js/icons.js';
 import { amountField } from '../../../js/ui/amount.js';
@@ -12,8 +13,11 @@ const CUR = [
   ['LBP', 'LL'],
 ];
 
-/** A blank form for a new entry of `type`: 'expense', 'income', 'transfer' or 'exchange'. */
-export function newTxForm(type = 'expense', account = null) {
+/**
+ * A blank form for a new entry of `type`: 'expense', 'income', 'transfer' or 'exchange'. `account` and
+ * `eventId` preselect a fund and an event, when it is added from that fund's or event's page.
+ */
+export function newTxForm(type = 'expense', account = null, eventId = '') {
   const list = accounts(state);
   const from = account && list.some((a) => a.id === account) ? account : 'wallet';
   return {
@@ -26,6 +30,7 @@ export function newTxForm(type = 'expense', account = null) {
     to: (list.find((a) => a.id !== from) || { id: from }).id,
     toAmount: '',
     categoryId: type === 'income' ? 'dues' : 'transport',
+    eventId: eventOf(state, eventId) ? eventId : '',
     note: '',
     date: ymd(new Date()),
   };
@@ -45,6 +50,7 @@ export function formFromTx(t) {
     to: t.to || 'wallet',
     toAmount: t.type === 'transfer' ? toInput(+t.toAmount, t.toCurrency || t.currency) : '',
     categoryId: t.categoryId || (t.type === 'income' ? 'other-in' : 'other'),
+    eventId: t.eventId || '',
     note: t.note || '',
     date: t.date,
   };
@@ -63,6 +69,17 @@ const options = (list, value) =>
         '</option>',
     )
     .join('');
+
+/* Which event or camp an expense or income belongs to. Offered once there is an event to pick. */
+function eventPicker(f) {
+  const list = pickableEvents(state, f.eventId);
+  if (!list.length) return '';
+  return (
+    '<label class="field"><span>Event</span><select data-f="eventId"><option value="">None</option>' +
+    options(list, f.eventId) +
+    '</select></label>'
+  );
+}
 
 export function txSheet(f) {
   const isMove = f.type === 'transfer',
@@ -142,7 +159,8 @@ export function txSheet(f) {
     h +=
       '<label class="field"><span>Category</span><select data-f="categoryId">' +
       options(cats, f.categoryId) +
-      '</select></label>';
+      '</select></label>' +
+      eventPicker(f);
   h +=
     '<div class="grid2"><label class="field"><span>Note</span><input data-f="note" autocomplete="off" value="' +
     esc(f.note) +
@@ -189,6 +207,8 @@ export function buildTx(f, old) {
     t.account = f.account;
     t.categoryId = f.categoryId;
     t.rate = (old && +old.rate > 0 && old.rate) || state.rate;
+    if (f.eventId && eventOf(state, f.eventId)) t.eventId = f.eventId;
+    else delete t.eventId;
     delete t.from;
     delete t.to;
     delete t.toAmount;
@@ -196,6 +216,8 @@ export function buildTx(f, old) {
     return { tx: t };
   }
   t.type = 'transfer';
+  // Moving money between funds isn't spending, so it never belongs to an event.
+  delete t.eventId;
   delete t.account;
   delete t.categoryId;
   delete t.rate;

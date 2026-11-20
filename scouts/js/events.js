@@ -9,6 +9,7 @@ import { exportSave, stageImport } from './backup.js';
 import { KEY, save, setState, state, syncFromStorage } from './state.js';
 import { buildAdjust, adjustForm, adjustFromTx, updateAdjustPreview } from './sheets/adjust.js';
 import { buildTx, formFromTx, newTxForm } from './sheets/entry.js';
+import { buildEvent, formFromEvent, newEventForm } from './sheets/event.js';
 import { closeSheet, drawSheet, form, openSheet, sheetOpen } from './sheets/sheet.js';
 import { commit, render } from './ui/render.js';
 import {
@@ -16,10 +17,13 @@ import {
   hist,
   pendingImport,
   setArmed,
+  setEventView,
   setPendingImport,
   setShowOpening,
   setView,
   showOpening,
+  eventView,
+  view,
 } from './ui/ui-state.js';
 
 const byId = (id) => state.tx.find((t) => t.id === id);
@@ -31,8 +35,48 @@ function showError(msg) {
   el.hidden = false;
 }
 
+/* Saves the event form. A new event opens its own page, ready for its first entries. */
+function saveEvent() {
+  const old = form.mode === 'edit' ? state.events.find((e) => e.id === form.id) : null;
+  const r = buildEvent(form, old);
+  if (r.error) return showError(r.error);
+  if (old) state.events[state.events.indexOf(old)] = r.event;
+  else state.events.push(r.event);
+  setArmed(null);
+  closeSheet();
+  if (!old) {
+    setView('events');
+    setEventView(r.event.id);
+  }
+  commit();
+  toast(old ? 'Changes saved' : 'Event added');
+}
+
+/* Deletes an event. Its entries stay, as ordinary entries; Undo brings back the event and the links. */
+function deleteEvent() {
+  if (armed !== 'tx') {
+    setArmed('tx');
+    return drawSheet();
+  }
+  const i = state.events.findIndex((e) => e.id === form.id);
+  if (i < 0) return;
+  const [gone] = state.events.splice(i, 1);
+  const linked = state.tx.filter((t) => t.eventId === gone.id);
+  linked.forEach((t) => delete t.eventId);
+  setArmed(null);
+  closeSheet();
+  setEventView(null);
+  commit();
+  toast('Event deleted', () => {
+    state.events.splice(Math.min(i, state.events.length), 0, gone);
+    linked.forEach((t) => (t.eventId = gone.id));
+    commit();
+  });
+}
+
 /* Saves the open form: a new entry is added, an edited one replaces the saved entry in place. */
 function saveForm() {
+  if (form.kind === 'event') return saveEvent();
   const old = form.mode === 'edit' ? byId(form.id) : null;
   const r = form.kind === 'adjust' ? buildAdjust(form, old) : buildTx(form, old);
   if (r.error) return showError(r.error);
@@ -45,6 +89,7 @@ function saveForm() {
 }
 
 function deleteForm() {
+  if (form.kind === 'event') return deleteEvent();
   if (armed !== 'tx') {
     setArmed('tx');
     return drawSheet();
@@ -71,14 +116,48 @@ function click(e) {
     case 'nav':
       setView(v);
       if (v === 'history') hist.account = null;
+      if (v === 'events') setEventView(null);
       setArmed(null);
       render();
       window.scrollTo(0, 0);
       break;
     case 'new':
       setArmed(null);
-      openSheet(newTxForm(v || 'expense', hist.account));
+      openSheet(
+        newTxForm(
+          v || 'expense',
+          view === 'history' ? hist.account : null,
+          el.dataset.event || eventView || '',
+        ),
+      );
       break;
+    case 'newEvent':
+      setArmed(null);
+      openSheet(newEventForm());
+      break;
+    case 'editEvent': {
+      const e = state.events.find((x) => x.id === id);
+      if (e) openSheet(formFromEvent(e));
+      break;
+    }
+    case 'eventView':
+      setEventView(id);
+      render();
+      window.scrollTo(0, 0);
+      break;
+    case 'eventsAll':
+      setEventView(null);
+      render();
+      break;
+    case 'eventClose': {
+      const e = form && state.events.find((x) => x.id === form.id);
+      if (!e) break;
+      e.closed = !e.closed;
+      closeSheet();
+      commit();
+      toast(e.closed ? 'Marked finished' : 'Reopened');
+      break;
+    }
     case 'newAdjust':
       openSheet(adjustForm(v));
       break;
