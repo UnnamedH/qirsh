@@ -3,6 +3,7 @@ import { fitAllThousands } from '../../../js/ui/amount.js';
 import { $ } from '../../../js/util.js';
 import { adjustSheet, updateAdjustPreview } from './adjust.js';
 import { txSheet } from './entry.js';
+import { eventSheet } from './event.js';
 
 export let form = null;
 
@@ -25,14 +26,16 @@ export const sheetOpen = () => !!form;
 export function drawSheet() {
   if (!form) return;
   const el = $('#sheet');
-  el.innerHTML = '<div class="grab"></div>' + (form.kind === 'adjust' ? adjustSheet(form) : txSheet(form));
+  el.innerHTML =
+    '<div class="grab"></div>' +
+    (form.kind === 'adjust' ? adjustSheet(form) : form.kind === 'event' ? eventSheet(form) : txSheet(form));
   fitAllThousands(el);
   if (form.kind === 'adjust') updateAdjustPreview(form);
   if (form.mode === 'new' && !form.focused) {
     form.focused = true;
     setTimeout(() => {
       const a = document.activeElement,
-        n = $('#f-amount');
+        n = $(form.kind === 'event' ? '#f-name' : '#f-amount');
       if (a && a.matches && a.matches('input, textarea, select')) return;
       if (n) n.focus();
     }, 60);

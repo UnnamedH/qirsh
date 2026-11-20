@@ -89,7 +89,7 @@ export function renderHistory() {
     '</div></div>';
   h +=
     '<div class="list">' +
-    (txs.length ? txs.map(txRow).join('') : '<p class="empty">Nothing here for this month.</p>') +
+    (txs.length ? txs.map((t) => txRow(t)).join('') : '<p class="empty">Nothing here for this month.</p>') +
     '</div>';
   $('#v-history').innerHTML = h;
 }

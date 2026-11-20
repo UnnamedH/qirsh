@@ -290,9 +290,161 @@ test('the personal app’s service worker leaves the scouts app alone', async ({
 test('the layout fits a narrow phone with no sideways scroll', async ({ page }) => {
   await page.setViewportSize({ width: 320, height: 640 });
   await openScouts(page);
-  for (const v of ['home', 'history', 'settings']) {
+  for (const v of ['home', 'events', 'history', 'settings']) {
     await page.click(`[data-act=nav][data-v=${v}]`);
     const over = await page.evaluate(() => document.documentElement.scrollWidth - innerWidth);
     expect(over, v).toBeLessThanOrEqual(0);
   }
+});
+
+/* ---------- events and camps ---------- */
+
+/** Creates an event through its form and returns its id. Leaves the event's page open. */
+async function addEvent(page, { name, start, end, budget, cur }) {
+  await page.click('[data-act=nav][data-v=events]');
+  await page.click('[data-act=newEvent]');
+  await page.fill('#sheet [data-f=name]', name);
+  if (start != null) await page.fill('#sheet [data-f=start]', start);
+  if (end != null) await page.fill('#sheet [data-f=end]', end);
+  if (cur) await page.click(`#sheet [data-act=fcur][data-v=${cur}]`);
+  if (budget != null) await page.fill('#f-amount', String(budget));
+  await page.click('#sheet [data-act=fsave]');
+  return page.evaluate(() => window.__scouts.state.events.at(-1).id);
+}
+
+test('an event with a budget tracks what was spent and brought in for it', async ({ page }) => {
+  await openScouts(page);
+  const camp = await addEvent(page, {
+    name: 'Summer camp',
+    start: '2026-07-01',
+    end: '2026-07-08',
+    budget: 200,
+  });
+  await expect(page.locator('#v-events .acct-name h2')).toHaveText('Summer camp');
+  // Added from the event's page, the entries belong to it.
+  await page.click('#v-events [data-act=new][data-v=expense]');
+  await page.fill('#f-amount', '170');
+  await page.click('#sheet [data-act=fsave]');
+  await page.click('#v-events [data-act=new][data-v=income]');
+  await page.fill('#f-amount', '250');
+  await page.click('#sheet [data-act=fsave]');
+  const t = await page.evaluate((id) => window.__scouts.eventTotals(id, 'USD'), camp);
+  expect([t.spent, t.earned, t.net]).toEqual([170, 250, 80]);
+  await expect(page.locator('#v-events .row')).toHaveCount(3); // one category, two entries
+  await page.click('[data-act=eventsAll]');
+  await expect(page.locator('#v-events .budget .pill.warn')).toHaveText('85%');
+  await expect(page.locator('#v-events .budget .b-foot')).toContainText('Net +$80');
+});
+
+test('an entry can be put in an event from the entry form, and taken out again', async ({ page }) => {
+  await openScouts(page);
+  const hike = await addEvent(page, { name: 'Hike' });
+  await page.click('[data-act=nav][data-v=home]');
+  await page.click('.btn[data-act=new][data-v=expense]');
+  await page.fill('#f-amount', '12');
+  await page.selectOption('#sheet [data-f=eventId]', hike);
+  await page.click('#sheet [data-act=fsave]');
+  expect((await st(page)).tx[0].eventId).toBe(hike);
+  await expect(page.locator('#v-home .row-sub')).toContainText('Hike');
+  // A second entry in the event is labelled too, in History, but not on the event's own page.
+  await page.click('.btn[data-act=new][data-v=expense]');
+  await page.fill('#f-amount', '3');
+  await page.selectOption('#sheet [data-f=eventId]', hike);
+  await page.click('#sheet [data-act=fsave]');
+  await page.click('[data-act=nav][data-v=history]');
+  await expect(page.locator('#v-history .row-sub').nth(0)).toContainText('Hike');
+  await expect(page.locator('#v-history .row-sub').nth(1)).toContainText('Hike');
+  await page.click('[data-act=nav][data-v=events]');
+  await page.click(`[data-act=eventView][data-id="${hike}"]`);
+  await expect(page.locator('#v-events .row-sub').first()).not.toContainText('Hike');
+  await page.click('[data-act=nav][data-v=home]');
+  await page.locator('#v-home [data-act=editTx]').last().click();
+  await page.selectOption('#sheet [data-f=eventId]', '');
+  await page.click('#sheet [data-act=fsave]');
+  expect((await st(page)).tx[0].eventId).toBeUndefined();
+});
+
+test('a move between funds never belongs to an event', async ({ page }) => {
+  await openScouts(page);
+  await addEvent(page, { name: 'Camp' });
+  await page.click('#v-events [data-act=new][data-v=expense]');
+  await page.click('#sheet [data-act=ftype][data-v=transfer]');
+  await page.fill('#f-amount', '20');
+  await page.click('#sheet [data-act=fsave]');
+  const t = (await st(page)).tx[0];
+  expect(t.type).toBe('transfer');
+  expect(t.eventId).toBeUndefined();
+});
+
+test('an LL budget counts LL spending exactly, and a new rate moves nothing', async ({ page }) => {
+  await openScouts(page);
+  const camp = await addEvent(page, { name: 'Camp', budget: 9000, cur: 'LBP' }); // 9,000,000 LL
+  await page.click('#v-events [data-act=new][data-v=expense]');
+  await page.click('#sheet [data-act=fcur][data-v=LBP]');
+  await page.fill('#f-amount', '4500');
+  await page.click('#sheet [data-act=fsave]');
+  const budget = () =>
+    page.evaluate((id) => {
+      const e = window.__scouts.state.events.find((x) => x.id === id);
+      return window.__scouts.eventBudget(e);
+    }, camp);
+  expect((await budget()).spent).toBe(4500000);
+  expect((await budget()).pct).toBe(0.5);
+  await page.click('[data-act=nav][data-v=settings]');
+  await page.fill('#rate', '100000');
+  await page.locator('#rate').blur();
+  expect((await budget()).spent).toBe(4500000);
+});
+
+test('a finished event leaves the entry form, and can be reopened', async ({ page }) => {
+  await openScouts(page);
+  const camp = await addEvent(page, { name: 'Camp' });
+  await page.click('[data-act=editEvent]');
+  await page.click('#sheet [data-act=eventClose]');
+  expect((await st(page)).events[0].closed).toBe(true);
+  await page.click('[data-act=eventsAll]');
+  await expect(page.locator('#v-events .pill')).toHaveText('Finished');
+  await page.click('[data-act=nav][data-v=home]');
+  await page.click('.btn[data-act=new][data-v=expense]');
+  // The only event is finished, so there is nothing to pick.
+  await expect(page.locator('#sheet [data-f=eventId]')).toHaveCount(0);
+  await page.click('#sheet [data-act=close]');
+  await page.click('[data-act=nav][data-v=events]');
+  await page.click(`[data-act=eventView][data-id="${camp}"]`);
+  await page.click('[data-act=editEvent]');
+  await page.click('#sheet [data-act=eventClose]');
+  expect((await st(page)).events[0].closed).toBe(false);
+});
+
+test('deleting an event keeps its entries, and Undo links them again', async ({ page }) => {
+  await openScouts(page);
+  const camp = await addEvent(page, { name: 'Camp' });
+  await page.click('#v-events [data-act=new][data-v=expense]');
+  await page.fill('#f-amount', '30');
+  await page.click('#sheet [data-act=fsave]');
+  await page.click('[data-act=editEvent]');
+  await expect(page.locator('#sheet .note')).toContainText('1 entry belongs');
+  await page.click('#sheet [data-act=fdel]');
+  await page.click('#sheet [data-act=fdel]');
+  let s = await st(page);
+  expect(s.events).toEqual([]);
+  expect(s.tx.map((t) => [t.amount, t.eventId])).toEqual([[30, undefined]]);
+  await page.click('#toast [data-act=undo]');
+  s = await st(page);
+  expect(s.events.map((e) => e.id)).toEqual([camp]);
+  expect(s.tx[0].eventId).toBe(camp);
+});
+
+test('an event needs a name, and can’t end before it starts', async ({ page }) => {
+  await openScouts(page);
+  await page.click('[data-act=nav][data-v=events]');
+  await page.click('[data-act=newEvent]');
+  await page.click('#sheet [data-act=fsave]');
+  await expect(page.locator('#f-err')).toContainText('name');
+  await page.fill('#sheet [data-f=name]', 'Camp');
+  await page.fill('#sheet [data-f=start]', '2026-07-10');
+  await page.fill('#sheet [data-f=end]', '2026-07-01');
+  await page.click('#sheet [data-act=fsave]');
+  await expect(page.locator('#f-err')).toContainText('before the start');
+  expect((await st(page)).events).toEqual([]);
 });

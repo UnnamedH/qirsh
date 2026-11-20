@@ -33,3 +33,11 @@ export function setShowOpening(value) {
   showOpening = value;
   return value;
 }
+
+/* The event whose page is open on the Events tab, or null for the list. */
+export let eventView = null;
+
+export function setEventView(value) {
+  eventView = value;
+  return value;
+}

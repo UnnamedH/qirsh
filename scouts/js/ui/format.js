@@ -1,5 +1,6 @@
 /* Text and HTML for entries and amounts: titles, glyphs, and totals in the display currency. */
 import { accName } from '../../../js/core/accounts.js';
+import { eventOf } from '../../../js/core/events.js';
 import { catName, catOf } from '../../../js/core/ledger.js';
 import { fmt, fromUSD, payParts } from '../../../js/core/money.js';
 import { dayLabel, esc } from '../../../js/util.js';
@@ -22,10 +23,12 @@ export function txTitle(t) {
   return t.note || catName(state, t.categoryId);
 }
 
-export function rowSub(t) {
+/** The line under an entry's title. `hideEvent` leaves out the event name, on that event's own page. */
+export function rowSub(t, hideEvent = false) {
   const where = t.type === 'transfer' ? '' : accName(state, t.account || 'wallet');
   const note = t.note && t.type !== 'transfer' ? catName(state, t.categoryId) : t.note || '';
-  return [dayLabel(t.date), where, note].filter(Boolean).join(' · ');
+  const ev = hideEvent ? undefined : eventOf(state, t.eventId);
+  return [dayLabel(t.date), where, ev ? ev.name : '', note].filter(Boolean).join(' · ');
 }
 
 export function txGlyph(t) {
@@ -62,7 +65,7 @@ export function txAmt(t) {
 }
 
 /** One tappable row of an entry, as in Frata's History. */
-export function txRow(t) {
+export function txRow(t, hideEvent = false) {
   return (
     '<div class="row"><button class="row-btn" data-act="editTx" data-id="' +
     esc(t.id) +
@@ -71,7 +74,7 @@ export function txRow(t) {
     '<span class="row-main"><span class="row-title">' +
     esc(txTitle(t)) +
     '</span><span class="row-sub">' +
-    esc(rowSub(t)) +
+    esc(rowSub(t, hideEvent)) +
     '</span></span><span class="priv">' +
     txAmt(t) +
     '</span></button></div>'

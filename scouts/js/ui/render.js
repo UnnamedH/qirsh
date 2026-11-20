@@ -4,13 +4,14 @@ import { fitAllThousands } from '../../../js/ui/amount.js';
 import { updateReady } from '../pwa.js';
 import { rescuedData, save, saveConflict, saveFailed, state } from '../state.js';
 import { applyTheme } from '../theme.js';
+import { renderEvents } from '../views/events.js';
 import { renderHistory } from '../views/history.js';
 import { renderHome } from '../views/home.js';
 import { renderSettings } from '../views/settings.js';
 import { pendingImport, view } from './ui-state.js';
 
-const VIEWS = { home: renderHome, history: renderHistory, settings: renderSettings };
-const TITLES = { home: '', history: 'History', settings: 'Settings' };
+const VIEWS = { home: renderHome, events: renderEvents, history: renderHistory, settings: renderSettings };
+const TITLES = { home: '', events: 'Events', history: 'History', settings: 'Settings' };
 
 export function render() {
   applyTheme();

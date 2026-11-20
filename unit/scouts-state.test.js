@@ -42,7 +42,10 @@ test('bad data is repaired and never throws', () => {
     ['wallet', 'bank'],
   );
   assert.ok(s.categories.length > 4);
-  assert.deepEqual(s.events, [{ id: 'e1' }]);
+  assert.deepEqual(
+    s.events.map((e) => [e.id, e.name]),
+    [['e1', 'Untitled event']],
+  );
   assert.deepEqual(s.members, []);
   assert.deepEqual(
     s.tx.map((t) => t.id),
@@ -111,6 +114,7 @@ test('a leader who paid and the claims a reimbursement covers are kept only when
 test('links to events, members and fees survive when they are plain ids', () => {
   const s = normalize(
     base({
+      events: [{ id: 'e', name: 'Camp' }],
       tx: [
         {
           id: 'a',
@@ -128,4 +132,39 @@ test('links to events, members and fees survive when they are plain ids', () => 
   assert.equal(s.tx[0].eventId, 'e');
   assert.equal(s.tx[0].memberId, 'm');
   assert.equal('feeId' in s.tx[0], false);
+});
+
+test('events are repaired, and entries lose links to events that are gone', () => {
+  const s = normalize(
+    base({
+      events: [
+        {
+          id: 'camp',
+          name: ' Summer camp ',
+          start: '2026-07-01',
+          end: '2026-06-01',
+          budget: { amount: '500', currency: 'USD' },
+        },
+        { id: 'camp', name: 'Duplicate' },
+        { id: 'hike', name: 'Hike', start: 'soon', budget: { amount: -1, currency: 'USD' }, closed: 'yes' },
+      ],
+      tx: [
+        { id: 'a', type: 'expense', amount: 1, currency: 'USD', date: '2026-01-02', eventId: 'camp' },
+        { id: 'b', type: 'expense', amount: 1, currency: 'USD', date: '2026-01-02', eventId: 'deleted' },
+      ],
+    }),
+  );
+  assert.deepEqual(s.events[0], {
+    id: 'camp',
+    name: 'Summer camp',
+    start: '2026-07-01',
+    end: '',
+    budget: { amount: 500, currency: 'USD' },
+    closed: false,
+    createdAt: 0,
+  });
+  assert.equal(s.events.length, 2);
+  assert.deepEqual([s.events[1].start, s.events[1].budget, s.events[1].closed], ['', null, false]);
+  assert.equal(s.tx[0].eventId, 'camp');
+  assert.equal('eventId' in s.tx[1], false);
 });

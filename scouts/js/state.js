@@ -95,6 +95,31 @@ function normalizeTx(t, out) {
   return x;
 }
 
+const YMD = /^\d{4}-\d{2}-\d{2}$/;
+
+/* Events and camps: each needs an id and a name; dates and a budget are optional. */
+function normalizeEvents(list) {
+  const seen = new Set();
+  return (Array.isArray(list) ? list : [])
+    .filter((e) => isObj(e) && typeof e.id === 'string' && e.id && !seen.has(e.id) && seen.add(e.id))
+    .map((e) => {
+      const name = typeof e.name === 'string' ? e.name.trim().slice(0, 60) : '';
+      const b = isObj(e.budget) ? e.budget : null;
+      const x = {
+        id: e.id,
+        name: name || 'Untitled event',
+        start: typeof e.start === 'string' && YMD.test(e.start) ? e.start : '',
+        end: typeof e.end === 'string' && YMD.test(e.end) ? e.end : '',
+        budget: b && +b.amount > 0 && isCur(b.currency) ? { amount: +b.amount, currency: b.currency } : null,
+        closed: e.closed === true,
+        createdAt: +e.createdAt || 0,
+      };
+      // An end before the start is a slip; the start is the date people type first.
+      if (x.start && x.end && x.end < x.start) x.end = '';
+      return x;
+    });
+}
+
 /** Repairs any parsed data into a state the app can use. It never throws on bad data. */
 export function normalize(s) {
   const b = blankState();
@@ -139,7 +164,13 @@ export function normalize(s) {
         isCur(t.currency),
     )
     .map((t) => normalizeTx(t, out));
-  ['events', 'members', 'fees'].forEach((k) => {
+  out.events = normalizeEvents(s.events);
+  // An entry linked to an event that no longer exists is an ordinary entry again.
+  const eventIds = new Set(out.events.map((e) => e.id));
+  out.tx.forEach((t) => {
+    if (t.eventId && !eventIds.has(t.eventId)) delete t.eventId;
+  });
+  ['members', 'fees'].forEach((k) => {
     out[k] = Array.isArray(s[k]) ? s[k].filter((r) => isObj(r) && typeof r.id === 'string') : [];
   });
   out.lastExport = typeof s.lastExport === 'string' ? s.lastExport : null;
