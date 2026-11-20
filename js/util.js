@@ -59,7 +59,7 @@ export const cap = (s) => s.charAt(0).toUpperCase() + s.slice(1);
 export function dayLabel(s) {
   const d = parseYmd(s),
     t = startOfDay(new Date());
-  const diff = Math.round((t - d) / 864e5);
+  const diff = Math.round((t.getTime() - d.getTime()) / 864e5);
   if (diff === 0) return 'Today';
   if (diff === 1) return 'Yesterday';
   return DAYS[d.getDay()] + ' ' + d.getDate() + ' ' + MONTHS[d.getMonth()].slice(0, 3);
