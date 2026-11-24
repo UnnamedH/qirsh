@@ -56,7 +56,7 @@ function normalizeAccounts(s) {
     if (!isObj(a) || typeof a.id !== 'string' || !ACCOUNT_ID.test(a.id) || seen.has(a.id)) return;
     seen.add(a.id);
     const name = typeof a.name === 'string' ? a.name.trim().slice(0, 30) : '';
-    const x = { id: a.id, name: name || (a.id === 'wallet' ? 'Cash box' : a.id) };
+    const x = { id: a.id, name: name || (a.id === 'wallet' ? 'Caisse' : a.id) };
     if (a.hidden === true && a.id !== 'wallet') x.hidden = true;
     out.push(x);
   };
@@ -97,20 +97,27 @@ function normalizeTx(t, out) {
 
 const YMD = /^\d{4}-\d{2}-\d{2}$/;
 
-/* Events and camps: each needs an id and a name; dates and a budget are optional. */
-function normalizeEvents(list) {
+const money = (b) =>
+  isObj(b) && +b.amount > 0 && isCur(b.currency) ? { amount: +b.amount, currency: b.currency } : null;
+
+/* Events and camps: each needs an id and a name; dates, a budget, a cotisation and who attends are
+   optional. Attendees must be members. */
+function normalizeEvents(list, memberIds) {
   const seen = new Set();
   return (Array.isArray(list) ? list : [])
     .filter((e) => isObj(e) && typeof e.id === 'string' && e.id && !seen.has(e.id) && seen.add(e.id))
     .map((e) => {
       const name = typeof e.name === 'string' ? e.name.trim().slice(0, 60) : '';
-      const b = isObj(e.budget) ? e.budget : null;
       const x = {
         id: e.id,
         name: name || 'Untitled event',
         start: typeof e.start === 'string' && YMD.test(e.start) ? e.start : '',
         end: typeof e.end === 'string' && YMD.test(e.end) ? e.end : '',
-        budget: b && +b.amount > 0 && isCur(b.currency) ? { amount: +b.amount, currency: b.currency } : null,
+        budget: money(e.budget),
+        cotisation: money(e.cotisation),
+        attendees: [
+          ...new Set((Array.isArray(e.attendees) ? e.attendees : []).filter((id) => memberIds.has(id))),
+        ],
         closed: e.closed === true,
         createdAt: +e.createdAt || 0,
       };
@@ -165,6 +172,25 @@ function normalizeFees(list, out) {
     });
 }
 
+/* Version 0.2 of the scouts app had fees of their own, optionally tied to an event. A camp's fee is now
+   the event's cotisation, with its members as the attendees, so a fee tied to an event that has no
+   cotisation yet becomes it, and its payments move along. Other fees stay in the data, unseen. */
+function moveEventFees(out) {
+  out.fees = out.fees.filter((f) => {
+    const e = f.eventId && out.events.find((x) => x.id === f.eventId);
+    if (!e || e.cotisation) return true;
+    e.cotisation = { amount: f.amount, currency: f.currency };
+    e.attendees = [...new Set([...e.attendees, ...f.memberIds])];
+    out.tx.forEach((t) => {
+      if (t.feeId === f.id) {
+        t.feeId = e.id;
+        t.eventId = e.id;
+      }
+    });
+    return false;
+  });
+}
+
 /** Repairs any parsed data into a state the app can use. It never throws on bad data. */
 export function normalize(s) {
   const b = blankState();
@@ -209,17 +235,22 @@ export function normalize(s) {
         isCur(t.currency),
     )
     .map((t) => normalizeTx(t, out));
-  out.events = normalizeEvents(s.events);
+  out.members = normalizeMembers(s.members);
+  const memberIds = new Set(out.members.map((m) => m.id));
+  out.events = normalizeEvents(s.events, memberIds);
   // An entry linked to an event that no longer exists is an ordinary entry again.
   const eventIds = new Set(out.events.map((e) => e.id));
   out.tx.forEach((t) => {
     if (t.eventId && !eventIds.has(t.eventId)) delete t.eventId;
   });
-  out.members = normalizeMembers(s.members);
   out.fees = normalizeFees(s.fees, out);
-  // Links to a member or fee that no longer exists are dropped, as for events.
-  const memberIds = new Set(out.members.map((m) => m.id)),
-    feeIds = new Set(out.fees.map((f) => f.id));
+  moveEventFees(out);
+  // Links to a member or fee that no longer exists are dropped, as for events. A cotisation is paid
+  // toward its event, so an event with one is also a fee.
+  const feeIds = new Set([
+    ...out.fees.map((f) => f.id),
+    ...out.events.filter((e) => e.cotisation).map((e) => e.id),
+  ]);
   out.tx.forEach((t) => {
     if (t.memberId && !memberIds.has(t.memberId)) delete t.memberId;
     if (t.paidBy && !memberIds.has(t.paidBy)) delete t.paidBy;

@@ -1,7 +1,16 @@
 /* Unit tests for event and camp totals (js/core/events.js). */
 import assert from 'node:assert/strict';
 import { test } from 'node:test';
-import { eventBudget, eventOf, eventTotals, pickableEvents } from '../js/core/events.js';
+import {
+  cotisationFee,
+  eventBudget,
+  generalTotals,
+  eventOf,
+  eventTotals,
+  pickableEvents,
+  withCotisations,
+} from '../js/core/events.js';
+import { feeStatus } from '../js/core/fees.js';
 
 const mk = (tx, events = []) => ({
   rate: 90000,
@@ -80,4 +89,53 @@ test('closed events leave the picker unless an entry already uses them', () => {
   assert.equal(eventOf(s, 'b').name, 'Done');
   assert.equal(eventOf(s, 'gone'), undefined);
   assert.equal(eventOf(s, undefined), undefined);
+});
+
+test('an event’s cotisation works as a fee for its attendees', () => {
+  const camp = {
+    id: 'camp',
+    name: 'Camp HP',
+    start: '2026-12-26',
+    cotisation: { amount: 40, currency: 'USD' },
+    attendees: ['ali', 'maya'],
+  };
+  const s = mk(
+    [e({ id: 'p', type: 'income', amount: 40, memberId: 'ali', feeId: 'camp', eventId: 'camp' })],
+    [camp, { id: 'hike', name: 'Hike' }],
+  );
+  const fees = withCotisations(s).fees;
+  assert.deepEqual(
+    fees.map((f) => f.id),
+    ['camp'],
+  );
+  assert.equal(cotisationFee({ id: 'x', name: 'X', cotisation: null }), null);
+  const st = feeStatus(withCotisations(s), fees[0]);
+  assert.deepEqual(
+    st.members.map((m) => m.state),
+    ['paid', 'unpaid'],
+  );
+  assert.equal(st.outstanding, 40);
+  // The cotisation also counts as the camp's income.
+  assert.equal(eventTotals(s, 'camp', 'USD').earned, 40);
+});
+
+test('the caisse générale counts only entries outside events, in the range', () => {
+  const year = { start: new Date(2026, 0, 1), end: new Date(2027, 0, 1) };
+  const s = mk([
+    e({ id: '1', amount: 30 }),
+    e({ id: '2', amount: 900000, currency: 'LBP', rate: 90000 }),
+    e({ id: '3', type: 'income', amount: 100 }),
+    e({ id: '4', amount: 50, eventId: 'camp' }),
+    e({ id: '5', amount: 70, date: '2025-12-31' }),
+    {
+      id: '6',
+      type: 'transfer',
+      date: '2026-03-01',
+      currency: 'USD',
+      amount: 20,
+      from: 'wallet',
+      to: 'bank',
+    },
+  ]);
+  assert.deepEqual(generalTotals(s, year, 'USD'), { spent: 40, earned: 100, net: 60 });
 });

@@ -1,11 +1,11 @@
-/* The member form: a scout or leader, their unit, and whether they are still in the group. */
+/* The member form: a scout or leader, and whether they are still in the unité. */
 import { ICON } from '../../../js/icons.js';
 import { esc, uid } from '../../../js/util.js';
 import { state } from '../state.js';
 import { armed } from '../ui/ui-state.js';
 
 export function newMemberForm() {
-  return { mode: 'new', kind: 'member', name: '', role: 'scout', unit: '' };
+  return { mode: 'new', kind: 'member', name: '', role: 'scout' };
 }
 
 export function formFromMember(m) {
@@ -15,7 +15,6 @@ export function formFromMember(m) {
     id: m.id,
     name: m.name,
     role: m.role,
-    unit: m.unit,
     active: m.active,
   };
 }
@@ -51,9 +50,6 @@ export function memberSheet(f) {
       )
       .join('') +
     '</div>' +
-    '<label class="field"><span>Unit (optional)</span><input data-f="unit" maxlength="30" autocomplete="off" value="' +
-    esc(f.unit) +
-    '" placeholder="e.g. Cubs, Scouts, Rovers"></label>' +
     (f.mode === 'edit' && used
       ? '<p class="note">' +
         used +
@@ -87,7 +83,6 @@ export function buildMember(f, old) {
       id: (old && old.id) || 'm' + uid(),
       name,
       role: f.role === 'leader' ? 'leader' : 'scout',
-      unit: f.unit.trim().slice(0, 30),
       active: old ? old.active !== false : true,
       createdAt: (old && old.createdAt) || Date.now(),
     }),

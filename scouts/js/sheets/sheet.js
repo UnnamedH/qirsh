@@ -4,12 +4,11 @@ import { $ } from '../../../js/util.js';
 import { adjustSheet, updateAdjustPreview } from './adjust.js';
 import { txSheet } from './entry.js';
 import { eventSheet } from './event.js';
-import { feeSheet } from './fee.js';
 import { memberSheet } from './member.js';
 
 export let form = null;
 
-const SHEETS = { tx: txSheet, adjust: adjustSheet, event: eventSheet, member: memberSheet, fee: feeSheet };
+const SHEETS = { tx: txSheet, adjust: adjustSheet, event: eventSheet, member: memberSheet };
 
 export function openSheet(f) {
   form = f;
@@ -37,9 +36,7 @@ export function drawSheet() {
     form.focused = true;
     setTimeout(() => {
       const a = document.activeElement,
-        n = $(
-          form.kind === 'event' || form.kind === 'member' || form.kind === 'fee' ? '#f-name' : '#f-amount',
-        );
+        n = $(form.kind === 'event' || form.kind === 'member' ? '#f-name' : '#f-amount');
       if (a && a.matches && a.matches('input, textarea, select')) return;
       if (n) n.focus();
     }, 60);

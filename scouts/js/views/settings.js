@@ -1,4 +1,4 @@
-/* Settings: group name, exchange rate, display, funds, starting balances and backups. */
+/* Settings: the unité's name, exchange rate, display, funds, starting balances and backups. */
 import { MAX_ACCOUNTS, MAX_NAME, accounts } from '../../../js/core/accounts.js';
 import { toInput } from '../../../js/core/money.js';
 import { thousandsInput } from '../../../js/ui/amount.js';
@@ -91,9 +91,9 @@ export function renderSettings() {
   // A rate waiting for confirmation, set by a big change typed into the rate field (see events.js).
   const pendingRate = armed && armed.startsWith('rate:') ? +armed.slice(5) : 0;
   let h =
-    '<section class="sec"><h2>Group</h2><div class="card"><div class="set-row"><label class="field"><span>Group name</span><input id="groupName" class="input" maxlength="60" autocomplete="off" value="' +
+    '<section class="sec"><h2>Unité</h2><div class="card"><div class="set-row"><label class="field"><span>Name of your unité</span><input id="groupName" class="input" maxlength="60" autocomplete="off" value="' +
     esc(state.group.name) +
-    '" placeholder="e.g. Group 12"></label></div></div></section>';
+    '" placeholder="e.g. Unité Saint-Joseph"></label></div></div></section>';
   h +=
     '<section class="sec"><h2>Exchange rate</h2><div class="card"><div class="set-row"><label class="field"><span>LL for 1 USD</span><input id="rate" class="num" inputmode="numeric" value="' +
     (pendingRate ? pendingRate : state.rate).toLocaleString('en-US') +

@@ -1,6 +1,6 @@
 /* The entry form: an expense, income, a move between funds, or an exchange. */
 import { accounts, pickable } from '../../../js/core/accounts.js';
-import { eventOf, pickableEvents } from '../../../js/core/events.js';
+import { eventOf, pickableEvents, withCotisations } from '../../../js/core/events.js';
 import { feeOf, memberFeeStatus, memberOf } from '../../../js/core/fees.js';
 import { other, parseInput, toInput } from '../../../js/core/money.js';
 import { ICON } from '../../../js/icons.js';
@@ -81,7 +81,7 @@ const options = (list, value) =>
  */
 export function paymentForm(fee, memberId) {
   const f = newTxForm('income', null, fee.eventId || '');
-  const left = memberFeeStatus(state, fee, memberId).owed;
+  const left = memberFeeStatus(withCotisations(state), fee, memberId).owed;
   return Object.assign(f, {
     amount: left > 0 ? toInput(left, fee.currency) : '',
     cur: fee.currency,
@@ -99,10 +99,12 @@ function memberPicker(f) {
     '<label class="field"><span>From member</span><select data-f="memberId"><option value="">None</option>' +
     options(people, f.memberId) +
     '</select></label>';
-  const fees = state.fees.filter((x) => f.memberId && (x.memberIds.includes(f.memberId) || x.id === f.feeId));
+  const fees = withCotisations(state).fees.filter(
+    (x) => f.memberId && (x.memberIds.includes(f.memberId) || x.id === f.feeId),
+  );
   if (fees.length)
     h +=
-      '<label class="field"><span>Toward fee</span><select data-f="feeId"><option value="">None</option>' +
+      '<label class="field"><span>Cotisation for</span><select data-f="feeId"><option value="">None</option>' +
       options(fees, f.feeId) +
       '</select></label>';
   return h;
@@ -250,7 +252,7 @@ export function buildTx(f, old) {
     else delete t.eventId;
     // Only money coming in is a member's payment.
     const member = f.type === 'income' ? memberOf(state, f.memberId) : undefined;
-    const fee = member ? feeOf(state, f.feeId) : undefined;
+    const fee = member ? feeOf(withCotisations(state), f.feeId) : undefined;
     if (member) t.memberId = member.id;
     else delete t.memberId;
     if (fee) t.feeId = fee.id;

@@ -1,4 +1,5 @@
 /* Events and camps: what each one cost and brought in. Pure: the state is passed in. */
+import { inRange } from './ledger.js';
 import { entryValueIn } from './money.js';
 
 /**
@@ -8,6 +9,8 @@ import { entryValueIn } from './money.js';
  * @property {string} [start]  ymd, or '' when not set
  * @property {string} [end]    ymd, or '' when not set
  * @property {{ amount: number, currency: import("./types.js").Cur } | null} [budget]
+ * @property {{ amount: number, currency: import("./types.js").Cur } | null} [cotisation]  what each attendee pays
+ * @property {string[]} [attendees]  member ids
  * @property {boolean} [closed]
  */
 
@@ -68,4 +71,55 @@ export function eventBudget(s, e) {
     left: e.budget.amount - spent,
     state: pct >= 1 ? 'over' : pct >= 0.8 ? 'warn' : 'ok',
   };
+}
+
+/**
+ * An event's cotisation as a fee, so the fee logic in fees.js works on it unchanged: what each
+ * attendee pays, and who attends. Payments toward it are income with this event's id as their feeId.
+ * Null when the event has no cotisation.
+ * @param {Event} e
+ * @returns {import("./fees.js").Fee | null}
+ */
+export function cotisationFee(e) {
+  if (!e.cotisation || !(e.cotisation.amount > 0)) return null;
+  return {
+    id: e.id,
+    name: e.name,
+    amount: e.cotisation.amount,
+    currency: e.cotisation.currency,
+    due: e.start || '',
+    eventId: e.id,
+    memberIds: e.attendees || [],
+  };
+}
+
+/**
+ * The state with every event's cotisation as its fees, for the functions in fees.js.
+ * @template {import("./types.js").CoreState & { events?: Event[] }} S
+ * @param {S} s
+ * @returns {S & { fees: import("./fees.js").Fee[] }}
+ */
+export function withCotisations(s) {
+  const fees = /** @type {import("./fees.js").Fee[]} */ ((s.events || []).map(cotisationFee).filter(Boolean));
+  return Object.assign({}, s, { fees });
+}
+
+/**
+ * The caisse générale: spending and income outside every event, in a date range, in `cur`. Each entry
+ * counts at its own saved rate. Moves between funds and balance corrections are neither.
+ * @param {import("./types.js").CoreState} s
+ * @param {import("./types.js").Range} r
+ * @param {string} cur
+ */
+export function generalTotals(s, r, cur) {
+  let spent = 0,
+    earned = 0;
+  for (const t of s.tx) {
+    if (/** @type {{ eventId?: string }} */ (t).eventId) continue;
+    if (t.type !== 'expense' && t.type !== 'income') continue;
+    if (!inRange(t, r)) continue;
+    if (t.type === 'expense') spent += entryValueIn(t, cur, s.rate);
+    else earned += entryValueIn(t, cur, s.rate);
+  }
+  return { spent, earned, net: earned - spent };
 }

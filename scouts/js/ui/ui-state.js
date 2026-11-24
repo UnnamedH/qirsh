@@ -7,6 +7,8 @@ export const hist = {
   filter: 'all',
   // Set when a fund is tapped on Home: History then shows only that fund's entries.
   account: null,
+  // '' for every entry, 'general' for the caisse générale (outside events), or one event's id.
+  event: '',
 };
 
 /* Something waiting for a second tap, such as 'tx' (delete) or 'acc:<id>' (remove a fund). */

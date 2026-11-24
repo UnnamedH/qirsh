@@ -1,11 +1,12 @@
-/* Home: the group's funds, what they hold in total, and the latest entries. */
+/* Home: the unité's funds, the caisse générale this year, and the latest entries. */
 import { accounts } from '../../../js/core/accounts.js';
 import { balances, combinedUSD } from '../../../js/core/ledger.js';
 import { fmt } from '../../../js/core/money.js';
 import { $, esc } from '../../../js/util.js';
 import { state } from '../state.js';
+import { generalTotals, withCotisations } from '../../../js/core/events.js';
 import { outstandingUSD } from '../../../js/core/fees.js';
-import { fmtDisp, txRow } from '../ui/format.js';
+import { fmtDisp, fmtTotal, txRow } from '../ui/format.js';
 
 export function renderHome() {
   const b = balances(state),
@@ -16,7 +17,7 @@ export function renderHome() {
   });
   let h =
     '<section class="balance" aria-label="Total of all funds"><div class="balance-head"><span class="label">' +
-    esc(state.group.name || 'Group funds') +
+    esc(state.group.name || 'Your unité') +
     '</span></div><button class="balance-total priv" data-act="toggleDisplay" title="Switch currency">' +
     fmtDisp(combinedUSD(all, state.rate)) +
     '<small>in all funds</small></button><div class="balance-split priv"><span>' +
@@ -43,11 +44,28 @@ export function renderHome() {
       })
       .join('') +
     '</div></section>';
-  // What members still owe on their fees: money still to come in, so valued at today's rate.
-  const owed = outstandingUSD(state);
+  // The caisse générale: the year's spending and income outside every camp. Each entry at its own rate.
+  const year = new Date().getFullYear(),
+    g = generalTotals(
+      state,
+      { start: new Date(year, 0, 1), end: new Date(year + 1, 0, 1) },
+      state.settings.display,
+    );
+  h +=
+    '<section class="sec"><div class="sec-head"><h2>Caisse générale ' +
+    year +
+    '</h2><button class="btn sm ghost" data-act="historyGeneral">See entries</button></div><div class="stats"><div class="stat"><span class="label">Spent</span><span class="amt priv">' +
+    fmtTotal(g.spent) +
+    '</span></div><div class="stat"><span class="label">Brought in</span><span class="amt in priv">' +
+    fmtTotal(g.earned) +
+    '</span></div><div class="stat"><span class="label">Net</span><span class="amt priv">' +
+    fmtTotal(g.net, { sign: true }) +
+    '</span></div></div></section>';
+  // What attendees still owe on cotisations: money still to come in, so valued at today's rate.
+  const owed = outstandingUSD(withCotisations(state));
   if (owed > 0)
     h +=
-      '<div class="list"><div class="row"><button class="row-btn" data-act="nav" data-v="members"><span class="row-main"><span class="row-title">Still owed by members</span><span class="row-sub">On their fees</span></span><span class="amt priv">' +
+      '<div class="list"><div class="row"><button class="row-btn" data-act="nav" data-v="members"><span class="row-main"><span class="row-title">Cotisations still owed</span><span class="row-sub">By camp attendees</span></span><span class="amt priv">' +
       fmtDisp(owed) +
       '</span></button></div></div>';
   h +=

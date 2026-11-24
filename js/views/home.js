@@ -178,7 +178,14 @@ export function renderHome() {
     'month',
     MONTHS[new Date().getMonth()],
     '<span class="mini-stats priv" aria-label="' +
-      esc('Spent ' + fmtTotal(spent) + ', earned ' + fmtTotal(inc) + ', net ' + fmtTotal(net)) +
+      esc(
+        'Spent ' +
+          fmtTotal(spent) +
+          ', earned ' +
+          fmtTotal(inc) +
+          ', net ' +
+          fmtTotal(net, { sign: net > 0 }),
+      ) +
       '"><span aria-hidden="true">' +
       fmtTotal(spent, { whole: true }) +
       '</span><span class="in" aria-hidden="true">' +

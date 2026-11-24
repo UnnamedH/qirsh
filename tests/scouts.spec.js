@@ -30,12 +30,12 @@ async function addEntry(page, { type = 'expense', amount, cur, to, toAmount, not
   await page.click('#sheet [data-act=fsave]');
 }
 
-test('opens with a cash box and a bank, both empty', async ({ page }) => {
+test('opens with a caisse and a bank, both empty', async ({ page }) => {
   await openScouts(page);
   await expect(page).toHaveTitle('Frata Scouts');
   const s = await st(page);
   expect(s.app).toBe('frata-scouts');
-  expect(s.accounts.map((a) => a.name)).toEqual(['Cash box', 'Bank']);
+  expect(s.accounts.map((a) => a.name)).toEqual(['Caisse', 'Bank']);
   expect(await bal(page)).toEqual({ wallet: { USD: 0, LBP: 0 }, bank: { USD: 0, LBP: 0 } });
   await expect(page.locator('.acc')).toHaveCount(2);
 });
@@ -162,7 +162,7 @@ test('a fund can be added, renamed and removed, keeping its money', async ({ pag
   await page.fill('#newAcc', 'Camp savings');
   await page.click('[data-act=accAdd]');
   const s = await st(page);
-  expect(s.accounts.map((a) => a.name)).toEqual(['Cash box', 'Bank', 'Camp savings']);
+  expect(s.accounts.map((a) => a.name)).toEqual(['Caisse', 'Bank', 'Camp savings']);
   const camp = s.accounts[2].id;
   await page.click('[data-act=nav][data-v=home]');
   await addEntry(page, { type: 'transfer', amount: 10, to: camp });
@@ -423,7 +423,7 @@ test('deleting an event keeps its entries, and Undo links them again', async ({ 
   await page.fill('#f-amount', '30');
   await page.click('#sheet [data-act=fsave]');
   await page.click('[data-act=editEvent]');
-  await expect(page.locator('#sheet .note')).toContainText('1 entry belongs');
+  await expect(page.locator('#sheet')).toContainText('1 entry belongs');
   await page.click('#sheet [data-act=fdel]');
   await page.click('#sheet [data-act=fdel]');
   let s = await st(page);
@@ -449,131 +449,155 @@ test('an event needs a name, and can’t end before it starts', async ({ page })
   expect((await st(page)).events).toEqual([]);
 });
 
-/* ---------- members, dues and fees ---------- */
+/* ---------- members, camps and cotisations ---------- */
 
-async function addMember(page, name, { leader = false, unit = '' } = {}) {
+async function addMember(page, name, { leader = false } = {}) {
   await page.click('[data-act=nav][data-v=members]');
   await page.click('[data-act=newMember]');
   await page.fill('#sheet [data-f=name]', name);
   if (leader) await page.click('#sheet [data-act=frole][data-v=leader]');
-  if (unit) await page.fill('#sheet [data-f=unit]', unit);
   await page.click('#sheet [data-act=fsave]');
   return page.evaluate((n) => window.__scouts.state.members.find((m) => m.name === n).id, name);
 }
 
-/** Creates a fee for every member still in the group and leaves its page open. */
-async function addFee(page, { name, amount, cur, untick = [] }) {
-  await page.click('[data-act=nav][data-v=members]');
-  await page.click('[data-act=newFee]');
+/**
+ * Creates a camp with a cotisation and ticks who attends (everyone, unless `attend` lists them).
+ * Leaves the camp's page open and returns its id.
+ */
+async function addCamp(page, { name, cotisation, cur, budget, attend }) {
+  await page.click('[data-act=nav][data-v=events]');
+  await page.click('[data-act=newEvent]');
   await page.fill('#sheet [data-f=name]', name);
-  if (cur) await page.click(`#sheet [data-act=fcur][data-v=${cur}]`);
-  await page.fill('#f-amount', String(amount));
-  for (const id of untick) await page.uncheck(`#sheet [data-feemember="${id}"]`);
+  if (cur) await page.click(`#sheet [data-act=fcotcur][data-v=${cur}]`);
+  if (cotisation != null) await page.fill('#f-cot', String(cotisation));
+  if (budget != null) await page.fill('#f-amount', String(budget));
+  if (attend) for (const id of attend) await page.check(`#sheet [data-attendee="${id}"]`);
+  else await page.click('#sheet [data-act=attAll]');
   await page.click('#sheet [data-act=fsave]');
-  return page.evaluate(() => window.__scouts.state.fees.at(-1).id);
+  return page.evaluate(() => window.__scouts.state.events.at(-1).id);
 }
 
-const feeStatus = (page, id) => page.evaluate((x) => window.__scouts.feeStatus(x), id);
+const cotisation = (page, id) => page.evaluate((x) => window.__scouts.feeStatus(x), id);
 
-test('a fee tracks who has paid, part paid or not paid, and Home shows what is still owed', async ({
-  page,
-}) => {
+test('a camp’s attendees pay its cotisation: paid, part paid and not paid', async ({ page }) => {
   await openScouts(page);
-  const ali = await addMember(page, 'Ali', { unit: 'Cubs' });
+  const ali = await addMember(page, 'Ali');
   const maya = await addMember(page, 'Maya');
   await addMember(page, 'Sam');
-  const dues = await addFee(page, { name: 'Dues 2026', amount: 50 });
-  await expect(page.locator('#v-members .acct-name h2')).toHaveText('Dues 2026');
-  // "Paid" fills in what the member still owes; Ali pays in full.
+  const camp = await addCamp(page, { name: 'Camp HP', cotisation: 50, budget: 400 });
+  await expect(page.locator('#v-events .acct-name h2')).toHaveText('Camp HP');
+  await expect(page.locator('#v-events')).toContainText('Attending (3)');
+  // "Record" fills in what the attendee still owes; Ali pays in full, Maya part of it.
   await page.click(`[data-act=newPayment][data-member="${ali}"]`);
   await expect(page.locator('#f-amount')).toHaveValue('50');
   await page.click('#sheet [data-act=fsave]');
-  // Maya pays part.
   await page.click(`[data-act=newPayment][data-member="${maya}"]`);
   await page.fill('#f-amount', '20');
   await page.click('#sheet [data-act=fsave]');
-  const fs = await feeStatus(page, dues);
-  expect(fs.members.map((m) => m.state)).toEqual(['paid', 'part', 'unpaid']);
-  expect([fs.expected, fs.collected, fs.outstanding, fs.paidCount]).toEqual([150, 70, 80, 1]);
+  const c = await cotisation(page, camp);
+  expect(c.members.map((m) => m.state)).toEqual(['paid', 'part', 'unpaid']);
+  expect([c.expected, c.collected, c.outstanding, c.paidCount]).toEqual([150, 70, 80, 1]);
   // Who still owes is listed first.
-  await expect(page.locator('#v-members .row .row-title').first()).toContainText('Sam');
-  await expect(page.locator('#v-members .row .row-sub').first()).toContainText('Not paid');
-  const income = (await st(page)).tx;
-  expect(income.map((t) => [t.type, t.memberId, t.feeId, t.categoryId])).toEqual([
-    ['income', ali, dues, 'dues'],
-    ['income', maya, dues, 'dues'],
+  await expect(page.locator('#v-events .row .row-title').first()).toContainText('Sam');
+  await expect(page.locator('#v-events .row .row-sub').first()).toContainText('Not paid');
+  // Payments are the camp's income, in the caisse.
+  const s = await st(page);
+  expect(s.tx.map((t) => [t.type, t.memberId, t.feeId, t.eventId, t.categoryId])).toEqual([
+    ['income', ali, camp, camp, 'dues'],
+    ['income', maya, camp, camp, 'dues'],
   ]);
+  expect(await page.evaluate((id) => window.__scouts.eventTotals(id, 'USD').earned, camp)).toBe(70);
   expect((await bal(page)).wallet.USD).toBe(70);
   await page.click('[data-act=nav][data-v=home]');
-  await expect(page.locator('#v-home')).toContainText('Still owed by members');
+  await expect(page.locator('#v-home')).toContainText('Cotisations still owed');
   await expect(page.locator('#v-home')).toContainText('$80');
 });
 
-test('a payment in lira toward a dollar fee counts at its own rate', async ({ page }) => {
+test('a cotisation paid in lira counts at its own rate', async ({ page }) => {
   await openScouts(page);
   const ali = await addMember(page, 'Ali');
-  const dues = await addFee(page, { name: 'Dues', amount: 50 });
+  const camp = await addCamp(page, { name: 'Camp Noël', cotisation: 50 });
   await page.click(`[data-act=newPayment][data-member="${ali}"]`);
   await page.click('#sheet [data-act=fcur][data-v=LBP]');
   await page.fill('#f-amount', '2237.5'); // 2,237,500 LL at 89,500 = $25
   await page.click('#sheet [data-act=fsave]');
-  expect((await feeStatus(page, dues)).outstanding).toBe(25);
+  expect((await cotisation(page, camp)).outstanding).toBe(25);
   await page.click('[data-act=nav][data-v=settings]');
   await page.fill('#rate', '100000');
   await page.locator('#rate').blur();
-  expect((await feeStatus(page, dues)).outstanding).toBe(25);
+  expect((await cotisation(page, camp)).outstanding).toBe(25);
 });
 
-test('income can be recorded as a member’s payment from the entry form', async ({ page }) => {
+test('a cotisation can be recorded from the income form, and puts the entry in the camp', async ({
+  page,
+}) => {
   await openScouts(page);
   const ali = await addMember(page, 'Ali');
-  const dues = await addFee(page, { name: 'Dues', amount: 30 });
+  const camp = await addCamp(page, { name: 'Camp Pâques', cotisation: 30 });
   await page.click('[data-act=nav][data-v=home]');
   await page.click('.btn[data-act=new][data-v=income]');
   await page.fill('#f-amount', '30');
-  // The fee picker appears once a member is picked, offering only that member's fees.
+  // The cotisation picker appears once a member is picked, offering only the camps they attend.
   await expect(page.locator('#sheet [data-f=feeId]')).toHaveCount(0);
   await page.selectOption('#sheet [data-f=memberId]', ali);
-  await page.selectOption('#sheet [data-f=feeId]', dues);
+  await page.selectOption('#sheet [data-f=feeId]', camp);
+  await expect(page.locator('#sheet [data-f=eventId]')).toHaveValue(camp);
   await page.click('#sheet [data-act=fsave]');
-  expect((await feeStatus(page, dues)).paidCount).toBe(1);
+  expect((await cotisation(page, camp)).paidCount).toBe(1);
+  expect((await st(page)).tx[0].eventId).toBe(camp);
   await expect(page.locator('#v-home .row-sub').first()).toContainText('Ali');
-  // An expense has no member or fee.
+  // An expense has no member.
   await page.click('.btn[data-act=new][data-v=expense]');
   await expect(page.locator('#sheet [data-f=memberId]')).toHaveCount(0);
 });
 
-test('a fee can leave members out, and a camp fee brings its event to the payment', async ({ page }) => {
+test('only the ticked members attend, and a camp can have no cotisation', async ({ page }) => {
   await openScouts(page);
   const ali = await addMember(page, 'Ali');
-  const lea = await addMember(page, 'Lea', { leader: true });
-  const camp = await addEvent(page, { name: 'Summer camp' });
-  await page.click('[data-act=nav][data-v=members]');
-  await page.click('[data-act=newFee]');
-  await page.fill('#sheet [data-f=name]', 'Camp fee');
-  await page.fill('#f-amount', '100');
-  await page.selectOption('#sheet [data-f=eventId]', camp);
-  await page.uncheck(`#sheet [data-feemember="${lea}"]`);
-  await expect(page.locator('#sheet .who-head')).toContainText('Who pays (1)');
-  await page.click('#sheet [data-act=fsave]');
-  const fee = (await st(page)).fees[0];
-  expect([fee.memberIds, fee.eventId]).toEqual([[ali], camp]);
+  await addMember(page, 'Lea', { leader: true });
+  const hike = await addCamp(page, { name: 'Sortie', attend: [ali] });
+  const e = (await st(page)).events.find((x) => x.id === hike);
+  expect([e.attendees, e.cotisation]).toEqual([[ali], null]);
+  await expect(page.locator('#v-events')).toContainText('Attending (1)');
+  await expect(page.locator('#v-events [data-act=newPayment]')).toHaveCount(0);
+});
+
+test('a cotisation can’t be removed once payments are recorded toward it', async ({ page }) => {
+  await openScouts(page);
+  const ali = await addMember(page, 'Ali');
+  await addCamp(page, { name: 'Camp HP', cotisation: 40 });
   await page.click(`[data-act=newPayment][data-member="${ali}"]`);
   await page.click('#sheet [data-act=fsave]');
-  expect((await st(page)).tx[0].eventId).toBe(camp);
-  const t = await page.evaluate((id) => window.__scouts.eventTotals(id, 'USD'), camp);
-  expect(t.earned).toBe(100);
+  await page.click('[data-act=editEvent]');
+  await page.fill('#f-cot', '');
+  await page.click('#sheet [data-act=fsave]');
+  await expect(page.locator('#f-err')).toContainText('already recorded');
+  expect((await st(page)).events[0].cotisation).toEqual({ amount: 40, currency: 'USD' });
+});
+
+test('a member’s page shows their cotisations and payments', async ({ page }) => {
+  await openScouts(page);
+  const ali = await addMember(page, 'Ali');
+  await addCamp(page, { name: 'Camp HP', cotisation: 40 });
+  await addCamp(page, { name: 'Camp d’été', cotisation: 120 });
+  await page.click(`[data-act=newPayment][data-member="${ali}"]`);
+  await page.click('#sheet [data-act=fsave]');
+  await page.click('[data-act=nav][data-v=members]');
+  await expect(page.locator('#v-members .row').first()).toContainText('owes $40');
+  await page.click(`[data-act=memberView][data-id="${ali}"]`);
+  await expect(page.locator('#v-members .row-title')).toContainText(['Camp HP', 'Camp d’été']);
+  await expect(page.locator('#v-members')).toContainText('Payments');
 });
 
 test('a member who left keeps their payments; one with none can be deleted', async ({ page }) => {
   await openScouts(page);
   const ali = await addMember(page, 'Ali');
   const sam = await addMember(page, 'Sam');
-  const dues = await addFee(page, { name: 'Dues', amount: 10 });
+  const camp = await addCamp(page, { name: 'Camp HP', cotisation: 10 });
   await page.click(`[data-act=newPayment][data-member="${ali}"]`);
   await page.click('#sheet [data-act=fsave]');
   // Ali has a payment, so they can only be marked as left.
-  await page.click('[data-act=peopleAll]');
+  await page.click('[data-act=nav][data-v=members]');
   await page.click(`[data-act=memberView][data-id="${ali}"]`);
   await page.click('[data-act=editMember]');
   await expect(page.locator('#sheet [data-act=fdel]')).toHaveCount(0);
@@ -581,51 +605,58 @@ test('a member who left keeps their payments; one with none can be deleted', asy
   expect((await st(page)).members.find((m) => m.id === ali).active).toBe(false);
   await page.click('[data-act=peopleAll]');
   await expect(page.locator('#v-members')).toContainText('Left the group');
-  // Sam has none: deleting takes them off the fee, and Undo puts them back.
+  // Sam has none: deleting takes them off the camp, and Undo puts them back.
   await page.click(`[data-act=memberView][data-id="${sam}"]`);
   await page.click('[data-act=editMember]');
   await page.click('#sheet [data-act=fdel]');
   await page.click('#sheet [data-act=fdel]');
   let s = await st(page);
   expect(s.members.map((m) => m.id)).toEqual([ali]);
-  expect(s.fees[0].memberIds).toEqual([ali]);
+  expect(s.events[0].attendees).toEqual([ali]);
   await page.click('#toast [data-act=undo]');
   s = await st(page);
-  expect(s.members.map((m) => m.id).sort()).toEqual([ali, sam].sort());
-  expect(s.fees[0].memberIds.sort()).toEqual([ali, sam].sort());
-  expect((await feeStatus(page, dues)).paidCount).toBe(1);
+  expect(s.events[0].attendees.sort()).toEqual([ali, sam].sort());
+  expect((await cotisation(page, camp)).paidCount).toBe(1);
 });
 
-test('deleting a fee keeps its payments as income, and Undo links them again', async ({ page }) => {
-  await openScouts(page);
-  const ali = await addMember(page, 'Ali');
-  const dues = await addFee(page, { name: 'Dues', amount: 10 });
-  await page.click(`[data-act=newPayment][data-member="${ali}"]`);
-  await page.click('#sheet [data-act=fsave]');
-  await page.click('[data-act=editFee]');
-  await expect(page.locator('#sheet')).toContainText('1 payment was made');
-  await page.click('#sheet [data-act=fdel]');
-  await page.click('#sheet [data-act=fdel]');
-  let s = await st(page);
-  expect(s.fees).toEqual([]);
-  expect(s.tx.map((t) => [t.type, t.amount, t.memberId, t.feeId])).toEqual([['income', 10, ali, undefined]]);
-  await page.click('#toast [data-act=undo]');
-  s = await st(page);
-  expect(s.fees.map((f) => f.id)).toEqual([dues]);
-  expect(s.tx[0].feeId).toBe(dues);
-});
-
-test('a fee needs a name and an amount; a member needs a name', async ({ page }) => {
+test('the member form asks only for a name and role, and needs a name', async ({ page }) => {
   await openScouts(page);
   await page.click('[data-act=nav][data-v=members]');
   await page.click('[data-act=newMember]');
+  await expect(page.locator('#sheet [data-f=unit]')).toHaveCount(0);
   await page.click('#sheet [data-act=fsave]');
   await expect(page.locator('#f-err')).toContainText('name');
-  await page.click('#sheet [data-act=close]');
-  await page.click('[data-act=newFee]');
-  await page.fill('#sheet [data-f=name]', 'Dues');
+  expect((await st(page)).members).toEqual([]);
+});
+
+test('the unité’s name is set once in Settings and shown on Home', async ({ page }) => {
+  await openScouts(page);
+  await page.click('[data-act=nav][data-v=settings]');
+  await page.fill('#groupName', 'Unité Saint-Joseph');
+  await page.locator('#groupName').blur();
+  await page.click('[data-act=nav][data-v=home]');
+  await expect(page.locator('.balance-head')).toContainText('Unité Saint-Joseph');
+});
+
+test('the caisse générale counts this year’s entries outside camps, and History can show just those', async ({
+  page,
+}) => {
+  await openScouts(page);
+  await addEntry(page, { type: 'expense', amount: 30, note: 'Rent' });
+  await addEntry(page, { type: 'income', amount: 100, note: 'Donation' });
+  const camp = await addEvent(page, { name: 'Camp HP' });
+  await page.click('#v-events [data-act=new][data-v=expense]');
+  await page.fill('#f-amount', '45');
   await page.click('#sheet [data-act=fsave]');
-  await expect(page.locator('#f-err')).toContainText('each member pays');
-  const s = await st(page);
-  expect([s.members, s.fees]).toEqual([[], []]);
+  await page.click('[data-act=nav][data-v=home]');
+  const general = page.locator('#v-home .sec', { hasText: 'Caisse générale' });
+  await expect(general).toContainText('$30');
+  await expect(general).toContainText('$100');
+  await expect(general).toContainText('+$70');
+  await page.click('[data-act=historyGeneral]');
+  await expect(page.locator('#hevent')).toHaveValue('general');
+  await expect(page.locator('#v-history .list .row')).toHaveCount(2);
+  await page.selectOption('#hevent', camp);
+  await expect(page.locator('#v-history .list .row')).toHaveCount(1);
+  await expect(page.locator('#v-history .stat').first()).toContainText('$45');
 });

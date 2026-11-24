@@ -162,6 +162,8 @@ test('events are repaired, and entries lose links to events that are gone', () =
     start: '2026-07-01',
     end: '',
     budget: { amount: 500, currency: 'USD' },
+    cotisation: null,
+    attendees: [],
     closed: false,
     createdAt: 0,
   });
@@ -222,15 +224,97 @@ test('members and fees are repaired, and links to ones that are gone are dropped
     { id: 'ali', name: 'Ali', role: 'leader', unit: 'Rovers', active: false, createdAt: 0 },
     { id: 'maya', name: 'Unnamed', role: 'scout', unit: '', active: true, createdAt: 0 },
   ]);
+  // The fee tied to the camp became the camp's cotisation (see the next test).
   assert.deepEqual(
     s.fees.map((f) => [f.id, f.name, f.amount, f.due, f.eventId, f.memberIds]),
     [
       ['dues', 'Dues', 50, '2026-03-01', undefined, ['ali', 'maya']],
-      ['campfee', 'Fee', 100, '', 'camp', []],
       ['x', 'Fee', 1, '', undefined, []],
     ],
   );
+  assert.deepEqual(s.events[0].cotisation, { amount: 100, currency: 'USD' });
   assert.deepEqual([s.tx[0].memberId, s.tx[0].feeId], ['ali', 'dues']);
   assert.equal('memberId' in s.tx[1] || 'feeId' in s.tx[1], false);
   assert.equal('paidBy' in s.tx[2], false);
+});
+
+test('a fee tied to a camp becomes its cotisation, and its payments move along, once', () => {
+  const data = base({
+    members: [
+      { id: 'ali', name: 'Ali' },
+      { id: 'maya', name: 'Maya' },
+    ],
+    events: [
+      { id: 'camp', name: 'Camp HP', attendees: ['maya'] },
+      { id: 'noel', name: 'Camp Noël', cotisation: { amount: 20, currency: 'USD' } },
+    ],
+    fees: [
+      { id: 'f1', name: 'Camp fee', amount: 4475000, currency: 'LBP', eventId: 'camp', memberIds: ['ali'] },
+      { id: 'f2', name: 'Second fee', amount: 10, currency: 'USD', eventId: 'noel', memberIds: ['ali'] },
+    ],
+    tx: [
+      {
+        id: 'p',
+        type: 'income',
+        amount: 50,
+        currency: 'USD',
+        date: '2026-01-02',
+        memberId: 'ali',
+        feeId: 'f1',
+      },
+    ],
+  });
+  const s = normalize(data);
+  assert.deepEqual(s.events[0].cotisation, { amount: 4475000, currency: 'LBP' });
+  assert.deepEqual(s.events[0].attendees, ['maya', 'ali']);
+  assert.deepEqual([s.tx[0].feeId, s.tx[0].eventId], ['camp', 'camp']);
+  // Camp Noël already had a cotisation, so its old fee stays as it was.
+  assert.deepEqual(
+    s.fees.map((f) => f.id),
+    ['f2'],
+  );
+  // Running it again changes nothing.
+  assert.deepEqual(normalize(JSON.parse(JSON.stringify(s))), s);
+});
+
+test('attendees must be members, and a cotisation needs a usable amount', () => {
+  const s = normalize(
+    base({
+      members: [{ id: 'ali', name: 'Ali' }],
+      events: [
+        {
+          id: 'a',
+          name: 'A',
+          attendees: ['ali', 'ali', 'ghost', 5],
+          cotisation: { amount: '30', currency: 'USD' },
+        },
+        { id: 'b', name: 'B', attendees: 'ali', cotisation: { amount: 0, currency: 'USD' } },
+      ],
+      tx: [
+        {
+          id: 'p',
+          type: 'income',
+          amount: 30,
+          currency: 'USD',
+          date: '2026-01-02',
+          memberId: 'ali',
+          feeId: 'a',
+        },
+        {
+          id: 'q',
+          type: 'income',
+          amount: 5,
+          currency: 'USD',
+          date: '2026-01-02',
+          memberId: 'ali',
+          feeId: 'b',
+        },
+      ],
+    }),
+  );
+  assert.deepEqual(s.events[0].attendees, ['ali']);
+  assert.deepEqual(s.events[0].cotisation, { amount: 30, currency: 'USD' });
+  assert.deepEqual([s.events[1].attendees, s.events[1].cotisation], [[], null]);
+  assert.equal(s.tx[0].feeId, 'a');
+  assert.equal('feeId' in s.tx[1], false); // event B has no cotisation to pay toward
 });

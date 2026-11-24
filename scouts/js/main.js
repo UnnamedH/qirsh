@@ -1,5 +1,5 @@
 /* Entry point. */
-import { eventBudget, eventTotals } from '../../js/core/events.js';
+import { eventBudget, eventTotals, withCotisations } from '../../js/core/events.js';
 import { feeStatus, outstandingUSD } from '../../js/core/fees.js';
 import { balances, combinedUSD, range, sumIn } from '../../js/core/ledger.js';
 import { entryValueIn, fmt, parseAmt } from '../../js/core/money.js';
@@ -22,12 +22,15 @@ window.__scouts = {
   entryValueIn: (t, cur) => entryValueIn(t, cur, state.rate),
   eventTotals: (id, cur) => eventTotals(state, id, cur),
   eventBudget: (e) => eventBudget(state, e),
-  feeStatus: (id) =>
-    feeStatus(
-      state,
-      state.fees.find((f) => f.id === id),
-    ),
-  outstandingUSD: (memberId) => outstandingUSD(state, memberId),
+  // A camp's cotisation, by the camp's id.
+  feeStatus: (id) => {
+    const s = withCotisations(state);
+    return feeStatus(
+      s,
+      s.fees.find((f) => f.id === id),
+    );
+  },
+  outstandingUSD: (memberId) => outstandingUSD(withCotisations(state), memberId),
   fmt,
   parseAmt,
 };

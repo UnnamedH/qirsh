@@ -114,7 +114,7 @@ tests/                  Playwright tests, and server.mjs, a test server that can
 
 ## Frata Scouts
 
-`scouts/` is a second app for tracking a scout group's money: funds (cash box, bank), expenses, income, moves and exchanges in USD and LL, events and camps with their own budget, spending by category and net result, and members with their dues and fees: who has paid, who has paid part and who still owes. It is installed and updated on its own (its own `scouts/sw.js`, manifest and cache) and keeps its data under its own key, `frata-scouts.v1`, so it never touches the personal app's data. It shares the money logic in `js/core/`, the styles, the fonts and a few UI helpers with Frata, and follows the same rules: no framework, no build step, no network calls.
+`scouts/` is a second app for tracking a scout group's money: funds (cash box, bank), expenses, income, moves and exchanges in USD and LL, camps (Camp HP, Noël, Pâques, été…) with their own budget, attendees and cotisation: who has paid, who has paid part and who still owes. Entries outside every camp make up the caisse générale. The unité's name is set once in Settings; the screens are in English with the unité's own words (unité, cotisation, caisse). It is installed and updated on its own (its own `scouts/sw.js`, manifest and cache) and keeps its data under its own key, `frata-scouts.v1`, so it never touches the personal app's data. It shares the money logic in `js/core/`, the styles, the fonts and a few UI helpers with Frata, and follows the same rules: no framework, no build step, no network calls.
 
 Open it at `/scouts/` (`npm start`, then http://127.0.0.1:8765/scouts/). Leader reimbursements, a spreadsheet export and Google Sheets sync are planned next.
 

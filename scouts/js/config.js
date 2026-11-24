@@ -3,9 +3,9 @@
 export const APP_ID = 'frata-scouts';
 
 /* The main fund has the id 'wallet' because the shared core (js/core/) treats that id as the default
-   account. People see its name, "Cash box", and can rename it. Other funds can be added or removed. */
+   account. People see its name, "Caisse", and can rename it. Other funds can be added or removed. */
 export const DEFAULT_ACCOUNTS = [
-  { id: 'wallet', name: 'Cash box' },
+  { id: 'wallet', name: 'Caisse' },
   { id: 'bank', name: 'Bank' },
 ];
 
@@ -18,7 +18,7 @@ export const DEFAULT_CATS = [
   ['activities', 'Activities', 'expense', '🎯'],
   ['admin', 'Admin & fees', 'expense', '📄'],
   ['other', 'Other', 'expense', '📦'],
-  ['dues', 'Member dues', 'income', '🧾'],
+  ['dues', 'Cotisations', 'income', '🧾'],
   ['donation', 'Donations', 'income', '💝'],
   ['fundraiser', 'Fundraising', 'income', '🥳'],
   ['other-in', 'Other income', 'income', '💰'],

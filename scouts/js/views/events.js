@@ -1,10 +1,18 @@
 /* Events: camps, outings and activities, each with what it cost, what it brought in and its budget. */
-import { eventBudget, eventOf, eventTotals } from '../../../js/core/events.js';
+import {
+  cotisationFee,
+  eventBudget,
+  eventOf,
+  eventTotals,
+  withCotisations,
+} from '../../../js/core/events.js';
+import { feeStatus, memberOf } from '../../../js/core/fees.js';
 import { catName } from '../../../js/core/ledger.js';
 import { fmt } from '../../../js/core/money.js';
 import { ICON } from '../../../js/icons.js';
 import { $, MONTHS, esc, parseYmd } from '../../../js/util.js';
 import { state } from '../state.js';
+import { cotisationCard, cotisationLine, roleLine } from '../ui/cotisation.js';
 import { fmtTotal, txRow } from '../ui/format.js';
 import { eventView } from '../ui/ui-state.js';
 
@@ -83,6 +91,53 @@ function renderList() {
   return h;
 }
 
+/*
+ * Who attends, and with a cotisation, where each of them stands on it: who still owes first, so the
+ * list works as a to-do at the start of the camp.
+ */
+function attendance(e) {
+  const fee = cotisationFee(e),
+    people = (e.attendees || []).map((id) => memberOf(state, id)).filter(Boolean);
+  let h = '<section class="sec"><div class="sec-head"><h2>Attending (' + people.length + ')</h2></div>';
+  if (!people.length)
+    return (
+      h +
+      '<div class="list"><p class="empty">Edit the event to tick who is attending' +
+      (fee ? ', then record their cotisation here.' : '.') +
+      '</p></div></section>'
+    );
+  if (!fee)
+    return (
+      h +
+      '<div class="list">' +
+      people
+        .map(
+          (m) =>
+            '<div class="row"><span class="row-main"><span class="row-title">' +
+            esc(m.name) +
+            '</span><span class="row-sub">' +
+            esc(roleLine(m)) +
+            '</span></span></div>',
+        )
+        .join('') +
+      '</div></section>'
+    );
+  const s = withCotisations(state),
+    order = { unpaid: 0, part: 1, paid: 2 };
+  const rows = feeStatus(s, fee)
+    .members.map((x) => ({ x, m: memberOf(state, x.memberId) }))
+    .filter((r) => r.m)
+    .sort((a, c) => order[a.x.state] - order[c.x.state] || a.m.name.localeCompare(c.m.name));
+  return (
+    h +
+    '<div class="list">' +
+    cotisationCard(s, fee) +
+    '</div><div class="list">' +
+    rows.map((r) => cotisationLine(fee, r.x, r.m.name, roleLine(r.m))).join('') +
+    '</div></section>'
+  );
+}
+
 function renderEvent(e) {
   const cur = state.settings.display,
     t = eventTotals(state, e.id, cur),
@@ -106,6 +161,7 @@ function renderEvent(e) {
     '</span></div><div class="stat"><span class="label">Net</span><span class="amt priv">' +
     fmtTotal(t.net, { sign: true }) +
     '</span></div></div>';
+  h += attendance(e);
   if (b)
     h +=
       '<div class="list"><div class="budget"><div class="b-top"><span class="b-name"><span>Budget</span></span><span class="b-nums priv">' +
