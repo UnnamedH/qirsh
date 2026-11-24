@@ -46,7 +46,10 @@ wrappers (`js/money.js`, `ledger.js`, `accounts.js`, `advances.js`): they load t
 - **`js/core/` is pure**: functions take the state (or rate) as an argument and never touch the DOM, storage or
   a global. Frata's top-level `money.js`/`ledger.js`/`accounts.js`/`advances.js` are thin wrappers that pass in
   `state`. Put new shared logic in `js/core/`, with a unit test in `unit/` and JSDoc types (`npm run typecheck`).
-- The scouts main fund keeps the id `wallet` (shown as "Cash box") because the core defaults to that id.
+- The scouts main fund keeps the id `wallet` (shown as "Caisse") because the core defaults to that id.
+- Each camp (event) has its own account (`accountId`, id `camp-<event id>`, made by `ensureCampAccount()` in
+  `scouts/js/camps.js`). Its cotisation is a fee via `withCotisations()` in `js/core/events.js`; payments are
+  income with the camp's id as `eventId` and `feeId`, into the camp's account.
 - New scouts file? Add it to `APP` in `scouts/sw.js`. `npm run stamp` stamps both service workers.
 - Frata's `sw.js` ignores requests under `scouts/`, so Frata's worker never answers for the scouts app.
 - Scouts tests are in `tests/scouts.spec.js`; the shared core's are in `unit/` (`npm run test:unit`).

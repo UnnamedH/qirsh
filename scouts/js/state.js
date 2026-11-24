@@ -1,5 +1,6 @@
 /* The saved scouts data: shape, loading, saving and repairing data from older versions or backups.
    It lives under its own key, so it never mixes with the personal Frata app on the same address. */
+import { ensureCampAccount } from './camps.js';
 import { APP_ID, DEFAULT_ACCOUNTS, DEFAULT_CATS, PROTECTED } from './config.js';
 
 export const KEY = 'frata-scouts.v1';
@@ -7,12 +8,12 @@ export const KEY = 'frata-scouts.v1';
 export function blankState() {
   return {
     app: APP_ID,
-    version: 1,
+    version: 2,
     group: { name: '' },
     rate: 89500,
-    settings: { display: 'USD', weekStart: 1, theme: 'system' },
+    settings: { display: 'USD', weekStart: 1, theme: 'system', fold: {} },
     accounts: DEFAULT_ACCOUNTS.map((a) => Object.assign({}, a)),
-    opening: { wallet: { USD: 0, LBP: 0 }, bank: { USD: 0, LBP: 0 } },
+    opening: { wallet: { USD: 0, LBP: 0 } },
     categories: DEFAULT_CATS.map((c) => Object.assign({}, c)),
     tx: [],
     // Reserved for later steps (events, members and their fees), so saved data never needs migrating.
@@ -33,6 +34,7 @@ const LINKS = ['eventId', 'memberId', 'feeId', 'paidBy'];
 const isCur = (c) => CURRENCIES.includes(c);
 const isObj = (x) => !!x && typeof x === 'object';
 const ACCOUNT_ID = /^[\w-]{1,40}$/;
+const FOLD_KEY = /^[a-z][\w-]{0,30}$/i;
 
 const validCategory = (c) =>
   isObj(c) &&
@@ -56,7 +58,7 @@ function normalizeAccounts(s) {
     if (!isObj(a) || typeof a.id !== 'string' || !ACCOUNT_ID.test(a.id) || seen.has(a.id)) return;
     seen.add(a.id);
     const name = typeof a.name === 'string' ? a.name.trim().slice(0, 30) : '';
-    const x = { id: a.id, name: name || (a.id === 'wallet' ? 'Cash box' : a.id) };
+    const x = { id: a.id, name: name || (a.id === 'wallet' ? 'Caisse' : a.id) };
     if (a.hidden === true && a.id !== 'wallet') x.hidden = true;
     out.push(x);
   };
@@ -97,23 +99,31 @@ function normalizeTx(t, out) {
 
 const YMD = /^\d{4}-\d{2}-\d{2}$/;
 
-/* Events and camps: each needs an id and a name; dates and a budget are optional. */
-function normalizeEvents(list) {
+const money = (b) =>
+  isObj(b) && +b.amount > 0 && isCur(b.currency) ? { amount: +b.amount, currency: b.currency } : null;
+
+/* Events and camps: each needs an id and a name; dates, a budget, a cotisation and who attends are
+   optional. Attendees must be members. */
+function normalizeEvents(list, memberIds) {
   const seen = new Set();
   return (Array.isArray(list) ? list : [])
     .filter((e) => isObj(e) && typeof e.id === 'string' && e.id && !seen.has(e.id) && seen.add(e.id))
     .map((e) => {
       const name = typeof e.name === 'string' ? e.name.trim().slice(0, 60) : '';
-      const b = isObj(e.budget) ? e.budget : null;
       const x = {
         id: e.id,
         name: name || 'Untitled event',
         start: typeof e.start === 'string' && YMD.test(e.start) ? e.start : '',
         end: typeof e.end === 'string' && YMD.test(e.end) ? e.end : '',
-        budget: b && +b.amount > 0 && isCur(b.currency) ? { amount: +b.amount, currency: b.currency } : null,
+        budget: money(e.budget),
+        cotisation: money(e.cotisation),
+        attendees: [
+          ...new Set((Array.isArray(e.attendees) ? e.attendees : []).filter((id) => memberIds.has(id))),
+        ],
         closed: e.closed === true,
         createdAt: +e.createdAt || 0,
       };
+      if (typeof e.accountId === 'string' && e.accountId) x.accountId = e.accountId;
       // An end before the start is a slip; the start is the date people type first.
       if (x.start && x.end && x.end < x.start) x.end = '';
       return x;
@@ -165,6 +175,37 @@ function normalizeFees(list, out) {
     });
 }
 
+/* Version 0.2 of the scouts app had fees of their own, optionally tied to an event. A camp's fee is now
+   the event's cotisation, with its members as the attendees, so a fee tied to an event that has no
+   cotisation yet becomes it, and its payments move along. Other fees stay in the data, unseen. */
+function moveEventFees(out) {
+  out.fees = out.fees.filter((f) => {
+    const e = f.eventId && out.events.find((x) => x.id === f.eventId);
+    if (!e || e.cotisation) return true;
+    e.cotisation = { amount: f.amount, currency: f.currency };
+    e.attendees = [...new Set([...e.attendees, ...f.memberIds])];
+    out.tx.forEach((t) => {
+      if (t.feeId === f.id) {
+        t.feeId = e.id;
+        t.eventId = e.id;
+      }
+    });
+    return false;
+  });
+}
+
+/* Version 1 started every unité with a second fund, "Bank". Most never used it, and on its own the caisse
+   needs no list of funds, so it goes once, if it is still the untouched default: same name, never used,
+   nothing in its starting balance. A Bank someone used or renamed stays. */
+function dropUnusedBank(out) {
+  const a = out.accounts.find((x) => x.id === 'bank'),
+    o = out.opening.bank || {};
+  if (!a || a.name !== 'Bank' || +o.USD || +o.LBP) return;
+  if (out.tx.some((t) => t.account === 'bank' || t.from === 'bank' || t.to === 'bank')) return;
+  out.accounts = out.accounts.filter((x) => x !== a);
+  delete out.opening.bank;
+}
+
 /** Repairs any parsed data into a state the app can use. It never throws on bad data. */
 export function normalize(s) {
   const b = blankState();
@@ -179,6 +220,12 @@ export function normalize(s) {
     display: isCur(st.display) ? st.display : b.settings.display,
     weekStart: Number.isInteger(week) && week >= 0 && week <= 6 ? week : b.settings.weekStart,
     theme: ['system', 'light', 'dark'].includes(st.theme) ? st.theme : b.settings.theme,
+    // Sections folded shut (see ui/fold.js); anything else in saved data or a backup is dropped.
+    fold: Object.fromEntries(
+      Object.keys(isObj(st.fold) ? st.fold : {})
+        .filter((k) => FOLD_KEY.test(k) && st.fold[k] === true)
+        .map((k) => [k, true]),
+    ),
   };
   const txs = Array.isArray(s.tx) ? s.tx : [];
   out.accounts = normalizeAccounts(Object.assign({}, s, { tx: txs }));
@@ -209,22 +256,31 @@ export function normalize(s) {
         isCur(t.currency),
     )
     .map((t) => normalizeTx(t, out));
-  out.events = normalizeEvents(s.events);
+  out.members = normalizeMembers(s.members);
+  const memberIds = new Set(out.members.map((m) => m.id));
+  out.events = normalizeEvents(s.events, memberIds);
+  // Every camp has its own account (camps from before then get one, empty, so no balance moves).
+  out.events.forEach((e) => ensureCampAccount(out, e));
   // An entry linked to an event that no longer exists is an ordinary entry again.
   const eventIds = new Set(out.events.map((e) => e.id));
   out.tx.forEach((t) => {
     if (t.eventId && !eventIds.has(t.eventId)) delete t.eventId;
   });
-  out.members = normalizeMembers(s.members);
   out.fees = normalizeFees(s.fees, out);
-  // Links to a member or fee that no longer exists are dropped, as for events.
-  const memberIds = new Set(out.members.map((m) => m.id)),
-    feeIds = new Set(out.fees.map((f) => f.id));
+  moveEventFees(out);
+  // Links to a member or fee that no longer exists are dropped, as for events. A cotisation is paid
+  // toward its event, so an event with one is also a fee.
+  const feeIds = new Set([
+    ...out.fees.map((f) => f.id),
+    ...out.events.filter((e) => e.cotisation).map((e) => e.id),
+  ]);
   out.tx.forEach((t) => {
     if (t.memberId && !memberIds.has(t.memberId)) delete t.memberId;
     if (t.paidBy && !memberIds.has(t.paidBy)) delete t.paidBy;
     if (t.feeId && !feeIds.has(t.feeId)) delete t.feeId;
   });
+  if (!(+s.version >= 2)) dropUnusedBank(out);
+  out.version = 2;
   out.lastExport = typeof s.lastExport === 'string' ? s.lastExport : null;
   delete out.exportedAt;
   return out;

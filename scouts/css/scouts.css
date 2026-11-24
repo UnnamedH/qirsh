@@ -96,8 +96,9 @@
 .who {
   display: flex;
   flex-direction: column;
-  max-height: 40vh;
-  overflow-y: auto;
+  /* The sheet is a flex column that scrolls as a whole. A list that scrolls on its own is allowed to shrink
+     in it, down to a sliver, so it is left to grow instead and the sheet scrolls past it. */
+  flex: none;
   border: 1px solid var(--line);
   border-radius: var(--r);
   background: var(--surface);
@@ -130,4 +131,44 @@
   padding: 0 6px;
   margin-right: 2px;
   vertical-align: 1px;
+}
+
+/* Home's tabs: the caisse and each open camp. They scroll sideways when there are many camps. */
+.home-tabs {
+  display: flex;
+  gap: 6px;
+  overflow-x: auto;
+  scrollbar-width: none;
+  margin: 0 -2px 4px;
+  padding: 2px;
+}
+.home-tabs::-webkit-scrollbar {
+  display: none;
+}
+.home-tabs button {
+  flex: none;
+  border: 1px solid var(--line);
+  background: var(--surface);
+  color: var(--fg);
+  border-radius: 999px;
+  padding: 7px 14px;
+  font: inherit;
+  font-size: 14px;
+  font-weight: 550;
+  white-space: nowrap;
+}
+.home-tabs button[aria-pressed='true'] {
+  background: var(--accent);
+  border-color: var(--accent);
+  color: var(--accent-ink);
+}
+
+/* Save stays in reach at the bottom of a long form, such as an event with many members to tick. */
+.sheet .sheet-actions {
+  position: sticky;
+  bottom: calc(-20px - env(safe-area-inset-bottom, 0px));
+  background: var(--bg);
+  padding: 10px 0 calc(20px + env(safe-area-inset-bottom, 0px));
+  margin-bottom: calc(-20px - env(safe-area-inset-bottom, 0px));
+  z-index: 1;
 }

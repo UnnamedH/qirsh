@@ -1,7 +1,7 @@
 /* History: every entry for a month, with a filter and an optional single fund. */
 import { accName } from '../../../js/core/accounts.js';
-import { balances, inRange, sumIn } from '../../../js/core/ledger.js';
-import { fmt } from '../../../js/core/money.js';
+import { balances, inRange } from '../../../js/core/ledger.js';
+import { entryValueIn, fmt } from '../../../js/core/money.js';
 import { ICON } from '../../../js/icons.js';
 import { $, MONTHS, esc } from '../../../js/util.js';
 import { state } from '../state.js';
@@ -14,8 +14,12 @@ const monthRange = (m) => ({ start: m, end: new Date(m.getFullYear(), m.getMonth
 const inAccount = (t, id) =>
   t.type === 'transfer' ? t.from === id || t.to === id : (t.account || 'wallet') === id;
 
+/* The event filter: everything, the caisse générale (no event), or one event. */
+const inEvent = (t) => !hist.event || (hist.event === 'general' ? !t.eventId : t.eventId === hist.event);
+
 const matches = (t) =>
   (!hist.account || inAccount(t, hist.account)) &&
+  inEvent(t) &&
   (hist.filter === 'all' ||
     (hist.filter === 'move' ? t.type === 'transfer' || t.type === 'adjust' : t.type === hist.filter));
 
@@ -27,13 +31,32 @@ export function historyTxs() {
     .sort((a, b) => b.date.localeCompare(a.date) || (b.createdAt || 0) - (a.createdAt || 0));
 }
 
+function eventFilter() {
+  const opt = (v, label) =>
+    '<option value="' + esc(v) + '"' + (hist.event === v ? ' selected' : '') + '>' + esc(label) + '</option>';
+  return (
+    '<select id="hevent" class="input" aria-label="Show entries for">' +
+    opt('', 'All entries') +
+    opt('general', 'Caisse générale') +
+    state.events.map((e) => opt(e.id, e.name)).join('') +
+    '</select>'
+  );
+}
+
 export function renderHistory() {
   const m = hist.month,
     r = monthRange(m),
     txs = historyTxs(),
     acc = hist.account;
-  const spent = sumIn(state, r, 'expense', null, state.settings.display, acc),
-    inc = sumIn(state, r, 'income', null, state.settings.display, acc);
+  // Totals of exactly the entries listed, so they follow the fund and event filters (the Out/In/Moves
+  // buttons only narrow the list). Each entry counts at its own rate.
+  const shown = state.tx.filter((t) => inRange(t, r) && (!acc || inAccount(t, acc)) && inEvent(t));
+  const total = (type) =>
+    shown
+      .filter((t) => t.type === type)
+      .reduce((n, t) => n + entryValueIn(t, state.settings.display, state.rate), 0);
+  const spent = total('expense'),
+    inc = total('income');
   let h = '';
   if (acc) {
     const b = balances(state)[acc] || { USD: 0, LBP: 0 };
@@ -86,7 +109,9 @@ export function renderHistory() {
           '</button>',
       )
       .join('') +
-    '</div></div>';
+    '</div>' +
+    eventFilter() +
+    '</div>';
   h +=
     '<div class="list">' +
     (txs.length ? txs.map((t) => txRow(t)).join('') : '<p class="empty">Nothing here for this month.</p>') +

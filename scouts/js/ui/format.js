@@ -29,7 +29,12 @@ export function txTitle(t) {
  * event's page ({ event: true }), the member on a member's page ({ member: true }).
  */
 export function rowSub(t, hide = {}) {
-  const where = t.type === 'transfer' ? '' : accName(state, t.account || 'wallet');
+  // A camp's own account has the camp's name, which the event part below already gives.
+  const camp = eventOf(state, t.eventId),
+    where =
+      t.type === 'transfer' || (camp && camp.accountId === t.account)
+        ? ''
+        : accName(state, t.account || 'wallet');
   const note = t.note && t.type !== 'transfer' ? catName(state, t.categoryId) : t.note || '';
   const ev = hide.event ? undefined : eventOf(state, t.eventId),
     who = hide.member ? undefined : memberOf(state, t.memberId);
