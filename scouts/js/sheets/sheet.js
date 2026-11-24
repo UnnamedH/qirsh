@@ -5,10 +5,17 @@ import { adjustSheet, updateAdjustPreview } from './adjust.js';
 import { txSheet } from './entry.js';
 import { eventSheet } from './event.js';
 import { memberSheet } from './member.js';
+import { paymentSheet } from './payment.js';
 
 export let form = null;
 
-const SHEETS = { tx: txSheet, adjust: adjustSheet, event: eventSheet, member: memberSheet };
+const SHEETS = {
+  tx: txSheet,
+  adjust: adjustSheet,
+  event: eventSheet,
+  member: memberSheet,
+  pay: paymentSheet,
+};
 
 export function openSheet(f) {
   form = f;

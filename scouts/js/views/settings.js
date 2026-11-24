@@ -4,6 +4,7 @@ import { toInput } from '../../../js/core/money.js';
 import { thousandsInput } from '../../../js/ui/amount.js';
 import { $, esc } from '../../../js/util.js';
 import { APP_VERSION } from '../version.js';
+import { campAccountIds } from '../camps.js';
 import { rescuedData, state } from '../state.js';
 import { armed, showOpening } from '../ui/ui-state.js';
 
@@ -25,8 +26,11 @@ const seg = (act, pairs, current) =>
     .join('') +
   '</div>';
 
+/* The caisse's funds. Camps' accounts come and go with their camp, so they are not listed here. */
 function accountRows() {
+  const camps = campAccountIds(state);
   return state.accounts
+    .filter((a) => !camps.has(a.id))
     .map((a) => {
       const gone = !!a.hidden,
         main = a.id === 'wallet';

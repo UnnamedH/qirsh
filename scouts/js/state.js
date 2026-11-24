@@ -1,5 +1,6 @@
 /* The saved scouts data: shape, loading, saving and repairing data from older versions or backups.
    It lives under its own key, so it never mixes with the personal Frata app on the same address. */
+import { ensureCampAccount } from './camps.js';
 import { APP_ID, DEFAULT_ACCOUNTS, DEFAULT_CATS, PROTECTED } from './config.js';
 
 export const KEY = 'frata-scouts.v1';
@@ -121,6 +122,7 @@ function normalizeEvents(list, memberIds) {
         closed: e.closed === true,
         createdAt: +e.createdAt || 0,
       };
+      if (typeof e.accountId === 'string' && e.accountId) x.accountId = e.accountId;
       // An end before the start is a slip; the start is the date people type first.
       if (x.start && x.end && x.end < x.start) x.end = '';
       return x;
@@ -238,6 +240,8 @@ export function normalize(s) {
   out.members = normalizeMembers(s.members);
   const memberIds = new Set(out.members.map((m) => m.id));
   out.events = normalizeEvents(s.events, memberIds);
+  // Every camp has its own account (camps from before then get one, empty, so no balance moves).
+  out.events.forEach((e) => ensureCampAccount(out, e));
   // An entry linked to an event that no longer exists is an ordinary entry again.
   const eventIds = new Set(out.events.map((e) => e.id));
   out.tx.forEach((t) => {

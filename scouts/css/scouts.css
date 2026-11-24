@@ -131,3 +131,33 @@
   margin-right: 2px;
   vertical-align: 1px;
 }
+
+/* Home's tabs: the caisse and each open camp. They scroll sideways when there are many camps. */
+.home-tabs {
+  display: flex;
+  gap: 6px;
+  overflow-x: auto;
+  scrollbar-width: none;
+  margin: 0 -2px 4px;
+  padding: 2px;
+}
+.home-tabs::-webkit-scrollbar {
+  display: none;
+}
+.home-tabs button {
+  flex: none;
+  border: 1px solid var(--line);
+  background: var(--surface);
+  color: var(--fg);
+  border-radius: 999px;
+  padding: 7px 14px;
+  font: inherit;
+  font-size: 14px;
+  font-weight: 550;
+  white-space: nowrap;
+}
+.home-tabs button[aria-pressed='true'] {
+  background: var(--accent);
+  border-color: var(--accent);
+  color: var(--accent-ink);
+}

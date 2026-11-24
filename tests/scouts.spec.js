@@ -344,8 +344,8 @@ test('an entry can be put in an event from the entry form, and taken out again',
   await page.fill('#f-amount', '12');
   await page.selectOption('#sheet [data-f=eventId]', hike);
   await page.click('#sheet [data-act=fsave]');
-  expect((await st(page)).tx[0].eventId).toBe(hike);
-  await expect(page.locator('#v-home .row-sub')).toContainText('Hike');
+  // Putting it in the event put it in the event's own account.
+  expect([(await st(page)).tx[0].eventId, (await st(page)).tx[0].account]).toEqual([hike, 'camp-' + hike]);
   // A second entry in the event is labelled too, in History, but not on the event's own page.
   await page.click('.btn[data-act=new][data-v=expense]');
   await page.fill('#f-amount', '3');
@@ -357,11 +357,12 @@ test('an entry can be put in an event from the entry form, and taken out again',
   await page.click('[data-act=nav][data-v=events]');
   await page.click(`[data-act=eventView][data-id="${hike}"]`);
   await expect(page.locator('#v-events .row-sub').first()).not.toContainText('Hike');
-  await page.click('[data-act=nav][data-v=home]');
-  await page.locator('#v-home [data-act=editTx]').last().click();
+  await page.click('[data-act=nav][data-v=history]');
+  await page.locator('#v-history [data-act=editTx]').last().click();
   await page.selectOption('#sheet [data-f=eventId]', '');
   await page.click('#sheet [data-act=fsave]');
-  expect((await st(page)).tx[0].eventId).toBeUndefined();
+  // Taken out of the event, it goes back to the caisse.
+  expect([(await st(page)).tx[0].eventId, (await st(page)).tx[0].account]).toEqual([undefined, 'wallet']);
 });
 
 test('a move between funds never belongs to an event', async ({ page }) => {
@@ -419,8 +420,10 @@ test('a finished event leaves the entry form, and can be reopened', async ({ pag
 test('deleting an event keeps its entries, and Undo links them again', async ({ page }) => {
   await openScouts(page);
   const camp = await addEvent(page, { name: 'Camp' });
+  // An entry in the event but paid from the caisse, so the camp's own account stays empty.
   await page.click('#v-events [data-act=new][data-v=expense]');
   await page.fill('#f-amount', '30');
+  await page.selectOption('#sheet [data-f=account]', 'wallet');
   await page.click('#sheet [data-act=fsave]');
   await page.click('[data-act=editEvent]');
   await expect(page.locator('#sheet')).toContainText('1 entry belongs');
@@ -429,10 +432,23 @@ test('deleting an event keeps its entries, and Undo links them again', async ({ 
   let s = await st(page);
   expect(s.events).toEqual([]);
   expect(s.tx.map((t) => [t.amount, t.eventId])).toEqual([[30, undefined]]);
+  expect(s.accounts.some((a) => a.id === 'camp-' + camp)).toBe(false);
   await page.click('#toast [data-act=undo]');
   s = await st(page);
   expect(s.events.map((e) => e.id)).toEqual([camp]);
   expect(s.tx[0].eventId).toBe(camp);
+  expect(s.accounts.some((a) => a.id === 'camp-' + camp)).toBe(true);
+});
+
+test('a camp whose account has entries can’t be deleted, only finished', async ({ page }) => {
+  await openScouts(page);
+  await addEvent(page, { name: 'Camp' });
+  await page.click('#v-events [data-act=new][data-v=income]');
+  await page.fill('#f-amount', '30');
+  await page.click('#sheet [data-act=fsave]');
+  await page.click('[data-act=editEvent]');
+  await expect(page.locator('#sheet [data-act=fdel]')).toHaveCount(0);
+  await expect(page.locator('#sheet')).toContainText('can’t be deleted');
 });
 
 test('an event needs a name, and can’t end before it starts', async ({ page }) => {
@@ -507,7 +523,9 @@ test('a camp’s attendees pay its cotisation: paid, part paid and not paid', as
     ['income', maya, camp, camp, 'dues'],
   ]);
   expect(await page.evaluate((id) => window.__scouts.eventTotals(id, 'USD').earned, camp)).toBe(70);
-  expect((await bal(page)).wallet.USD).toBe(70);
+  // Cotisations go into the camp's own account, not the caisse.
+  expect((await bal(page))['camp-' + camp].USD).toBe(70);
+  expect((await bal(page)).wallet.USD).toBe(0);
   await page.click('[data-act=nav][data-v=home]');
   await expect(page.locator('#v-home')).toContainText('Cotisations still owed');
   await expect(page.locator('#v-home')).toContainText('$80');
@@ -544,8 +562,8 @@ test('a cotisation can be recorded from the income form, and puts the entry in t
   await expect(page.locator('#sheet [data-f=eventId]')).toHaveValue(camp);
   await page.click('#sheet [data-act=fsave]');
   expect((await cotisation(page, camp)).paidCount).toBe(1);
-  expect((await st(page)).tx[0].eventId).toBe(camp);
-  await expect(page.locator('#v-home .row-sub').first()).toContainText('Ali');
+  const t = (await st(page)).tx[0];
+  expect([t.eventId, t.account, t.memberId]).toEqual([camp, 'camp-' + camp, ali]);
   // An expense has no member.
   await page.click('.btn[data-act=new][data-v=expense]');
   await expect(page.locator('#sheet [data-f=memberId]')).toHaveCount(0);
@@ -638,7 +656,7 @@ test('the unité’s name is set once in Settings and shown on Home', async ({ p
   await expect(page.locator('.balance-head')).toContainText('Unité Saint-Joseph');
 });
 
-test('the caisse générale counts this year’s entries outside camps, and History can show just those', async ({
+test('the caisse counts this year’s entries outside camps, and History can show just those', async ({
   page,
 }) => {
   await openScouts(page);
@@ -649,7 +667,7 @@ test('the caisse générale counts this year’s entries outside camps, and Hist
   await page.fill('#f-amount', '45');
   await page.click('#sheet [data-act=fsave]');
   await page.click('[data-act=nav][data-v=home]');
-  const general = page.locator('#v-home .sec', { hasText: 'Caisse générale' });
+  const general = page.locator('#v-home .sec', { hasText: 'Caisse ' + new Date().getFullYear() });
   await expect(general).toContainText('$30');
   await expect(general).toContainText('$100');
   await expect(general).toContainText('+$70');
@@ -659,4 +677,80 @@ test('the caisse générale counts this year’s entries outside camps, and Hist
   await page.selectOption('#hevent', camp);
   await expect(page.locator('#v-history .list .row')).toHaveCount(1);
   await expect(page.locator('#v-history .stat').first()).toContainText('$45');
+});
+
+/* ---------- recording in one step, Home's tabs, and camps' own accounts ---------- */
+
+test('Record asks only for the amount, then records the cotisation straight away', async ({ page }) => {
+  await openScouts(page);
+  const ali = await addMember(page, 'Ali');
+  const camp = await addCamp(page, { name: 'Camp HP', cotisation: 40 });
+  await page.click(`[data-act=newPayment][data-member="${ali}"]`);
+  await expect(page.locator('#sheet')).toContainText('Ali');
+  await expect(page.locator('#f-amount')).toHaveValue('40');
+  // Only the amount: no fund, category, date or member to choose.
+  for (const f of ['account', 'categoryId', 'date', 'memberId', 'feeId', 'eventId'])
+    await expect(page.locator(`#sheet [data-f=${f}]`)).toHaveCount(0);
+  await page.fill('#f-amount', '25');
+  await page.click('#sheet [data-act=fsave]');
+  await expect(page.locator('#sheet')).toBeHidden();
+  const t = (await st(page)).tx[0];
+  expect([t.type, t.amount, t.memberId, t.feeId, t.eventId, t.account, t.categoryId]).toEqual([
+    'income',
+    25,
+    ali,
+    camp,
+    camp,
+    'camp-' + camp,
+    'dues',
+  ]);
+  // A slip can be undone.
+  await page.click('#toast [data-act=undo]');
+  expect((await st(page)).tx).toEqual([]);
+});
+
+test('Home has a tab for the caisse and one for each open camp', async ({ page }) => {
+  await openScouts(page);
+  await expect(page.locator('.home-tabs')).toHaveCount(0); // no camps yet
+  const hp = await addEvent(page, { name: 'Camp HP' });
+  await addEvent(page, { name: 'Camp Noël' });
+  await page.click('[data-act=nav][data-v=home]');
+  await expect(page.locator('.home-tabs button')).toHaveText(['Caisse', 'Camp HP', 'Camp Noël']);
+  await expect(page.locator('.home-tabs [aria-pressed=true]')).toHaveText('Caisse');
+  await page.click(`[data-act=homeTab][data-v="${hp}"]`);
+  await expect(page.locator('#v-home .acct-name h2')).toHaveText('Camp HP');
+  await expect(page.locator('#v-home [data-act=eventsAll]')).toHaveCount(0);
+  // An expense added from the camp's tab is the camp's, from its account.
+  await page.click('#fab');
+  await page.fill('#f-amount', '15');
+  await page.click('#sheet [data-act=fsave]');
+  const t = (await st(page)).tx[0];
+  expect([t.eventId, t.account]).toEqual([hp, 'camp-' + hp]);
+  // The caisse tab leaves camps' accounts out.
+  await page.click('[data-act=homeTab][data-v=caisse]');
+  await expect(page.locator('#v-home .acc')).toHaveCount(2);
+});
+
+test('finishing a camp sends what is left back to the caisse and removes its tab', async ({ page }) => {
+  await openScouts(page);
+  const hp = await addEvent(page, { name: 'Camp HP' });
+  await page.click('#v-events [data-act=new][data-v=income]');
+  await page.fill('#f-amount', '100');
+  await page.click('#sheet [data-act=fsave]');
+  await page.click('#v-events [data-act=new][data-v=expense]');
+  await page.fill('#f-amount', '60');
+  await page.click('#sheet [data-act=fsave]');
+  await expect(page.locator('#v-events .acct-name')).toContainText('$40 in the camp’s account');
+  await page.click('[data-act=editEvent]');
+  await page.click('#sheet [data-act=eventClose]');
+  const b = await bal(page);
+  expect([b['camp-' + hp].USD, b.wallet.USD]).toEqual([0, 40]);
+  await page.click('[data-act=nav][data-v=home]');
+  await expect(page.locator('.home-tabs')).toHaveCount(0);
+  // Reopening brings back the camp and its account.
+  await page.click('[data-act=nav][data-v=events]');
+  await page.click(`[data-act=eventView][data-id="${hp}"]`);
+  await page.click('[data-act=editEvent]');
+  await page.click('#sheet [data-act=eventClose]');
+  expect((await st(page)).accounts.find((a) => a.id === 'camp-' + hp).hidden).toBeUndefined();
 });

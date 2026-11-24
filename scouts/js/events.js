@@ -7,19 +7,23 @@ import { fitThousands } from '../../js/ui/amount.js';
 import { setUndoFn, toast, undoFn } from '../../js/ui/toast.js';
 import { $ } from '../../js/util.js';
 import { exportSave, stageImport } from './backup.js';
+import { campAccountUsed, ensureCampAccount, finishCamp, reopenCamp } from './camps.js';
 import { KEY, save, setState, state, syncFromStorage } from './state.js';
 import { buildAdjust, adjustForm, adjustFromTx, updateAdjustPreview } from './sheets/adjust.js';
-import { buildTx, formFromTx, newTxForm, paymentForm } from './sheets/entry.js';
+import { buildTx, formFromTx, newTxForm } from './sheets/entry.js';
 import { buildMember, formFromMember, memberEntries, newMemberForm } from './sheets/member.js';
 import { buildEvent, formFromEvent, newEventForm } from './sheets/event.js';
+import { buildPayment, quickPaymentForm } from './sheets/payment.js';
 import { closeSheet, drawSheet, form, openSheet, sheetOpen } from './sheets/sheet.js';
 import { commit, render } from './ui/render.js';
+import { currentHomeTab } from './views/home.js';
 import {
   armed,
   hist,
   pendingImport,
   setArmed,
   setEventView,
+  setHomeTab,
   setPeopleView,
   setPendingImport,
   setShowOpening,
@@ -30,6 +34,9 @@ import {
 } from './ui/ui-state.js';
 
 const byId = (id) => state.tx.find((t) => t.id === id);
+
+/* The camp whose tab is open on Home, if any: new entries made there belong to it. */
+const homeCamp = () => (currentHomeTab() === 'caisse' ? '' : currentHomeTab());
 
 function showError(msg) {
   const el = $('#f-err');
@@ -45,6 +52,7 @@ function saveEvent() {
   if (r.error) return showError(r.error);
   if (old) state.events[state.events.indexOf(old)] = r.event;
   else state.events.push(r.event);
+  ensureCampAccount(state, r.event);
   setArmed(null);
   closeSheet();
   if (!old) {
@@ -62,10 +70,15 @@ function deleteEvent() {
     return drawSheet();
   }
   const i = state.events.findIndex((e) => e.id === form.id);
-  if (i < 0) return;
+  if (i < 0 || campAccountUsed(state, state.events[i])) return;
   const [gone] = state.events.splice(i, 1);
   const linked = state.tx.filter((t) => t.eventId === gone.id);
   linked.forEach((t) => delete t.eventId);
+  // Its account is empty and unused (the form offers Delete only then), so it goes too.
+  const ai = state.accounts.findIndex((a) => a.id === gone.accountId),
+    account = ai >= 0 ? state.accounts.splice(ai, 1)[0] : null,
+    opening = account && state.opening[account.id];
+  if (account) delete state.opening[account.id];
   setArmed(null);
   closeSheet();
   setEventView(null);
@@ -73,6 +86,10 @@ function deleteEvent() {
   toast('Event deleted', () => {
     state.events.splice(Math.min(i, state.events.length), 0, gone);
     linked.forEach((t) => (t.eventId = gone.id));
+    if (account) {
+      state.accounts.splice(Math.min(ai, state.accounts.length), 0, account);
+      state.opening[account.id] = opening || { USD: 0, LBP: 0 };
+    }
     commit();
   });
 }
@@ -114,7 +131,20 @@ function deleteMember() {
   });
 }
 
-const SAVE = { event: saveEvent, member: saveMember };
+/* Records a cotisation from the quick form straight away, with Undo in case of a slip. */
+function savePayment() {
+  const r = buildPayment(form);
+  if (r.error) return showError(r.error);
+  state.tx.push(r.tx);
+  closeSheet();
+  commit();
+  toast('Cotisation recorded', () => {
+    state.tx = state.tx.filter((t) => t.id !== r.tx.id);
+    commit();
+  });
+}
+
+const SAVE = { event: saveEvent, member: saveMember, pay: savePayment };
 const DELETE = { event: deleteEvent, member: deleteMember };
 
 /* Saves the open form: a new entry is added, an edited one replaces the saved entry in place. */
@@ -174,7 +204,7 @@ function click(e) {
         newTxForm(
           v || 'expense',
           view === 'history' ? hist.account : null,
-          el.dataset.event || eventView || '',
+          el.dataset.event || (view === 'home' ? homeCamp() : view === 'events' ? eventView : '') || '',
         ),
       );
       break;
@@ -236,9 +266,13 @@ function click(e) {
       const f = withCotisations(state).fees.find((x) => x.id === el.dataset.fee);
       if (!f) break;
       setArmed(null);
-      openSheet(paymentForm(f, el.dataset.member));
+      openSheet(quickPaymentForm(f, el.dataset.member));
       break;
     }
+    case 'homeTab':
+      setHomeTab(v);
+      render();
+      break;
     case 'newEvent':
       setArmed(null);
       openSheet(newEventForm());
@@ -260,10 +294,16 @@ function click(e) {
     case 'eventClose': {
       const e = form && state.events.find((x) => x.id === form.id);
       if (!e) break;
-      e.closed = !e.closed;
       closeSheet();
-      commit();
-      toast(e.closed ? 'Marked finished' : 'Reopened');
+      if (e.closed) {
+        reopenCamp(state, e);
+        commit();
+        toast('Reopened');
+      } else {
+        const moved = finishCamp(state, e);
+        commit();
+        toast(moved.length ? 'Finished. What was left went back to the caisse.' : 'Marked finished');
+      }
       break;
     }
     case 'newAdjust':
@@ -426,9 +466,21 @@ function input(e) {
       if (!fee || !fee.memberIds.includes(form.memberId)) form.feeId = '';
       return drawSheet();
     }
+    // Putting an entry in a camp puts it in the camp's account; taking it out, back in the caisse.
+    if (t.dataset.f === 'eventId') {
+      const camp = state.events.find((x) => x.id === form.eventId),
+        wasCamp = state.events.some((x) => x.accountId === form.account);
+      if (camp && camp.accountId && !camp.closed) form.account = camp.accountId;
+      else if (wasCamp) form.account = 'wallet';
+      return drawSheet();
+    }
     if (t.dataset.f === 'feeId') {
       const fee = withCotisations(state).fees.find((f) => f.id === form.feeId);
-      if (fee && fee.eventId) form.eventId = fee.eventId;
+      if (fee && fee.eventId) {
+        form.eventId = fee.eventId;
+        const camp = state.events.find((x) => x.id === fee.eventId);
+        if (camp && camp.accountId && !camp.closed) form.account = camp.accountId;
+      }
       return drawSheet();
     }
     if (t.closest('.thousands')) fitThousands(t);

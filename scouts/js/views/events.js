@@ -7,7 +7,7 @@ import {
   withCotisations,
 } from '../../../js/core/events.js';
 import { feeStatus, memberOf } from '../../../js/core/fees.js';
-import { catName } from '../../../js/core/ledger.js';
+import { balances, catName } from '../../../js/core/ledger.js';
 import { fmt } from '../../../js/core/money.js';
 import { ICON } from '../../../js/icons.js';
 import { $, MONTHS, esc, parseYmd } from '../../../js/util.js';
@@ -138,19 +138,41 @@ function attendance(e) {
   );
 }
 
-function renderEvent(e) {
+/* What the camp's own account holds now: its cotisations in, its expenses out. */
+function campBalance(e) {
+  if (!e.accountId || e.closed) return '';
+  const b = balances(state)[e.accountId] || { USD: 0, LBP: 0 };
+  return (
+    '<p class="num priv">' +
+    fmt(b.USD, 'USD') +
+    (Math.abs(b.LBP) > 0 ? ' · ' + fmt(b.LBP, 'LBP') : '') +
+    ' in the camp’s account</p>'
+  );
+}
+
+/**
+ * An event's page: its totals, who attends and their cotisation, its budget and its entries. On Home,
+ * where it is one of the tabs, it has no way back to the list (`inHome`).
+ */
+export function eventPage(e, inHome = false) {
   const cur = state.settings.display,
     t = eventTotals(state, e.id, cur),
     b = eventBudget(state, e);
   let h =
-    '<div class="acct-head"><button class="icon-btn" data-act="eventsAll" aria-label="Back to all events">' +
-    ICON.left +
-    '</button><div class="acct-name"><h2>' +
+    '<div class="acct-head">' +
+    (inHome
+      ? ''
+      : '<button class="icon-btn" data-act="eventsAll" aria-label="Back to all events">' +
+        ICON.left +
+        '</button>') +
+    '<div class="acct-name"><h2>' +
     esc(e.name) +
     '</h2><p>' +
     esc(eventDates(e) || 'No dates') +
     (e.closed ? ' · Finished' : '') +
-    '</p></div><button class="btn sm" data-act="editEvent" data-id="' +
+    '</p>' +
+    campBalance(e) +
+    '</div><button class="btn sm" data-act="editEvent" data-id="' +
     esc(e.id) +
     '">Edit</button></div>';
   h +=
@@ -213,5 +235,5 @@ function renderEvent(e) {
 
 export function renderEvents() {
   const e = eventOf(state, eventView || undefined);
-  $('#v-events').innerHTML = e ? renderEvent(e) : renderList();
+  $('#v-events').innerHTML = e ? eventPage(e) : renderList();
 }

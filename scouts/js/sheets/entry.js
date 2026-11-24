@@ -19,8 +19,17 @@ const CUR = [
  * `eventId` preselect a fund and an event, when it is added from that fund's or event's page.
  */
 export function newTxForm(type = 'expense', account = null, eventId = '') {
-  const list = accounts(state);
-  const from = account && list.some((a) => a.id === account) ? account : 'wallet';
+  const list = accounts(state),
+    camp = eventOf(state, eventId),
+    campAccount = camp && list.some((a) => a.id === camp.accountId) ? camp.accountId : null;
+  // In a camp, money comes into and goes out of the camp's own account; moving money is from the
+  // caisse to the camp, as when giving a camp its starting budget.
+  let from = account && list.some((a) => a.id === account) ? account : campAccount || 'wallet';
+  let to = (list.find((a) => a.id !== from) || { id: from }).id;
+  if (campAccount && type === 'transfer' && !account) {
+    from = 'wallet';
+    to = campAccount;
+  }
   return {
     mode: 'new',
     kind: 'tx',
@@ -28,7 +37,7 @@ export function newTxForm(type = 'expense', account = null, eventId = '') {
     amount: '',
     cur: 'USD',
     account: from,
-    to: (list.find((a) => a.id !== from) || { id: from }).id,
+    to,
     toAmount: '',
     categoryId: type === 'income' ? 'dues' : 'transport',
     eventId: eventOf(state, eventId) ? eventId : '',

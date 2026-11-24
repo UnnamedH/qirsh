@@ -36,6 +36,14 @@ export function setShowOpening(value) {
   return value;
 }
 
+/* Home's tab: 'caisse', or the id of an open event. */
+export let homeTab = 'caisse';
+
+export function setHomeTab(value) {
+  homeTab = value;
+  return value;
+}
+
 /* The event whose page is open on the Events tab, or null for the list. */
 export let eventView = null;
 

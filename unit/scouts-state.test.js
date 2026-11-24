@@ -37,9 +37,10 @@ test('bad data is repaired and never throws', () => {
   assert.equal(s.rate, blankState().rate);
   assert.deepEqual(s.settings, { display: 'USD', weekStart: 1, theme: 'system' });
   assert.equal(s.group.name, '');
+  // The two default funds, and the one event's own account.
   assert.deepEqual(
     s.accounts.map((a) => a.id),
-    ['wallet', 'bank'],
+    ['wallet', 'bank', 'camp-e1'],
   );
   assert.ok(s.categories.length > 4);
   assert.deepEqual(
@@ -166,6 +167,7 @@ test('events are repaired, and entries lose links to events that are gone', () =
     attendees: [],
     closed: false,
     createdAt: 0,
+    accountId: 'camp-camp',
   });
   assert.equal(s.events.length, 2);
   assert.deepEqual([s.events[1].start, s.events[1].budget, s.events[1].closed], ['', null, false]);

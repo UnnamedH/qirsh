@@ -3,6 +3,7 @@ import { parseInput, toInput } from '../../../js/core/money.js';
 import { ICON } from '../../../js/icons.js';
 import { amountField } from '../../../js/ui/amount.js';
 import { esc, uid, ymd } from '../../../js/util.js';
+import { campAccountUsed } from '../camps.js';
 import { state } from '../state.js';
 import { armed } from '../ui/ui-state.js';
 
@@ -97,7 +98,9 @@ function attendeeList(f) {
 }
 
 export function eventSheet(f) {
-  const used = f.id ? state.tx.filter((t) => t.eventId === f.id).length : 0;
+  const used = f.id ? state.tx.filter((t) => t.eventId === f.id).length : 0,
+    ev = f.id && state.events.find((e) => e.id === f.id),
+    locked = !!ev && campAccountUsed(state, ev);
   return (
     '<div class="sheet-head"><h2>' +
     (f.mode === 'edit' ? 'Edit event' : 'New event') +
@@ -129,22 +132,25 @@ export function eventSheet(f) {
     attendeeList(f) +
     (f.mode === 'edit'
       ? '<p class="note">' +
-        (used
-          ? used +
-            (used === 1 ? ' entry belongs' : ' entries belong') +
-            ' to this event. Deleting the event keeps them as ordinary entries.'
-          : 'No entries belong to this event yet.') +
+        (locked
+          ? 'This camp’s account has entries, so it can’t be deleted. Mark it finished instead: what is left in it goes back to the caisse.'
+          : used
+            ? used +
+              (used === 1 ? ' entry belongs' : ' entries belong') +
+              ' to this event. Deleting the event keeps them as ordinary entries.'
+            : 'No entries belong to this event yet.') +
         '</p>'
       : '') +
     '<p class="form-error" id="f-err" hidden></p><div class="sheet-actions">' +
-    (f.mode === 'edit'
+    (f.mode === 'edit' && !locked
       ? '<button class="btn danger' +
         (armed === 'tx' ? ' armed' : '') +
         '" data-act="fdel">' +
         (armed === 'tx' ? 'Tap to confirm' : 'Delete') +
-        '</button><button class="btn" data-act="eventClose">' +
-        (f.closed ? 'Reopen' : 'Mark finished') +
         '</button>'
+      : '') +
+    (f.mode === 'edit'
+      ? '<button class="btn" data-act="eventClose">' + (f.closed ? 'Reopen' : 'Mark finished') + '</button>'
       : '') +
     '<button class="btn primary" data-act="fsave">' +
     (f.mode === 'edit' ? 'Save changes' : 'Add event') +

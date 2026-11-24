@@ -1,26 +1,61 @@
-/* Home: the unité's funds, the caisse générale this year, and the latest entries. */
+/* Home: a tab for the caisse and one for each open camp. The caisse tab has the unité's general funds,
+   the year's caisse totals and its latest entries; a camp's tab is that camp's page. */
 import { accounts } from '../../../js/core/accounts.js';
+import { generalTotals, withCotisations } from '../../../js/core/events.js';
+import { outstandingUSD } from '../../../js/core/fees.js';
 import { balances, combinedUSD } from '../../../js/core/ledger.js';
 import { fmt } from '../../../js/core/money.js';
 import { $, esc } from '../../../js/util.js';
+import { campAccountIds } from '../camps.js';
 import { state } from '../state.js';
-import { generalTotals, withCotisations } from '../../../js/core/events.js';
-import { outstandingUSD } from '../../../js/core/fees.js';
 import { fmtDisp, fmtTotal, txRow } from '../ui/format.js';
+import { homeTab } from '../ui/ui-state.js';
+import { eventPage } from './events.js';
 
-export function renderHome() {
+/* The open camps, soonest first; camps on the same day, or without dates (last), in the order added. */
+export const openCamps = () =>
+  state.events
+    .filter((e) => !e.closed)
+    .sort(
+      (a, b) => (a.start || '9').localeCompare(b.start || '9') || (a.createdAt || 0) - (b.createdAt || 0),
+    );
+
+/** The tab Home shows: the one picked, unless that camp has since finished or gone. */
+export const currentHomeTab = () => (openCamps().some((e) => e.id === homeTab) ? homeTab : 'caisse');
+
+function tabs(current) {
+  const camps = openCamps();
+  if (!camps.length) return '';
+  const tab = (id, label) =>
+    '<button data-act="homeTab" data-v="' +
+    esc(id) +
+    '" aria-pressed="' +
+    (current === id) +
+    '">' +
+    esc(label) +
+    '</button>';
+  return (
+    '<div class="home-tabs" role="group" aria-label="Show">' +
+    tab('caisse', 'Caisse') +
+    camps.map((e) => tab(e.id, e.name)).join('') +
+    '</div>'
+  );
+}
+
+function caisse() {
   const b = balances(state),
-    list = accounts(state);
+    camps = campAccountIds(state),
+    list = accounts(state).filter((a) => !camps.has(a.id));
   const all = list.reduce((s, a) => ({ USD: s.USD + b[a.id].USD, LBP: s.LBP + b[a.id].LBP }), {
     USD: 0,
     LBP: 0,
   });
   let h =
-    '<section class="balance" aria-label="Total of all funds"><div class="balance-head"><span class="label">' +
+    '<section class="balance" aria-label="Total of the caisse"><div class="balance-head"><span class="label">' +
     esc(state.group.name || 'Your unité') +
     '</span></div><button class="balance-total priv" data-act="toggleDisplay" title="Switch currency">' +
     fmtDisp(combinedUSD(all, state.rate)) +
-    '<small>in all funds</small></button><div class="balance-split priv"><span>' +
+    '<small>in the caisse</small></button><div class="balance-split priv"><span>' +
     fmt(all.USD, 'USD') +
     '<em>in dollars</em></span><span>' +
     fmt(all.LBP, 'LBP') +
@@ -44,7 +79,7 @@ export function renderHome() {
       })
       .join('') +
     '</div></section>';
-  // The caisse générale: the year's spending and income outside every camp. Each entry at its own rate.
+  // The year's spending and income outside every camp. Each entry at its own rate.
   const year = new Date().getFullYear(),
     g = generalTotals(
       state,
@@ -52,7 +87,7 @@ export function renderHome() {
       state.settings.display,
     );
   h +=
-    '<section class="sec"><div class="sec-head"><h2>Caisse générale ' +
+    '<section class="sec"><div class="sec-head"><h2>Caisse ' +
     year +
     '</h2><button class="btn sm ghost" data-act="historyGeneral">See entries</button></div><div class="stats"><div class="stat"><span class="label">Spent</span><span class="amt priv">' +
     fmtTotal(g.spent) +
@@ -65,15 +100,16 @@ export function renderHome() {
   const owed = outstandingUSD(withCotisations(state));
   if (owed > 0)
     h +=
-      '<div class="list"><div class="row"><button class="row-btn" data-act="nav" data-v="members"><span class="row-main"><span class="row-title">Cotisations still owed</span><span class="row-sub">By camp attendees</span></span><span class="amt priv">' +
+      '<div class="list"><div class="row"><button class="row-btn" data-act="nav" data-v="events"><span class="row-main"><span class="row-title">Cotisations still owed</span><span class="row-sub">By camp attendees</span></span><span class="amt priv">' +
       fmtDisp(owed) +
       '</span></button></div></div>';
   h +=
     '<div class="btn-row"><button class="btn primary" data-act="new" data-v="expense">Expense</button>' +
     '<button class="btn" data-act="new" data-v="income">Income</button>' +
     '<button class="btn" data-act="new" data-v="transfer">Move money</button></div>';
+  // The caisse's own latest entries: camps' entries are on their tabs.
   const recent = state.tx
-    .slice()
+    .filter((t) => !t.eventId)
     .sort((a, c) => c.date.localeCompare(a.date) || (c.createdAt || 0) - (a.createdAt || 0))
     .slice(0, 6);
   h +=
@@ -82,5 +118,11 @@ export function renderHome() {
       ? recent.map((t) => txRow(t)).join('')
       : '<p class="empty">Add your first expense or income and it shows up here.</p>') +
     '</div></section>';
-  $('#v-home').innerHTML = h;
+  return h;
+}
+
+export function renderHome() {
+  const current = currentHomeTab(),
+    camp = state.events.find((e) => e.id === current);
+  $('#v-home').innerHTML = tabs(current) + (camp ? eventPage(camp, true) : caisse());
 }
