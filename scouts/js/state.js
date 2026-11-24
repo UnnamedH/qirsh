@@ -8,12 +8,12 @@ export const KEY = 'frata-scouts.v1';
 export function blankState() {
   return {
     app: APP_ID,
-    version: 1,
+    version: 2,
     group: { name: '' },
     rate: 89500,
     settings: { display: 'USD', weekStart: 1, theme: 'system' },
     accounts: DEFAULT_ACCOUNTS.map((a) => Object.assign({}, a)),
-    opening: { wallet: { USD: 0, LBP: 0 }, bank: { USD: 0, LBP: 0 } },
+    opening: { wallet: { USD: 0, LBP: 0 } },
     categories: DEFAULT_CATS.map((c) => Object.assign({}, c)),
     tx: [],
     // Reserved for later steps (events, members and their fees), so saved data never needs migrating.
@@ -193,6 +193,18 @@ function moveEventFees(out) {
   });
 }
 
+/* Version 1 started every unité with a second fund, "Bank". Most never used it, and on its own the caisse
+   needs no list of funds, so it goes once, if it is still the untouched default: same name, never used,
+   nothing in its starting balance. A Bank someone used or renamed stays. */
+function dropUnusedBank(out) {
+  const a = out.accounts.find((x) => x.id === 'bank'),
+    o = out.opening.bank || {};
+  if (!a || a.name !== 'Bank' || +o.USD || +o.LBP) return;
+  if (out.tx.some((t) => t.account === 'bank' || t.from === 'bank' || t.to === 'bank')) return;
+  out.accounts = out.accounts.filter((x) => x !== a);
+  delete out.opening.bank;
+}
+
 /** Repairs any parsed data into a state the app can use. It never throws on bad data. */
 export function normalize(s) {
   const b = blankState();
@@ -260,6 +272,8 @@ export function normalize(s) {
     if (t.paidBy && !memberIds.has(t.paidBy)) delete t.paidBy;
     if (t.feeId && !feeIds.has(t.feeId)) delete t.feeId;
   });
+  if (!(+s.version >= 2)) dropUnusedBank(out);
+  out.version = 2;
   out.lastExport = typeof s.lastExport === 'string' ? s.lastExport : null;
   delete out.exportedAt;
   return out;

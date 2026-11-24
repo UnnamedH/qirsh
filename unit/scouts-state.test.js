@@ -37,10 +37,10 @@ test('bad data is repaired and never throws', () => {
   assert.equal(s.rate, blankState().rate);
   assert.deepEqual(s.settings, { display: 'USD', weekStart: 1, theme: 'system' });
   assert.equal(s.group.name, '');
-  // The two default funds, and the one event's own account.
+  // The caisse, and the one event's own account.
   assert.deepEqual(
     s.accounts.map((a) => a.id),
-    ['wallet', 'bank', 'camp-e1'],
+    ['wallet', 'camp-e1'],
   );
   assert.ok(s.categories.length > 4);
   assert.deepEqual(
@@ -319,4 +319,39 @@ test('attendees must be members, and a cotisation needs a usable amount', () => 
   assert.deepEqual([s.events[1].attendees, s.events[1].cotisation], [[], null]);
   assert.equal(s.tx[0].feeId, 'a');
   assert.equal('feeId' in s.tx[1], false); // event B has no cotisation to pay toward
+});
+
+test('the untouched default Bank of version 1 goes once; a used or renamed one stays', () => {
+  const v1 = (o) =>
+    Object.assign(
+      {
+        app: 'frata-scouts',
+        version: 1,
+        accounts: [
+          { id: 'wallet', name: 'Caisse' },
+          { id: 'bank', name: 'Bank' },
+        ],
+        opening: { wallet: { USD: 0, LBP: 0 }, bank: { USD: 0, LBP: 0 } },
+        tx: [],
+      },
+      o,
+    );
+  const ids = (s) => s.accounts.map((a) => a.id);
+  const dropped = normalize(v1());
+  assert.deepEqual(ids(dropped), ['wallet']);
+  assert.equal('bank' in dropped.opening, false);
+  assert.equal(dropped.version, 2);
+  // Used, renamed, or holding a starting balance: kept.
+  const used = v1({
+    tx: [{ id: 'a', type: 'income', amount: 5, currency: 'USD', date: '2026-01-02', account: 'bank' }],
+  });
+  assert.deepEqual(ids(normalize(used)), ['wallet', 'bank']);
+  const renamed = v1();
+  renamed.accounts[1].name = 'Bank Audi';
+  assert.deepEqual(ids(normalize(renamed)), ['wallet', 'bank']);
+  const funded = v1();
+  funded.opening.bank = { USD: 20, LBP: 0 };
+  assert.deepEqual(ids(normalize(funded)), ['wallet', 'bank']);
+  // Version 2 data is left alone: a Bank added later on purpose stays even while unused.
+  assert.deepEqual(ids(normalize(Object.assign(v1(), { version: 2 }))), ['wallet', 'bank']);
 });

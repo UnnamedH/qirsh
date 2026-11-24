@@ -5,6 +5,7 @@ import { generalTotals, withCotisations } from '../../../js/core/events.js';
 import { outstandingUSD } from '../../../js/core/fees.js';
 import { balances, combinedUSD } from '../../../js/core/ledger.js';
 import { fmt } from '../../../js/core/money.js';
+import { ICON } from '../../../js/icons.js';
 import { $, esc } from '../../../js/util.js';
 import { campAccountIds } from '../camps.js';
 import { state } from '../state.js';
@@ -51,34 +52,44 @@ function caisse() {
     LBP: 0,
   });
   let h =
-    '<section class="balance" aria-label="Total of the caisse"><div class="balance-head"><span class="label">' +
-    esc(state.group.name || 'Your unité') +
-    '</span></div><button class="balance-total priv" data-act="toggleDisplay" title="Switch currency">' +
+    '<section class="balance" aria-label="Total of the caisse"><div class="balance-head">' +
+    // With no list of funds, the name opens the caisse's page: its entries, and Correct balance.
+    (list.length === 1
+      ? '<button class="label acc-open" data-act="accView" data-id="' +
+        esc(list[0].id) +
+        '">' +
+        esc(state.group.name || 'Your unité') +
+        ICON.right +
+        '</button>'
+      : '<span class="label">' + esc(state.group.name || 'Your unité') + '</span>') +
+    '</div><button class="balance-total priv" data-act="toggleDisplay" title="Switch currency">' +
     fmtDisp(combinedUSD(all, state.rate)) +
     '<small>in the caisse</small></button><div class="balance-split priv"><span>' +
     fmt(all.USD, 'USD') +
     '<em>in dollars</em></span><span>' +
     fmt(all.LBP, 'LBP') +
     '<em>in lira</em></span></div></section>';
-  h +=
-    '<section class="accs"><div class="accounts">' +
-    list
-      .map((a) => {
-        const x = b[a.id];
-        return (
-          '<button class="acc" data-act="accView" data-id="' +
-          esc(a.id) +
-          '"><span class="acc-name"><span class="label">' +
-          esc(a.name) +
-          '</span></span><span class="amt priv" style="text-align:left">' +
-          fmt(x.USD, 'USD') +
-          '</span><span class="amt sub priv" style="text-align:left">' +
-          fmt(x.LBP, 'LBP') +
-          '</span></button>'
-        );
-      })
-      .join('') +
-    '</div></section>';
+  // With the caisse as the only fund, the total above already says what it holds.
+  if (list.length > 1)
+    h +=
+      '<section class="accs"><div class="accounts">' +
+      list
+        .map((a) => {
+          const x = b[a.id];
+          return (
+            '<button class="acc" data-act="accView" data-id="' +
+            esc(a.id) +
+            '"><span class="acc-name"><span class="label">' +
+            esc(a.name) +
+            '</span></span><span class="amt priv" style="text-align:left">' +
+            fmt(x.USD, 'USD') +
+            '</span><span class="amt sub priv" style="text-align:left">' +
+            fmt(x.LBP, 'LBP') +
+            '</span></button>'
+          );
+        })
+        .join('') +
+      '</div></section>';
   // The year's spending and income outside every camp. Each entry at its own rate.
   const year = new Date().getFullYear(),
     g = generalTotals(

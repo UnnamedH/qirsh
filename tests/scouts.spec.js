@@ -19,6 +19,14 @@ const st = (page) => page.evaluate(() => window.__scouts.state);
 const bal = (page) => page.evaluate(() => window.__scouts.balances());
 
 /** Opens the entry form of `type`, fills it in and saves. */
+/** Adds a fund in Settings and returns its id. Leaves Settings open. */
+async function addFund(page, name) {
+  await page.click('[data-act=nav][data-v=settings]');
+  await page.fill('#newAcc', name);
+  await page.click('[data-act=accAdd]');
+  return page.evaluate((n) => window.__scouts.state.accounts.find((a) => a.name === n).id, name);
+}
+
 async function addEntry(page, { type = 'expense', amount, cur, to, toAmount, note }) {
   await page.click(`.btn[data-act=new][data-v=${type === 'exchange' ? 'transfer' : type}]`);
   if (type === 'exchange') await page.click('#sheet [data-act=ftype][data-v=exchange]');
@@ -30,13 +38,19 @@ async function addEntry(page, { type = 'expense', amount, cur, to, toAmount, not
   await page.click('#sheet [data-act=fsave]');
 }
 
-test('opens with a caisse and a bank, both empty', async ({ page }) => {
+test('opens with only the caisse, empty, and no list of funds', async ({ page }) => {
   await openScouts(page);
   await expect(page).toHaveTitle('Frata Scouts');
   const s = await st(page);
   expect(s.app).toBe('frata-scouts');
-  expect(s.accounts.map((a) => a.name)).toEqual(['Caisse', 'Bank']);
-  expect(await bal(page)).toEqual({ wallet: { USD: 0, LBP: 0 }, bank: { USD: 0, LBP: 0 } });
+  expect(s.accounts.map((a) => a.name)).toEqual(['Caisse']);
+  expect(await bal(page)).toEqual({ wallet: { USD: 0, LBP: 0 } });
+  // On its own, the caisse needs no card: the total says what it holds.
+  await expect(page.locator('.acc')).toHaveCount(0);
+  await expect(page.locator('.balance-total')).toContainText('in the caisse');
+  // A second fund brings the list of funds.
+  await addFund(page, 'Bank');
+  await page.click('[data-act=nav][data-v=home]');
   await expect(page.locator('.acc')).toHaveCount(2);
 });
 
@@ -56,9 +70,11 @@ test('LL is typed in thousands', async ({ page }) => {
 
 test('a move between funds and an exchange', async ({ page }) => {
   await openScouts(page);
+  const bank = await addFund(page, 'Bank');
+  await page.click('[data-act=nav][data-v=home]');
   await addEntry(page, { type: 'income', amount: 100 });
-  await addEntry(page, { type: 'transfer', amount: 40, to: 'bank' });
-  expect(await bal(page)).toEqual({ wallet: { USD: 60, LBP: 0 }, bank: { USD: 40, LBP: 0 } });
+  await addEntry(page, { type: 'transfer', amount: 40, to: bank });
+  expect(await bal(page)).toEqual({ wallet: { USD: 60, LBP: 0 }, [bank]: { USD: 40, LBP: 0 } });
   await addEntry(page, { type: 'exchange', amount: 20, toAmount: 1790 });
   expect((await bal(page)).wallet).toEqual({ USD: 40, LBP: 1790000 });
 });
@@ -122,16 +138,16 @@ test('a big change to the rate asks first, and any change can be undone', async 
 
 test('renaming a fund doesn’t swallow the next tap', async ({ page }) => {
   await openScouts(page);
-  await page.click('[data-act=nav][data-v=settings]');
-  await page.fill('[data-accname=bank]', 'Bank Audi');
+  const bank = await addFund(page, 'Bank');
+  await page.fill(`[data-accname="${bank}"]`, 'Bank Audi');
   // Tapping straight from the field to another button: the rename saves and the tap still works.
   await page.click('[data-act=setTheme][data-v=dark]');
   const s = await st(page);
-  expect(s.accounts.find((a) => a.id === 'bank').name).toBe('Bank Audi');
+  expect(s.accounts.find((a) => a.id === bank).name).toBe('Bank Audi');
   expect(s.settings.theme).toBe('dark');
   await page.reload();
   await page.waitForFunction(() => window.__scouts);
-  expect((await st(page)).accounts.find((a) => a.id === 'bank').name).toBe('Bank Audi');
+  expect((await st(page)).accounts.find((a) => a.id === bank).name).toBe('Bank Audi');
 });
 
 test('the totals say which currency without repeating it', async ({ page }) => {
@@ -162,8 +178,8 @@ test('a fund can be added, renamed and removed, keeping its money', async ({ pag
   await page.fill('#newAcc', 'Camp savings');
   await page.click('[data-act=accAdd]');
   const s = await st(page);
-  expect(s.accounts.map((a) => a.name)).toEqual(['Caisse', 'Bank', 'Camp savings']);
-  const camp = s.accounts[2].id;
+  expect(s.accounts.map((a) => a.name)).toEqual(['Caisse', 'Camp savings']);
+  const camp = s.accounts[1].id;
   await page.click('[data-act=nav][data-v=home]');
   await addEntry(page, { type: 'transfer', amount: 10, to: camp });
   await page.click('[data-act=nav][data-v=settings]');
@@ -176,7 +192,8 @@ test('a fund can be added, renamed and removed, keeping its money', async ({ pag
 test('correcting a balance sets the fund to what it really holds', async ({ page }) => {
   await openScouts(page);
   await addEntry(page, { type: 'income', amount: 50 });
-  await page.click('#v-home [data-act=accView][data-id=wallet]');
+  // With only the caisse, its name above the total opens its page.
+  await page.click('#v-home .balance-head [data-act=accView][data-id=wallet]');
   await page.click('[data-act=newAdjust]');
   await page.fill('#f-amount', '45');
   await page.click('#sheet [data-act=fsave]');
@@ -273,7 +290,7 @@ test('it opens with no connection once installed', async ({ page, context }) => 
   const tab = await context.newPage();
   await tab.goto(base() + 'scouts/');
   await expect(tab.locator('.balance-total')).toBeVisible();
-  await expect(tab.locator('.acc')).toHaveCount(2);
+  await expect(tab.locator('.balance-total')).toContainText('in the caisse');
 });
 
 test('the personal app’s service worker leaves the scouts app alone', async ({ page }) => {
@@ -726,9 +743,9 @@ test('Home has a tab for the caisse and one for each open camp', async ({ page }
   await page.click('#sheet [data-act=fsave]');
   const t = (await st(page)).tx[0];
   expect([t.eventId, t.account]).toEqual([hp, 'camp-' + hp]);
-  // The caisse tab leaves camps' accounts out.
+  // The caisse tab leaves camps' accounts out: with only the caisse, there is no list of funds.
   await page.click('[data-act=homeTab][data-v=caisse]');
-  await expect(page.locator('#v-home .acc')).toHaveCount(2);
+  await expect(page.locator('#v-home .acc')).toHaveCount(0);
 });
 
 test('finishing a camp sends what is left back to the caisse and removes its tab', async ({ page }) => {
