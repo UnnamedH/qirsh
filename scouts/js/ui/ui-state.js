@@ -41,3 +41,11 @@ export function setEventView(value) {
   eventView = value;
   return value;
 }
+
+/* The member or fee whose page is open on the Members tab ({ kind: 'member' | 'fee', id }), or null. */
+export let peopleView = null;
+
+export function setPeopleView(value) {
+  peopleView = value;
+  return value;
+}

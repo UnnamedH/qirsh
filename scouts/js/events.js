@@ -8,7 +8,9 @@ import { $ } from '../../js/util.js';
 import { exportSave, stageImport } from './backup.js';
 import { KEY, save, setState, state, syncFromStorage } from './state.js';
 import { buildAdjust, adjustForm, adjustFromTx, updateAdjustPreview } from './sheets/adjust.js';
-import { buildTx, formFromTx, newTxForm } from './sheets/entry.js';
+import { buildTx, formFromTx, newTxForm, paymentForm } from './sheets/entry.js';
+import { buildFee, formFromFee, newFeeForm } from './sheets/fee.js';
+import { buildMember, formFromMember, memberEntries, newMemberForm } from './sheets/member.js';
 import { buildEvent, formFromEvent, newEventForm } from './sheets/event.js';
 import { closeSheet, drawSheet, form, openSheet, sheetOpen } from './sheets/sheet.js';
 import { commit, render } from './ui/render.js';
@@ -18,6 +20,7 @@ import {
   pendingImport,
   setArmed,
   setEventView,
+  setPeopleView,
   setPendingImport,
   setShowOpening,
   setView,
@@ -74,9 +77,88 @@ function deleteEvent() {
   });
 }
 
+/* Saves the member form. A new member opens their page. */
+function saveMember() {
+  const old = form.mode === 'edit' ? state.members.find((m) => m.id === form.id) : null;
+  const r = buildMember(form, old);
+  if (r.error) return showError(r.error);
+  if (old) state.members[state.members.indexOf(old)] = r.member;
+  else state.members.push(r.member);
+  setArmed(null);
+  closeSheet();
+  if (!old) setView('members');
+  commit();
+  toast(old ? 'Changes saved' : r.member.name + ' added');
+}
+
+/* Deletes a member nobody's entries name (the form offers it only then). They leave every fee, with Undo. */
+function deleteMember() {
+  if (memberEntries(form.id)) return;
+  if (armed !== 'tx') {
+    setArmed('tx');
+    return drawSheet();
+  }
+  const i = state.members.findIndex((m) => m.id === form.id);
+  if (i < 0) return;
+  const [gone] = state.members.splice(i, 1);
+  const onFees = state.fees.filter((f) => f.memberIds.includes(gone.id));
+  onFees.forEach((f) => (f.memberIds = f.memberIds.filter((id) => id !== gone.id)));
+  setArmed(null);
+  closeSheet();
+  setPeopleView(null);
+  commit();
+  toast(gone.name + ' deleted', () => {
+    state.members.splice(Math.min(i, state.members.length), 0, gone);
+    onFees.forEach((f) => f.memberIds.push(gone.id));
+    commit();
+  });
+}
+
+/* Saves the fee form. A new fee opens its page, which lists who still has to pay. */
+function saveFee() {
+  const old = form.mode === 'edit' ? state.fees.find((f) => f.id === form.id) : null;
+  const r = buildFee(form, old);
+  if (r.error) return showError(r.error);
+  if (old) state.fees[state.fees.indexOf(old)] = r.fee;
+  else state.fees.push(r.fee);
+  setArmed(null);
+  closeSheet();
+  if (!old) {
+    setView('members');
+    setPeopleView({ kind: 'fee', id: r.fee.id });
+  }
+  commit();
+  toast(old ? 'Changes saved' : 'Fee added');
+}
+
+/* Deletes a fee. Payments toward it stay, as ordinary income; Undo brings back the fee and the links. */
+function deleteFee() {
+  if (armed !== 'tx') {
+    setArmed('tx');
+    return drawSheet();
+  }
+  const i = state.fees.findIndex((f) => f.id === form.id);
+  if (i < 0) return;
+  const [gone] = state.fees.splice(i, 1);
+  const linked = state.tx.filter((t) => t.feeId === gone.id);
+  linked.forEach((t) => delete t.feeId);
+  setArmed(null);
+  closeSheet();
+  setPeopleView(null);
+  commit();
+  toast('Fee deleted', () => {
+    state.fees.splice(Math.min(i, state.fees.length), 0, gone);
+    linked.forEach((t) => (t.feeId = gone.id));
+    commit();
+  });
+}
+
+const SAVE = { event: saveEvent, member: saveMember, fee: saveFee };
+const DELETE = { event: deleteEvent, member: deleteMember, fee: deleteFee };
+
 /* Saves the open form: a new entry is added, an edited one replaces the saved entry in place. */
 function saveForm() {
-  if (form.kind === 'event') return saveEvent();
+  if (SAVE[form.kind]) return SAVE[form.kind]();
   const old = form.mode === 'edit' ? byId(form.id) : null;
   const r = form.kind === 'adjust' ? buildAdjust(form, old) : buildTx(form, old);
   if (r.error) return showError(r.error);
@@ -89,7 +171,7 @@ function saveForm() {
 }
 
 function deleteForm() {
-  if (form.kind === 'event') return deleteEvent();
+  if (DELETE[form.kind]) return DELETE[form.kind]();
   if (armed !== 'tx') {
     setArmed('tx');
     return drawSheet();
@@ -117,6 +199,7 @@ function click(e) {
       setView(v);
       if (v === 'history') hist.account = null;
       if (v === 'events') setEventView(null);
+      if (v === 'members') setPeopleView(null);
       setArmed(null);
       render();
       window.scrollTo(0, 0);
@@ -131,6 +214,71 @@ function click(e) {
         ),
       );
       break;
+    case 'newMember':
+      setArmed(null);
+      openSheet(newMemberForm());
+      break;
+    case 'editMember': {
+      const m = state.members.find((x) => x.id === id);
+      if (m) openSheet(formFromMember(m));
+      break;
+    }
+    case 'memberView':
+      setPeopleView({ kind: 'member', id });
+      render();
+      window.scrollTo(0, 0);
+      break;
+    case 'feeView':
+      setPeopleView({ kind: 'fee', id });
+      render();
+      window.scrollTo(0, 0);
+      break;
+    case 'peopleAll':
+      setPeopleView(null);
+      render();
+      break;
+    case 'frole':
+      if (!form) break;
+      form.role = v;
+      drawSheet();
+      break;
+    case 'memberActive': {
+      const m = form && state.members.find((x) => x.id === form.id);
+      if (!m) break;
+      m.active = !m.active;
+      closeSheet();
+      commit();
+      toast(m.active ? m.name + ' is back in the group' : m.name + ' marked as left');
+      break;
+    }
+    case 'newFee':
+      setArmed(null);
+      openSheet(newFeeForm());
+      break;
+    case 'editFee': {
+      const f = state.fees.find((x) => x.id === id);
+      if (f) openSheet(formFromFee(f));
+      break;
+    }
+    case 'feeAll':
+      if (!form) break;
+      form.memberIds = state.members
+        .filter((m) => m.active || form.memberIds.includes(m.id))
+        .map((m) => m.id);
+      drawSheet();
+      break;
+    case 'feeNone':
+      if (!form) break;
+      form.memberIds = [];
+      drawSheet();
+      break;
+    case 'newPayment': {
+      const f = state.fees.find((x) => x.id === el.dataset.fee);
+      if (!f) break;
+      setArmed(null);
+      openSheet(paymentForm(f, el.dataset.member));
+      break;
+    }
     case 'newEvent':
       setArmed(null);
       openSheet(newEventForm());
@@ -304,6 +452,17 @@ function input(e) {
   const t = e.target;
   if (t.dataset.f && form) {
     form[t.dataset.f] = t.value;
+    // Picking who paid changes which fees can be picked; a fee brings its event along.
+    if (t.dataset.f === 'memberId') {
+      const fee = state.fees.find((f) => f.id === form.feeId);
+      if (!fee || !fee.memberIds.includes(form.memberId)) form.feeId = '';
+      return drawSheet();
+    }
+    if (t.dataset.f === 'feeId') {
+      const fee = state.fees.find((f) => f.id === form.feeId);
+      if (fee && fee.eventId && !form.eventId) form.eventId = fee.eventId;
+      return drawSheet();
+    }
     if (t.closest('.thousands')) fitThousands(t);
     if (form.kind === 'adjust') updateAdjustPreview(form);
   }
@@ -312,7 +471,13 @@ function input(e) {
 /* Settings fields save when the person leaves the field. */
 function change(e) {
   const t = e.target;
-  if (t.id === 'importFile') {
+  if (t.dataset.feemember && form && form.kind === 'fee') {
+    const id = t.dataset.feemember;
+    form.memberIds = t.checked
+      ? [...new Set([...form.memberIds, id])]
+      : form.memberIds.filter((x) => x !== id);
+    drawSheet();
+  } else if (t.id === 'importFile') {
     if (t.files && t.files[0]) stageImport(t.files[0]);
   } else if (t.id === 'rate') {
     const r = Math.round(parseAmt(t.value));
