@@ -6,7 +6,8 @@ import { parseAmt, parseInput } from '../../js/core/money.js';
 import { fitThousands } from '../../js/ui/amount.js';
 import { setUndoFn, toast, undoFn } from '../../js/ui/toast.js';
 import { $ } from '../../js/util.js';
-import { exportSave, stageImport } from './backup.js';
+import { exportSave, restoreReceipts, stageImport } from './backup.js';
+import * as receipts from './receipts.js';
 import { campAccountUsed, ensureCampAccount, finishCamp, reopenCamp } from './camps.js';
 import { KEY, save, setState, state, syncFromStorage } from './state.js';
 import { buildAdjust, adjustForm, adjustFromTx, updateAdjustPreview } from './sheets/adjust.js';
@@ -147,6 +148,42 @@ function savePayment() {
 
 const SAVE = { event: saveEvent, member: saveMember, pay: savePayment };
 const DELETE = { event: deleteEvent, member: deleteMember };
+
+/* Shrinks the picked photo, keeps it, and puts it on the open form. Nothing is saved to the entry until Add. */
+async function attachReceipt(file) {
+  const f = form;
+  toast('Adding the receipt…');
+  try {
+    const id = await receipts.add(await receipts.shrink(file));
+    $('#toast').hidden = true;
+    if (form === f && f) {
+      f.receiptId = id;
+      drawSheet();
+    }
+  } catch (e) {
+    toast('Couldn’t add that picture. Try another photo.');
+  }
+}
+
+/* Restores a staged backup: the data at once, then its receipt photos (an entry's photo is only read when
+   the entry is opened, so nothing waits on them). */
+async function restoreBackup(pending) {
+  setState(pending.state);
+  setPendingImport(null);
+  hist.account = null;
+  commit();
+  const kept = await restoreReceipts(pending);
+  toast(
+    !kept
+      ? 'Backup restored, but this browser couldn’t keep its receipt photos.'
+      : pending.missing
+        ? 'Backup restored. ' +
+          pending.missing +
+          (pending.missing === 1 ? ' receipt was' : ' receipts were') +
+          ' missing from the file.'
+        : 'Backup restored',
+  );
+}
 
 /* Saves the open form: a new entry is added, an edited one replaces the saved entry in place. */
 function saveForm() {
@@ -329,7 +366,10 @@ function click(e) {
       const t = byId(id);
       if (!t) break;
       setArmed(null);
-      openSheet(t.type === 'adjust' ? adjustFromTx(t) : formFromTx(t));
+      const open = () => openSheet(t.type === 'adjust' ? adjustFromTx(t) : formFromTx(t));
+      // The receipt's picture is read from the phone's store first, so it is there when the form draws.
+      if (t.receiptId && !receipts.cached(t.receiptId)) receipts.load(t.receiptId).then(open);
+      else open();
       break;
     }
     case 'ftype':
@@ -422,13 +462,26 @@ function click(e) {
       $('#importFile').click();
       break;
     case 'importConfirm':
-      if (pendingImport && pendingImport.state) {
-        setState(pendingImport.state);
-        setPendingImport(null);
-        hist.account = null;
-        commit();
-        toast('Backup restored');
-      }
+      if (pendingImport && pendingImport.state) restoreBackup(pendingImport);
+      break;
+    case 'receiptPick':
+      if (form && form.kind === 'tx') $('#receiptFile').click();
+      break;
+    case 'receiptRemove':
+      if (!form) break;
+      form.receiptId = '';
+      drawSheet();
+      break;
+    case 'receiptView': {
+      const url = form && receipts.cached(form.receiptId);
+      if (!url) break;
+      $('#viewerImg').src = url;
+      $('#viewer').hidden = false;
+      break;
+    }
+    case 'viewerClose':
+      $('#viewer').hidden = true;
+      $('#viewerImg').removeAttribute('src');
       break;
     case 'importCancel':
       setPendingImport(null);
@@ -505,6 +558,10 @@ function change(e) {
   } else if (t.id === 'hevent') {
     hist.event = t.value;
     render();
+  } else if (t.id === 'receiptFile') {
+    const file = t.files && t.files[0];
+    t.value = '';
+    if (file) attachReceipt(file);
   } else if (t.id === 'importFile') {
     if (t.files && t.files[0]) stageImport(t.files[0]);
   } else if (t.id === 'rate') {
@@ -537,7 +594,9 @@ function change(e) {
 }
 
 function keydown(e) {
-  if (e.key === 'Escape' && sheetOpen()) {
+  if (e.key === 'Escape' && !$('#viewer').hidden) {
+    $('#viewer').hidden = true;
+  } else if (e.key === 'Escape' && sheetOpen()) {
     setArmed(null);
     closeSheet();
   } else if (e.key === 'Enter' && sheetOpen() && e.target.matches('input[data-f]:not([type=date])')) {

@@ -4,6 +4,7 @@ import { feeStatus, outstandingUSD } from '../../js/core/fees.js';
 import { balances, combinedUSD, range, sumIn } from '../../js/core/ledger.js';
 import { entryValueIn, fmt, parseAmt } from '../../js/core/money.js';
 import { registerSW } from './pwa.js';
+import * as receipts from './receipts.js';
 import { normalize, parseState, persistStorage, state } from './state.js';
 import { render } from './ui/render.js';
 import './events.js';
@@ -31,9 +32,16 @@ window.__scouts = {
     );
   },
   outstandingUSD: (memberId) => outstandingUSD(withCotisations(state), memberId),
+  receipts: { all: receipts.all, load: receipts.load, usedIds: () => receipts.usedIds(state) },
   fmt,
   parseAmt,
 };
+
+// Receipt photos live in IndexedDB. Once it is open: redraw (rows show their photo), and clear out photos that
+// nothing refers to any more.
+receipts.init().then((ok) => {
+  if (ok) receipts.prune(state);
+});
 
 render();
 persistStorage();

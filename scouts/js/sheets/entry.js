@@ -5,6 +5,7 @@ import { feeOf, memberFeeStatus, memberOf } from '../../../js/core/fees.js';
 import { other, parseInput, toInput } from '../../../js/core/money.js';
 import { ICON } from '../../../js/icons.js';
 import { amountField } from '../../../js/ui/amount.js';
+import * as receipts from '../receipts.js';
 import { esc, uid, ymd } from '../../../js/util.js';
 import { state } from '../state.js';
 import { armed } from '../ui/ui-state.js';
@@ -43,6 +44,7 @@ export function newTxForm(type = 'expense', account = null, eventId = '') {
     eventId: eventOf(state, eventId) ? eventId : '',
     memberId: '',
     feeId: '',
+    receiptId: '',
     note: '',
     date: ymd(new Date()),
   };
@@ -64,6 +66,7 @@ export function formFromTx(t) {
     categoryId: t.categoryId || (t.type === 'income' ? 'other-in' : 'other'),
     eventId: t.eventId || '',
     memberId: t.memberId || '',
+    receiptId: t.receiptId || '',
     feeId: t.feeId || '',
     note: t.note || '',
     date: t.date,
@@ -128,6 +131,24 @@ function eventPicker(f) {
     options(list, f.eventId) +
     '</select></label>'
   );
+}
+
+/*
+ * The receipt photo of an expense or income, optional: a button to add one (the phone offers the camera or
+ * its photos), and once there is one, a small picture to open, replace or remove. Hidden where the browser
+ * can't keep photos.
+ */
+function receiptField(f) {
+  if (!receipts.available) return '';
+  const url = receipts.cached(f.receiptId);
+  if (f.receiptId && url)
+    return (
+      '<div class="receipt"><button class="receipt-thumb" data-act="receiptView" aria-label="View the receipt"><img src="' +
+      url +
+      '" alt="Receipt"></button><div class="receipt-side"><span class="sub-label">Receipt</span>' +
+      '<div class="btn-row"><button class="btn sm" data-act="receiptPick">Replace</button><button class="btn sm danger" data-act="receiptRemove">Remove</button></div></div></div>'
+    );
+  return '<button class="btn receipt-add" data-act="receiptPick"><span aria-hidden="true">📎</span> Add receipt <span class="muted">(optional)</span></button>';
 }
 
 export function txSheet(f) {
@@ -217,6 +238,7 @@ export function txSheet(f) {
     '" placeholder="Optional"></label><label class="field"><span>Date</span><input data-f="date" type="date" value="' +
     esc(f.date) +
     '"></label></div>';
+  if (f.type === 'expense' || f.type === 'income') h += receiptField(f);
   h +=
     '<p class="form-error" id="f-err" hidden></p><div class="sheet-actions">' +
     (f.mode === 'edit'
@@ -259,6 +281,8 @@ export function buildTx(f, old) {
     t.rate = (old && +old.rate > 0 && old.rate) || state.rate;
     if (f.eventId && eventOf(state, f.eventId)) t.eventId = f.eventId;
     else delete t.eventId;
+    if (f.receiptId) t.receiptId = f.receiptId;
+    else delete t.receiptId;
     // Only money coming in is a member's payment.
     const member = f.type === 'income' ? memberOf(state, f.memberId) : undefined;
     const fee = member ? feeOf(withCotisations(state), f.feeId) : undefined;
@@ -276,6 +300,7 @@ export function buildTx(f, old) {
   // Moving money between funds isn't spending or a payment, so it never belongs to an event or a member.
   delete t.eventId;
   delete t.memberId;
+  delete t.receiptId;
   delete t.feeId;
   delete t.account;
   delete t.categoryId;
