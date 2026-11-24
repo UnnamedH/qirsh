@@ -9,6 +9,7 @@ import { ICON } from '../../../js/icons.js';
 import { $, esc } from '../../../js/util.js';
 import { campAccountIds } from '../camps.js';
 import { state } from '../state.js';
+import { fold } from '../ui/fold.js';
 import { fmtDisp, fmtTotal, txRow } from '../ui/format.js';
 import { homeTab } from '../ui/ui-state.js';
 import { eventPage } from './events.js';
@@ -97,16 +98,19 @@ function caisse() {
       { start: new Date(year, 0, 1), end: new Date(year + 1, 0, 1) },
       state.settings.display,
     );
-  h +=
-    '<section class="sec"><div class="sec-head"><h2>Caisse ' +
-    year +
-    '</h2><button class="btn sm ghost" data-act="historyGeneral">See entries</button></div><div class="stats"><div class="stat"><span class="label">Spent</span><span class="amt priv">' +
-    fmtTotal(g.spent) +
-    '</span></div><div class="stat"><span class="label">Brought in</span><span class="amt in priv">' +
-    fmtTotal(g.earned) +
-    '</span></div><div class="stat"><span class="label">Net</span><span class="amt priv">' +
-    fmtTotal(g.net, { sign: true }) +
-    '</span></div></div></section>';
+  h += fold(
+    'caisseYear',
+    'Caisse ' + year,
+    '<span class="priv">Net ' + fmtTotal(g.net, { sign: true }) + '</span>',
+    '<div class="stats"><div class="stat"><span class="label">Spent</span><span class="amt priv">' +
+      fmtTotal(g.spent) +
+      '</span></div><div class="stat"><span class="label">Brought in</span><span class="amt in priv">' +
+      fmtTotal(g.earned) +
+      '</span></div><div class="stat"><span class="label">Net</span><span class="amt priv">' +
+      fmtTotal(g.net, { sign: true }) +
+      '</span></div></div>',
+    '<button class="btn sm ghost" data-act="historyGeneral">See entries</button>',
+  );
   // What attendees still owe on cotisations: money still to come in, so valued at today's rate.
   const owed = outstandingUSD(withCotisations(state));
   if (owed > 0)
@@ -123,12 +127,16 @@ function caisse() {
     .filter((t) => !t.eventId)
     .sort((a, c) => c.date.localeCompare(a.date) || (c.createdAt || 0) - (a.createdAt || 0))
     .slice(0, 6);
-  h +=
-    '<section class="sec"><h2>Latest</h2><div class="list">' +
-    (recent.length
-      ? recent.map((t) => txRow(t)).join('')
-      : '<p class="empty">Add your first expense or income and it shows up here.</p>') +
-    '</div></section>';
+  h += fold(
+    'latest',
+    'Latest',
+    recent.length ? recent.length + (recent.length === 1 ? ' entry' : ' entries') : '',
+    '<div class="list">' +
+      (recent.length
+        ? recent.map((t) => txRow(t)).join('')
+        : '<p class="empty">Add your first expense or income and it shows up here.</p>') +
+      '</div>',
+  );
   return h;
 }
 

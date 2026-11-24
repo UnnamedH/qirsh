@@ -15,6 +15,7 @@ import { buildMember, formFromMember, memberEntries, newMemberForm } from './she
 import { buildEvent, formFromEvent, newEventForm } from './sheets/event.js';
 import { buildPayment, quickPaymentForm } from './sheets/payment.js';
 import { closeSheet, drawSheet, form, openSheet, sheetOpen } from './sheets/sheet.js';
+import { toggleFold } from './ui/fold.js';
 import { commit, render } from './ui/render.js';
 import { currentHomeTab } from './views/home.js';
 import {
@@ -269,6 +270,10 @@ function click(e) {
       openSheet(quickPaymentForm(f, el.dataset.member));
       break;
     }
+    case 'fold':
+      toggleFold(v);
+      commit();
+      break;
     case 'homeTab':
       setHomeTab(v);
       render();

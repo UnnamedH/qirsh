@@ -35,7 +35,7 @@ test('bad data is repaired and never throws', () => {
     }),
   );
   assert.equal(s.rate, blankState().rate);
-  assert.deepEqual(s.settings, { display: 'USD', weekStart: 1, theme: 'system' });
+  assert.deepEqual(s.settings, { display: 'USD', weekStart: 1, theme: 'system', fold: {} });
   assert.equal(s.group.name, '');
   // The caisse, and the one event's own account.
   assert.deepEqual(
@@ -354,4 +354,17 @@ test('the untouched default Bank of version 1 goes once; a used or renamed one s
   assert.deepEqual(ids(normalize(funded)), ['wallet', 'bank']);
   // Version 2 data is left alone: a Bank added later on purpose stays even while unused.
   assert.deepEqual(ids(normalize(Object.assign(v1(), { version: 2 }))), ['wallet', 'bank']);
+});
+
+test('folded sections are kept as true, and anything else in saved data is dropped', () => {
+  const s = normalize(
+    base({
+      settings: {
+        fold: { latest: true, memList: false, evTotals: 'yes', 'bad key!': true, caisseYear: true },
+      },
+    }),
+  );
+  assert.deepEqual(s.settings.fold, { latest: true, caisseYear: true });
+  assert.deepEqual(normalize(base({ settings: { fold: 'all' } })).settings.fold, {});
+  assert.deepEqual(normalize(base()).settings.fold, {});
 });

@@ -10,7 +10,7 @@
  * then offers to reload. Run `npm run stamp` after changing app files; tests/precache.spec.js
  * fails if BUILD is out of date or a file is missing from APP.
  */
-const BUILD = 'b91ff41aca73';
+const BUILD = 'a3574d3b4d49';
 const CACHE = 'frata-scouts-' + BUILD;
 // Paths are relative to this folder. The shared money logic, styles and fonts come from the folders above.
 const APP = [
@@ -33,6 +33,7 @@ const APP = [
   'js/state.js',
   'js/theme.js',
   'js/ui/cotisation.js',
+  'js/ui/fold.js',
   'js/ui/format.js',
   'js/ui/render.js',
   'js/ui/ui-state.js',

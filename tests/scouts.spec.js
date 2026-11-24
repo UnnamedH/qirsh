@@ -771,3 +771,115 @@ test('finishing a camp sends what is left back to the caisse and removes its tab
   await page.click('#sheet [data-act=eventClose]');
   expect((await st(page)).accounts.find((a) => a.id === 'camp-' + hp).hidden).toBeUndefined();
 });
+
+/* ---------- long forms, and sections that fold ---------- */
+
+test('with many members, every one can be reached and ticked in the event form', async ({ page }) => {
+  const members = Array.from({ length: 30 }, (_, i) => ({
+    id: 'm' + i,
+    name: 'Member ' + (i + 1),
+    role: 'scout',
+    active: true,
+  }));
+  await openScouts(page, {
+    storage: {
+      [KEY]: JSON.stringify({
+        app: 'frata-scouts',
+        tx: [],
+        members,
+        events: [{ id: 'hp', name: 'Camp HP', start: '2026-12-26' }],
+      }),
+    },
+  });
+  await page.click('[data-act=nav][data-v=events]');
+  await page.click('[data-act=eventView][data-id=hp]');
+  await page.click('[data-act=editEvent]');
+  // The list is never squeezed to a sliver: every row has its full height, and the sheet scrolls instead.
+  const m = await page.evaluate(() => {
+    const who = document.querySelector('#sheet .who');
+    return { shown: who.clientHeight, needed: who.scrollHeight };
+  });
+  expect(m.shown).toBeGreaterThanOrEqual(m.needed - 2);
+  // The last member can be scrolled to and ticked, and Save is still in reach there.
+  await page.locator('#sheet [data-attendee=m29]').scrollIntoViewIfNeeded();
+  await page.check('#sheet [data-attendee=m29]');
+  await expect(page.locator('#sheet .who-head')).toContainText('Attending (1)');
+  await expect(page.locator('#sheet [data-act=fsave]')).toBeInViewport();
+  await page.click('#sheet [data-act=fsave]');
+  expect((await st(page)).events[0].attendees).toEqual(['m29']);
+});
+
+test('sections fold to a summary, and stay folded after a reload', async ({ page }) => {
+  await openScouts(page);
+  await addEntry(page, { type: 'income', amount: 100, note: 'Donation' });
+  const latest = page.locator('#v-home .fold', { has: page.locator('[data-act=fold][data-v=latest]') });
+  await expect(latest.locator('.list .row')).toHaveCount(1);
+  await expect(latest.locator('.fold-sum')).toHaveCount(0);
+  await latest.locator('[data-act=fold]').click();
+  await expect(latest.locator('.list')).toHaveCount(0);
+  await expect(latest.locator('.fold-sum')).toHaveText('1 entry');
+  expect((await st(page)).settings.fold).toEqual({ latest: true });
+  // The caisse's year folds to its net.
+  const year = page.locator('#v-home .fold', { has: page.locator('[data-act=fold][data-v=caisseYear]') });
+  await year.locator('[data-act=fold]').click();
+  await expect(year.locator('.stats')).toHaveCount(0);
+  await expect(year.locator('.fold-sum')).toContainText('Net +$100');
+  await page.reload();
+  await page.waitForFunction(() => window.__scouts);
+  await expect(latest.locator('.list')).toHaveCount(0);
+  await latest.locator('[data-act=fold]').click();
+  await expect(latest.locator('.list .row')).toHaveCount(1);
+  expect((await st(page)).settings.fold).toEqual({ caisseYear: true });
+});
+
+test('every section of an event’s page folds, with something useful to say when shut', async ({ page }) => {
+  await openScouts(page);
+  const ali = await addMember(page, 'Ali');
+  await addMember(page, 'Maya');
+  await addCamp(page, { name: 'Camp HP', cotisation: 40, budget: 400 });
+  await page.click(`[data-act=newPayment][data-member="${ali}"]`);
+  await page.click('#sheet [data-act=fsave]');
+  await page.click('#v-events [data-act=new][data-v=expense]');
+  await page.fill('#f-amount', '25');
+  await page.click('#sheet [data-act=fsave]');
+  const keys = ['evTotals', 'evAttending', 'evBudget', 'evSpend', 'evEntries'];
+  for (const k of keys) await page.click(`#v-events [data-act=fold][data-v=${k}]`);
+  expect(Object.keys((await st(page)).settings.fold).sort()).toEqual([...keys].sort());
+  const sum = (k) =>
+    page
+      .locator('#v-events .fold', { has: page.locator(`[data-act=fold][data-v=${k}]`) })
+      .locator('.fold-sum');
+  await expect(sum('evTotals')).toContainText('Net +$15');
+  await expect(sum('evAttending')).toHaveText('1 of 2 paid');
+  await expect(sum('evBudget')).toContainText('$25 / $400');
+  await expect(sum('evSpend')).toContainText('$25');
+  await expect(sum('evEntries')).toHaveText('2 entries');
+  // Nothing but headings is left to scroll past, and the Add buttons stay.
+  await expect(page.locator('#v-events .list')).toHaveCount(0);
+  await expect(page.locator('#v-events [data-act=new][data-v=expense]')).toBeVisible();
+});
+
+test('Members, Events and Settings fold too, and a rate waiting for an answer stays open', async ({
+  page,
+}) => {
+  await openScouts(page);
+  await addMember(page, 'Ali');
+  await page.click('[data-act=fold][data-v=memList]');
+  await expect(page.locator('#v-members .row')).toHaveCount(0);
+  await page.click('[data-act=fold][data-v=memList]');
+  await expect(page.locator('#v-members .row')).toHaveCount(1);
+  await page.click('[data-act=nav][data-v=events]');
+  await page.click('[data-act=fold][data-v=evRunning]');
+  await expect(page.locator('#v-events .fold-sum')).toHaveText('0 camps');
+  await page.click('[data-act=nav][data-v=settings]');
+  await page.click('[data-act=fold][data-v=setFunds]');
+  await expect(page.locator('#newAcc')).toHaveCount(0);
+  await page.click('[data-act=fold][data-v=setFunds]');
+  await expect(page.locator('#newAcc')).toBeVisible();
+  // A big rate change waits for an answer, so its section can't be folded away from under it.
+  await page.fill('#rate', '895');
+  await page.locator('#rate').blur();
+  await expect(page.locator('[data-act=rateConfirm]')).toBeVisible();
+  await page.click('[data-act=fold][data-v=setRate]');
+  await expect(page.locator('[data-act=rateConfirm]')).toBeVisible();
+});

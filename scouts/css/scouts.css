@@ -96,8 +96,9 @@
 .who {
   display: flex;
   flex-direction: column;
-  max-height: 40vh;
-  overflow-y: auto;
+  /* The sheet is a flex column that scrolls as a whole. A list that scrolls on its own is allowed to shrink
+     in it, down to a sliver, so it is left to grow instead and the sheet scrolls past it. */
+  flex: none;
   border: 1px solid var(--line);
   border-radius: var(--r);
   background: var(--surface);
@@ -160,4 +161,14 @@
   background: var(--accent);
   border-color: var(--accent);
   color: var(--accent-ink);
+}
+
+/* Save stays in reach at the bottom of a long form, such as an event with many members to tick. */
+.sheet .sheet-actions {
+  position: sticky;
+  bottom: calc(-20px - env(safe-area-inset-bottom, 0px));
+  background: var(--bg);
+  padding: 10px 0 calc(20px + env(safe-area-inset-bottom, 0px));
+  margin-bottom: calc(-20px - env(safe-area-inset-bottom, 0px));
+  z-index: 1;
 }

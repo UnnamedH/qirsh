@@ -11,7 +11,7 @@ export function blankState() {
     version: 2,
     group: { name: '' },
     rate: 89500,
-    settings: { display: 'USD', weekStart: 1, theme: 'system' },
+    settings: { display: 'USD', weekStart: 1, theme: 'system', fold: {} },
     accounts: DEFAULT_ACCOUNTS.map((a) => Object.assign({}, a)),
     opening: { wallet: { USD: 0, LBP: 0 } },
     categories: DEFAULT_CATS.map((c) => Object.assign({}, c)),
@@ -34,6 +34,7 @@ const LINKS = ['eventId', 'memberId', 'feeId', 'paidBy'];
 const isCur = (c) => CURRENCIES.includes(c);
 const isObj = (x) => !!x && typeof x === 'object';
 const ACCOUNT_ID = /^[\w-]{1,40}$/;
+const FOLD_KEY = /^[a-z][\w-]{0,30}$/i;
 
 const validCategory = (c) =>
   isObj(c) &&
@@ -219,6 +220,12 @@ export function normalize(s) {
     display: isCur(st.display) ? st.display : b.settings.display,
     weekStart: Number.isInteger(week) && week >= 0 && week <= 6 ? week : b.settings.weekStart,
     theme: ['system', 'light', 'dark'].includes(st.theme) ? st.theme : b.settings.theme,
+    // Sections folded shut (see ui/fold.js); anything else in saved data or a backup is dropped.
+    fold: Object.fromEntries(
+      Object.keys(isObj(st.fold) ? st.fold : {})
+        .filter((k) => FOLD_KEY.test(k) && st.fold[k] === true)
+        .map((k) => [k, true]),
+    ),
   };
   const txs = Array.isArray(s.tx) ? s.tx : [];
   out.accounts = normalizeAccounts(Object.assign({}, s, { tx: txs }));

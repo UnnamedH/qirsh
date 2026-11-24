@@ -5,6 +5,7 @@ import { ICON } from '../../../js/icons.js';
 import { $, esc } from '../../../js/util.js';
 import { state } from '../state.js';
 import { cotisationLine, roleLine } from '../ui/cotisation.js';
+import { fold } from '../ui/fold.js';
 import { fmtDisp, txRow } from '../ui/format.js';
 import { peopleView } from '../ui/ui-state.js';
 
@@ -43,17 +44,24 @@ function renderList(s) {
     '</span></div><div class="stat"><span class="label">Leaders</span><span class="amt">' +
     active.filter((m) => m.role === 'leader').length +
     '</span></div></div>';
-  h +=
-    '<section class="sec"><div class="sec-head"><h2>Members</h2><button class="btn sm" data-act="newMember">Add member</button></div><div class="list">' +
-    (active.length
-      ? active.map((m) => memberRow(s, m)).join('')
-      : '<p class="empty">Add your scouts and leaders once. Then pick who attends each camp, and track their cotisation there.</p>') +
-    '</div></section>';
+  h += fold(
+    'memList',
+    'Members',
+    active.length + (active.length === 1 ? ' member' : ' members'),
+    '<div class="list">' +
+      (active.length
+        ? active.map((m) => memberRow(s, m)).join('')
+        : '<p class="empty">Add your scouts and leaders once. Then pick who attends each camp, and track their cotisation there.</p>') +
+      '</div>',
+    '<button class="btn sm" data-act="newMember">Add member</button>',
+  );
   if (left.length)
-    h +=
-      '<section class="sec"><h2>Left the group</h2><div class="list">' +
-      left.map((m) => memberRow(s, m)).join('') +
-      '</div></section>';
+    h += fold(
+      'memLeft',
+      'Left the group',
+      String(left.length),
+      '<div class="list">' + left.map((m) => memberRow(s, m)).join('') + '</div>',
+    );
   return h;
 }
 
@@ -69,21 +77,29 @@ function renderMember(s, m) {
     '</p></div><button class="btn sm" data-act="editMember" data-id="' +
     esc(m.id) +
     '">Edit</button></div>';
-  h +=
-    '<section class="sec"><h2>Cotisations</h2><div class="list">' +
-    (fees.length
-      ? fees.map((x) => cotisationLine(x.fee, x, x.fee.name, '')).join('')
-      : '<p class="empty">Not attending any camp with a cotisation yet.</p>') +
-    '</div></section>';
+  h += fold(
+    'memCot',
+    'Cotisations',
+    fees.length ? fees.filter((x) => x.owed > 0).length + ' to pay' : '',
+    '<div class="list">' +
+      (fees.length
+        ? fees.map((x) => cotisationLine(x.fee, x, x.fee.name, '')).join('')
+        : '<p class="empty">Not attending any camp with a cotisation yet.</p>') +
+      '</div>',
+  );
   const txs = state.tx
     .filter((t) => t.memberId === m.id || t.paidBy === m.id)
     .sort((a, b) => b.date.localeCompare(a.date) || (b.createdAt || 0) - (a.createdAt || 0));
-  h +=
-    '<section class="sec"><h2>Payments</h2><div class="list">' +
-    (txs.length
-      ? txs.map((t) => txRow(t, { member: true })).join('')
-      : '<p class="empty">No payments yet.</p>') +
-    '</div></section>';
+  h += fold(
+    'memPay',
+    'Payments',
+    txs.length + (txs.length === 1 ? ' payment' : ' payments'),
+    '<div class="list">' +
+      (txs.length
+        ? txs.map((t) => txRow(t, { member: true })).join('')
+        : '<p class="empty">No payments yet.</p>') +
+      '</div>',
+  );
   return h;
 }
 
