@@ -139,11 +139,12 @@ that only the maker keeps, and the app carries just the public key (`UNLOCK_KEY`
 can check a code but not make one. While `UNLOCK_KEY` is `null`, Plus isn't offered and its features are open.
 
 ```bash
-node scripts/unlock-codes.mjs new-key ~/frata-keys
+npm run plus:setup
 ```
 
-Run once, on your own computer: it saves the private key outside the repo and prints the public key to paste
-into `UNLOCK_KEY`. Then for each buyer:
+Run once, on your own computer: it saves the private key in `~/frata-keys` (outside the repo), puts the public
+key in `UNLOCK_KEY`, stamps the service workers and checks a test code. Run again, it reuses the same key.
+Then for each buyer:
 
 ```bash
 node scripts/unlock-codes.mjs code ~/frata-keys/frata-plus.private.jwk "Buyer's name"

@@ -72,7 +72,7 @@ http
       if (rel === '/js/config.js')
         body = body
           .toString()
-          .replace(/export const UNLOCK_KEY = .*;/, `export const UNLOCK_KEY = ${TEST_KEY};`);
+          .replace(/export const UNLOCK_KEY = [^;]*;/, `export const UNLOCK_KEY = ${TEST_KEY};`);
       res.writeHead(200, {
         'Content-Type': TYPES[path.extname(file)] || 'application/octet-stream',
         'Cache-Control': 'no-store',

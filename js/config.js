@@ -9,7 +9,7 @@ export const SUPPORT_URL = 'https://whish.money/app/pay/ynLO2j39h';
 
 /* Frata Plus: the public half of the key that signs unlock codes (scripts/unlock-codes.mjs makes the pair).
    It can check a code but never make one, so it's safe to publish. While it's null, Plus isn't offered and
-   its features are open to everyone. Keep it on one line: the test server swaps in a test key. */
+   its features are open to everyone. npm run plus:setup fills it in. */
 export const UNLOCK_KEY = null;
 
 /* Frata's code is public, so anyone can check what it does with their data (Settings, at the bottom). */
