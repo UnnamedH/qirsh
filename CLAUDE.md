@@ -55,6 +55,17 @@ wrappers (`js/money.js`, `ledger.js`, `accounts.js`, `advances.js`): they load t
 - Scouts tests are in `tests/scouts.spec.js`; the shared core's are in `unit/` (`npm run test:unit`).
 - scouts.frata.cc is deployed by `wrangler.scouts.jsonc` (a second Cloudflare project) from the same files.
 
+## Frata Plus
+
+- Paid features (History → By category, budgets with several categories) check `hasPlus()` in `js/plus.js`.
+  The unlock code is in `state.unlock.code`, checked offline against `UNLOCK_KEY` in `js/config.js` by
+  `js/core/plus.js` (ECDSA P-256). `UNLOCK_KEY = null` means Plus isn't offered and everything is open.
+- Never commit a private key (`*.private.jwk` is ignored). Codes are made with `scripts/unlock-codes.mjs`.
+- Tests use the key in `tests/fixtures/plus-test-key.json`: `tests/server.mjs` swaps its public half into
+  `js/config.js`, and `plusCode()` / `unlockPlus()` in `tests/helpers.js` sign and type a code.
+- Starting over and clearing the examples keep `unlock`. No pop-ups asking for money: Plus is offered only
+  where a locked feature is, and in Settings.
+
 ## Data model rules
 
 - Currencies are `'USD'` and `'LBP'` internally; the UI says "LL". Conversion uses `state.rate`.

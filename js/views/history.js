@@ -3,6 +3,7 @@ import { ICON } from '../icons.js';
 import { balances, catOf, inRange, spendByCategory, sumIn } from '../ledger.js';
 import { dispCur, entryValueIn, fmt, fmtTotal } from '../money.js';
 import { accName } from '../accounts.js';
+import { hasPlus } from '../plus.js';
 import { state } from '../state.js';
 import { rowSub, txAmt, txGlyph, txTitle } from '../ui/format.js';
 import { hist } from '../ui/ui-state.js';
@@ -75,7 +76,7 @@ export function renderHistory() {
       .join('') +
     '</div>';
   if (hist.mode === 'chart') {
-    h += spendingChart(r, acc);
+    h += hasPlus() ? spendingChart(r, acc) : plusTeaser();
     $('#v-history').innerHTML = h;
     return;
   }
@@ -186,6 +187,12 @@ export function historyList(txs) {
   flush();
   return h;
 }
+
+/* In place of the chart while Plus is locked: what it would show, and the way in. */
+const plusTeaser = () =>
+  '<div class="card plus-teaser"><h3>Spending by category</h3>' +
+  '<p class="note">See where this month’s money went, as a chart. It’s part of Frata Plus.</p>' +
+  '<div class="btn-row"><button class="btn primary" data-act="plusOpen">Get Frata Plus</button></div></div>';
 
 /* Slices beyond this many are added up as "Everything else", so the chart stays readable. */
 const SLICES = 6;

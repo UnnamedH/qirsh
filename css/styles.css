@@ -445,6 +445,20 @@ main .wrap {
 .mini-stats .in {
   color: var(--accent);
 }
+/* Frata Plus: the card in History while it's locked, and the list of what it adds. */
+.plus-teaser h3 {
+  margin: 0 0 4px;
+  font-size: 16px;
+}
+.plus-list {
+  margin: 0 0 12px;
+  padding-left: 20px;
+  line-height: 1.5;
+}
+.plus-ok {
+  color: var(--accent);
+  font-weight: 600;
+}
 /* History → By category: the month's spending as a ring, biggest slice in the accent colour. The other
    colours are mid-tones that read on both the light and dark backgrounds. */
 .pie-card {

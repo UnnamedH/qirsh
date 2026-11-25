@@ -4,3 +4,6 @@ playwright-report/
 .DS_Store
 Thumbs.db
 *.log
+
+# Frata Plus signing keys: the private one must never be committed.
+*.private.jwk

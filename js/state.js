@@ -181,6 +181,10 @@ export function normalize(s) {
       }
       return x;
     });
+  // A Frata Plus unlock code: checked against the key each time the app opens (js/plus.js).
+  const code = isObj(s.unlock) && typeof s.unlock.code === 'string' ? s.unlock.code.replace(/\s+/g, '') : '';
+  if (code && code.length <= 600) out.unlock = { code };
+  else delete out.unlock;
   delete out.exportedAt;
   return out;
 }

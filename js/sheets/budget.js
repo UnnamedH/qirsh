@@ -2,6 +2,7 @@
 import { ICON } from '../icons.js';
 import { budgetCats, budgetName } from '../ledger.js';
 import { parseInput } from '../money.js';
+import { hasPlus } from '../plus.js';
 import { amountField } from '../ui/amount.js';
 import { curToggle } from './entry.js';
 import { closeSheet, form } from './sheet.js';
@@ -40,7 +41,12 @@ export function budgetSheet() {
           '</button>',
       )
       .join('') +
-    '</div></div>';
+    '</div>' +
+    (hasPlus()
+      ? ''
+      : '<p class="note">Picking several categories at once is part of Frata Plus. ' +
+        '<button class="link" data-act="plusOpen">Get Frata Plus</button></p>') +
+    '</div>';
   h +=
     '<div class="field"><span>Resets every</span><div class="seg wide">' +
     [
@@ -84,10 +90,11 @@ export function readBudget() {
   if (a) form.amount = a.value;
 }
 
-/** Picks or unpicks a category for the budget being edited. */
+/** Picks or unpicks a category for the budget being edited. Without Plus, picking one replaces the rest. */
 export function toggleBudgetCat(id) {
   const ids = form.categoryIds || [];
-  form.categoryIds = ids.includes(id) ? ids.filter((x) => x !== id) : [...ids, id];
+  if (ids.includes(id)) form.categoryIds = ids.filter((x) => x !== id);
+  else form.categoryIds = hasPlus() ? [...ids, id] : [id];
 }
 
 /* Two budgets for the same categories and period would count the same spending twice. */

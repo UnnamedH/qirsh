@@ -1,10 +1,11 @@
 /* History: spending by category as a ring chart, and each expense's price shown above how it was paid. */
-import { test, expect, openApp, appState } from './helpers.js';
+import { test, expect, openApp, appState, unlockPlus } from './helpers.js';
 
 const toHistory = (page) => page.click('.tabs [data-act=nav][data-v=history]');
 
 test('By category shows the month’s spending as slices that add up to what was spent', async ({ page }) => {
   await openApp(page);
+  await unlockPlus(page);
   await toHistory(page);
   const spent = await page.locator('#v-history .stats .stat').first().locator('.amt').innerText();
   await page.click('[data-act=hmode][data-v=chart]');
@@ -39,6 +40,7 @@ test('By category shows the month’s spending as slices that add up to what was
 test('the chart follows the month shown, and says so when nothing was spent', async ({ page }) => {
   await openApp(page);
   await page.click('[data-act=clearSample]');
+  await unlockPlus(page);
   await toHistory(page);
   await page.click('[data-act=hmode][data-v=chart]');
   await expect(page.locator('#v-history .empty')).toHaveText('No spending this month.');
@@ -49,6 +51,7 @@ test('the chart follows the month shown, and says so when nothing was spent', as
 
 test('the chart’s amounts are hidden with the eye, like the rest', async ({ page }) => {
   await openApp(page);
+  await unlockPlus(page);
   await page.click('[data-act=toggleHide]');
   await toHistory(page);
   await page.click('[data-act=hmode][data-v=chart]');

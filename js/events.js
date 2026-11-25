@@ -36,6 +36,7 @@ import {
   updateAdjustPreview,
 } from './sheets/adjust.js';
 import { readBudget, saveBudget, toggleBudgetCat } from './sheets/budget.js';
+import { tryUnlock } from './plus.js';
 import {
   autoTo,
   defaultAdjCur,
@@ -150,6 +151,7 @@ document.addEventListener('click', (e) => {
         accounts: keptAccounts(),
         tx: own,
         budgets: state.budgets.filter((b) => !isSampleBudget(b)),
+        unlock: state.unlock,
       };
       setState(normalize(Object.assign(blankState(), keep)));
       commit();
@@ -694,6 +696,13 @@ document.addEventListener('click', (e) => {
       toast('Deleted ' + c.name);
       break;
     }
+    case 'plusOpen':
+      setForm({});
+      openSheet('plus');
+      break;
+    case 'plusUnlock':
+      unlockPlus();
+      break;
     case 'supportOpen':
       setForm({});
       openSheet('support');
@@ -835,6 +844,7 @@ document.addEventListener('click', (e) => {
           settings: state.settings,
           categories: state.categories,
           accounts: keptAccounts(),
+          unlock: state.unlock,
         };
         setState(normalize(Object.assign(blankState(), keep)));
         commit();
@@ -847,6 +857,26 @@ document.addEventListener('click', (e) => {
       break;
   }
 });
+
+/* Checks the typed Frata Plus code on the phone and, if it's genuine, keeps it with the data. */
+async function unlockPlus() {
+  const field = $('#plus-code');
+  if (!field) return;
+  form.code = field.value;
+  const info = await tryUnlock(field.value);
+  if (sheetKind !== 'plus') return;
+  if (!info) {
+    const err = $('#plus-err');
+    err.textContent = field.value.trim()
+      ? 'That code doesn’t work. Check it was copied in full.'
+      : 'Paste the code you were sent.';
+    err.hidden = false;
+    return;
+  }
+  commit();
+  drawSheet();
+  toast('Frata Plus unlocked. Thank you!');
+}
 
 /* Starting over keeps the accounts in use, like the categories; removed ones go, as their entries do. */
 const keptAccounts = () => state.accounts.filter((a) => !a.hidden).map((a) => Object.assign({}, a));

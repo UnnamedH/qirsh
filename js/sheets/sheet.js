@@ -6,6 +6,7 @@ import { demoSheet, markPriceTipDone } from './demo.js';
 import { feedbackSheet } from './feedback.js';
 import { txSheet, updatePreview } from './entry.js';
 import { newsSheet } from './news.js';
+import { plusSheet } from './plus.js';
 import { repaySheet } from './payback.js';
 import { supportSheet } from './support.js';
 import { fitAllThousands } from '../ui/amount.js';
@@ -53,7 +54,9 @@ export function drawSheet() {
                 ? feedbackSheet()
                 : sheetKind === 'support'
                   ? supportSheet()
-                  : budgetSheet());
+                  : sheetKind === 'plus'
+                    ? plusSheet()
+                    : budgetSheet());
   fitAllThousands(el);
   if (sheetKind === 'tx') updatePreview();
   if (sheetKind === 'adjust') updateAdjustPreview();

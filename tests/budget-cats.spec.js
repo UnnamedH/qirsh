@@ -1,5 +1,5 @@
 /* Budgets that cover any number of categories: picking them, counting them, and keeping them tidy. */
-import { test, expect, openApp, appState } from './helpers.js';
+import { test, expect, openApp, appState, unlockPlus } from './helpers.js';
 
 const toBudgets = (page) => page.click('.tabs [data-act=nav][data-v=budgets]');
 
@@ -30,6 +30,7 @@ test('a budget can cover several categories, and counts the spending in all of t
     });
     s.tx.push(e('e1', 10, 'food'), e('e2', 4, 'coffee'), e('e3', 7, 'transport'));
   });
+  await unlockPlus(page);
   await toBudgets(page);
   await newBudget(page, ['food', 'coffee'], 50);
 
@@ -46,6 +47,7 @@ test('All spending clears the picked categories, and the same set can’t be bud
 }) => {
   await openApp(page);
   await page.click('[data-act=clearSample]');
+  await unlockPlus(page);
   await toBudgets(page);
   await page.click('#v-budgets [data-act=newBudget]');
   const all = page.locator('#sheet [data-act=bcatAll]');

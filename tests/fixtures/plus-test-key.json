@@ -1,0 +1,18 @@
+{
+  "note": "Test-only key for Frata Plus codes. The app never ships it: tests/server.mjs swaps it in.",
+  "private": {
+    "key_ops": ["sign"],
+    "ext": true,
+    "kty": "EC",
+    "x": "_XmgWwuQZ_Ce37ApdLy0vmGM3wYFhKkCFMXwj8p_eIc",
+    "y": "27CIQykann4oh59p8501IUvheBe8DGlVTx-XMUCZAbE",
+    "crv": "P-256",
+    "d": "MPAeXO2j1wEH72r2weFOw5bhR34BrkhfDONw9SIFhbk"
+  },
+  "public": {
+    "kty": "EC",
+    "crv": "P-256",
+    "x": "_XmgWwuQZ_Ce37ApdLy0vmGM3wYFhKkCFMXwj8p_eIc",
+    "y": "27CIQykann4oh59p8501IUvheBe8DGlVTx-XMUCZAbE"
+  }
+}

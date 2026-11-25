@@ -4,6 +4,8 @@ import { MAIN, MAX_ACCOUNTS, MAX_NAME, accounts } from '../accounts.js';
 import { PROTECTED, REPO_URL } from '../config.js';
 import { feedbackButtons } from '../sheets/feedback.js';
 import { supportButtons } from '../sheets/support.js';
+import { plusStatus } from '../sheets/plus.js';
+import { plusOffered } from '../plus.js';
 import { ICON } from '../icons.js';
 import { catName } from '../ledger.js';
 import { toInput } from '../money.js';
@@ -223,6 +225,11 @@ export function renderSettings() {
     '<p class="label">New category</p><div class="cat-row"><input class="input emoji" id="newCatIcon" placeholder="+" autocomplete="off" aria-label="Emoji for new category"><input class="input" id="newCatName" placeholder="Name" aria-label="New category name">' +
     '<select class="input" id="newCatType" style="flex:0 0 auto;width:auto" aria-label="Type"><option value="expense">Spending</option><option value="income">Income</option></select></div>' +
     '<div class="btn-row"><button class="btn sm" data-act="addCat">Add category</button></div></div></section>';
+  if (plusOffered())
+    h +=
+      '<section class="sec" id="plusSec"><h2>Frata Plus</h2><div class="card">' +
+      plusStatus() +
+      '</div></section>';
   h +=
     '<section class="sec" id="feedbackSec"><h2>Feedback &amp; bugs</h2><div class="card">' +
     feedbackButtons() +
