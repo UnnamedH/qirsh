@@ -50,6 +50,9 @@ wrappers (`js/money.js`, `ledger.js`, `accounts.js`, `advances.js`): they load t
 - Each camp (event) has its own account (`accountId`, id `camp-<event id>`, made by `ensureCampAccount()` in
   `scouts/js/camps.js`). Its cotisation is a fee via `withCotisations()` in `js/core/events.js`; payments are
   income with the camp's id as `eventId` and `feeId`, into the camp's account.
+- Receipt photos (`scouts/js/receipts.js`) are shrunk JPEG `data:` URLs in IndexedDB, not in the state; an entry only
+  holds `receiptId`. Keep them `data:` URLs so the CSP needs no `blob:`. Backups carry them in a top-level
+  `receipts` map (removed again by `normalize()`); photos nothing refers to are pruned after a day.
 - New scouts file? Add it to `APP` in `scouts/sw.js`. `npm run stamp` stamps both service workers.
 - Frata's `sw.js` ignores requests under `scouts/`, so Frata's worker never answers for the scouts app.
 - Scouts tests are in `tests/scouts.spec.js`; the shared core's are in `unit/` (`npm run test:unit`).
@@ -94,6 +97,10 @@ wrappers (`js/money.js`, `ledger.js`, `accounts.js`, `advances.js`): they load t
   `tests/privacy.spec.js` enforces this. Inline `style=` is allowed.
 - **New app file?** Add it to the `APP` list in `sw.js`, then `npm run stamp`.
   `tests/precache.spec.js` fails if a file is missing from `APP` or `BUILD` is stale.
+- **No `theme_color` in Frata's manifests, on purpose.** Chrome colours an installed Android app's gesture bar
+  with it, there is no dark version, so a light one leaves a light strip under a dark app. Without it,
+  Android follows the phone's light or dark mode. The page's `<meta name="theme-color">` tags still colour
+  the status bar. Don't add it back.
 - **App icons** come from `scripts/icon.svg` via `npm run icons`, which also writes `icons/<colour>/` and
   `manifest-<colour>.webmanifest` for each preset accent. Rerun it after changing the icon, the presets or
   `manifest.webmanifest`; `tests/precache.spec.js` checks the copies match.

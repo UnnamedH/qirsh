@@ -174,7 +174,7 @@ export function renderSettings() {
     'setBackup',
     'Backup',
     state.lastExport ? esc(state.lastExport.slice(0, 10)) : 'Not yet',
-    '<div class="card"><p class="note">Your entries live only on this device. Save a backup file now and then.' +
+    '<div class="card"><p class="note">Your entries and receipt photos live only on this device. Save a backup file now and then: it holds the photos too.' +
       (state.lastExport ? ' Last backup: ' + esc(state.lastExport.slice(0, 10)) + '.' : '') +
       '</p><div class="btn-row"><button class="btn sm primary" data-act="backupSave">Save backup</button><button class="btn sm" data-act="importPick">Restore from file</button></div>' +
       (rescuedData()
