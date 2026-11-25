@@ -85,7 +85,9 @@ export function txRow(t, hide = {}) {
     esc(txTitle(t)) +
     '</span><span class="row-sub">' +
     esc(rowSub(t, hide)) +
-    '</span></span><span class="priv">' +
+    '</span></span>' +
+    (t.receiptId ? '<span class="clip" role="img" aria-label="Has a receipt">📎</span>' : '') +
+    '<span class="priv">' +
     txAmt(t) +
     '</span></button></div>'
   );

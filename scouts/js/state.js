@@ -90,6 +90,9 @@ function normalizeTx(t, out) {
   LINKS.forEach((k) => {
     if (typeof x[k] !== 'string' || !x[k]) delete x[k];
   });
+  // A receipt photo (kept apart, see receipts.js) belongs to money spent or received, not to a move.
+  if (typeof x.receiptId !== 'string' || !x.receiptId || (x.type !== 'expense' && x.type !== 'income'))
+    delete x.receiptId;
   // The leader expenses a reimbursement pays back.
   const claims = Array.isArray(x.claimIds) ? x.claimIds.filter((id) => typeof id === 'string' && id) : [];
   if (claims.length) x.claimIds = [...new Set(claims)];
@@ -283,14 +286,21 @@ export function normalize(s) {
   out.version = 2;
   out.lastExport = typeof s.lastExport === 'string' ? s.lastExport : null;
   delete out.exportedAt;
+  // A backup file carries its receipt photos here; they are restored apart from the state (receipts.js).
+  delete out.receipts;
   return out;
 }
 
 /** Parses saved or imported text into a state, or returns null if it is not usable scouts data. */
 export function parseState(raw) {
+  return parseBackup(raw)?.state || null;
+}
+
+/** Parses a backup or saved text into { state, parsed }, where `parsed` is the file as read (it may carry receipts). */
+export function parseBackup(raw) {
   try {
     const s = JSON.parse(raw);
-    return isValid(s) ? normalize(s) : null;
+    return isValid(s) ? { state: normalize(s), parsed: s } : null;
   } catch (e) {
     return null;
   }

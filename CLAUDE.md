@@ -50,6 +50,9 @@ wrappers (`js/money.js`, `ledger.js`, `accounts.js`, `advances.js`): they load t
 - Each camp (event) has its own account (`accountId`, id `camp-<event id>`, made by `ensureCampAccount()` in
   `scouts/js/camps.js`). Its cotisation is a fee via `withCotisations()` in `js/core/events.js`; payments are
   income with the camp's id as `eventId` and `feeId`, into the camp's account.
+- Receipt photos (`scouts/js/receipts.js`) are shrunk JPEG `data:` URLs in IndexedDB, not in the state; an entry only
+  holds `receiptId`. Keep them `data:` URLs so the CSP needs no `blob:`. Backups carry them in a top-level
+  `receipts` map (removed again by `normalize()`); photos nothing refers to are pruned after a day.
 - New scouts file? Add it to `APP` in `scouts/sw.js`. `npm run stamp` stamps both service workers.
 - Frata's `sw.js` ignores requests under `scouts/`, so Frata's worker never answers for the scouts app.
 - Scouts tests are in `tests/scouts.spec.js`; the shared core's are in `unit/` (`npm run test:unit`).
