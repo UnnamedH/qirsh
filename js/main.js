@@ -6,6 +6,7 @@ import { checkMove, moveLink } from './handoff.js';
 import { registerSW } from './pwa.js';
 import { newsList, setNewsList } from './sheets/news.js';
 import { openSheet, setForm } from './sheets/sheet.js';
+import { plusInfo } from './plus.js';
 import { normalize, persistStorage, state } from './state.js';
 import { templates } from './templates.js';
 import { render } from './ui/render.js';
@@ -34,6 +35,8 @@ window.__qirsh = {
 };
 
 render();
+// Check a saved Frata Plus code; the screen is drawn again once it's confirmed.
+plusInfo();
 
 // Show "What's new" once after an update.
 setNewsList(unseenChanges());

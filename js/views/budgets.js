@@ -1,12 +1,12 @@
 /* Budgets view. */
-import { budgetStatus, range } from '../ledger.js';
+import { budgetCats, budgetStatus, range } from '../ledger.js';
 import { state } from '../state.js';
 import { budgetHtml } from '../ui/format.js';
 import { $, DAYS, MONTHS, addDays } from '../util.js';
 
 export function renderBudgets() {
-  const overall = state.budgets.filter((b) => !b.categoryId),
-    cats = state.budgets.filter((b) => b.categoryId);
+  const overall = state.budgets.filter((b) => !budgetCats(b).length),
+    cats = state.budgets.filter((b) => budgetCats(b).length);
   const wr = range('week');
   const wEnd = addDays(wr.end, -1);
   let h =

@@ -1,6 +1,6 @@
 /* Shared HTML snippets for transaction rows and budgets. */
 import { advanceOf, fmtAdv, owed } from '../advances.js';
-import { accName } from '../config.js';
+import { accName } from '../accounts.js';
 import { budgetName, budgetStatus, catName, catOf } from '../ledger.js';
 import { backParts, entryValueIn, fmt, payParts } from '../money.js';
 import { cap, esc } from '../util.js';
@@ -59,7 +59,8 @@ export function rowSub(t) {
   }
   if (t.correction)
     return (t.note ? txTitle(t) + ' · ' : '') + 'Balance correction · ' + accName(t.account || 'wallet');
-  return t.note ? txTitle(t) : cap(t.type);
+  const where = t.account && t.account !== 'wallet' ? accName(t.account) : '';
+  return [t.note ? txTitle(t) : cap(t.type), where].filter(Boolean).join(' · ');
 }
 
 export function txGlyph(t) {
@@ -114,21 +115,16 @@ export function txAmt(t) {
       '</span>'
     );
   if (p.length === 1 && !k.length) return '<span class="amt">' + p[0] + '</span>';
-  // Entered price first: show the price, with how it was paid underneath.
-  if (t.type === 'expense' && t.priceCur)
-    return (
-      '<span class="amt has-chg"><span>' +
-      fmt(entryValueIn(t, t.priceCur), t.priceCur) +
-      '</span><span class="chg">paid ' +
-      p.join(' + ') +
-      (k.length ? ' · ' + k.join(' + ') + ' back' : '') +
-      '</span></span>'
-    );
+  // Every expense shows what it cost, with how it was paid underneath, however it was typed in. The
+  // price is in the price currency if it was entered price first, otherwise in the first one paid in.
+  const cur = t.priceCur || t.currency;
   return (
-    '<span class="amt has-chg">' +
-    p.map((x) => '<span>' + x + '</span>').join('') +
-    (k.length ? '<span class="chg">+' + k.join(' + ') + ' back</span>' : '') +
-    '</span>'
+    '<span class="amt has-chg"><span>' +
+    fmt(entryValueIn(t, cur), cur) +
+    '</span><span class="chg">paid ' +
+    p.join(' + ') +
+    (k.length ? ' · ' + k.join(' + ') + ' back' : '') +
+    '</span></span>'
   );
 }
 

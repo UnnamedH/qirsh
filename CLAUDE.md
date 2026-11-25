@@ -16,7 +16,8 @@ README.md has the full feature list, privacy model and file layout; read it firs
 - Test: `npm test` (Playwright; local runs use Windows' Edge via `channel: 'msedge'`, CI uses Chromium).
   Cloud sessions: `PW_CHROMIUM_PATH=/opt/pw-browsers/chromium npm test` to use the pre-installed Chromium.
 - Lint / format: `npm run lint`, `npm run format`, `npm run format:check`
-- After changing any app file: `npm run stamp` (rewrites `BUILD` in `sw.js`)
+- After changing any app file: `npm run stamp` (rewrites `BUILD` in `sw.js` and `scouts/sw.js`)
+- Unit tests and types for the shared core: `npm run test:unit`, `npm run typecheck`
 
 CI (`.github/workflows/ci.yml`) runs lint, format check and tests on every PR.
 
@@ -34,9 +35,47 @@ CI (`.github/workflows/ci.yml`) runs lint, format check and tests on every PR.
   `advances.js` (paid-for-others + paybacks), `templates.js` (quick add), `report/` (xlsx + csv).
 - A `storage` event listener syncs state between two open copies of the app.
 
+## Frata Scouts (`scouts/`)
+
+A second, separate PWA for a scout group's funds, in the same repo. Own `scouts/sw.js` (paths relative to its
+folder, so it can list the shared `../js/` and `../css/` files), manifest, cache and storage key
+(`frata-scouts.v1`, `app: 'frata-scouts'`). It reuses `js/core/*`, `js/util.js`, `js/icons.js`,
+`js/ui/amount.js`, `js/ui/toast.js` and `css/styles.css`, but **never** imports Frata's `js/state.js` or its
+wrappers (`js/money.js`, `ledger.js`, `accounts.js`, `advances.js`): they load the personal data.
+
+- **`js/core/` is pure**: functions take the state (or rate) as an argument and never touch the DOM, storage or
+  a global. Frata's top-level `money.js`/`ledger.js`/`accounts.js`/`advances.js` are thin wrappers that pass in
+  `state`. Put new shared logic in `js/core/`, with a unit test in `unit/` and JSDoc types (`npm run typecheck`).
+- The scouts main fund keeps the id `wallet` (shown as "Caisse") because the core defaults to that id.
+- Each camp (event) has its own account (`accountId`, id `camp-<event id>`, made by `ensureCampAccount()` in
+  `scouts/js/camps.js`). Its cotisation is a fee via `withCotisations()` in `js/core/events.js`; payments are
+  income with the camp's id as `eventId` and `feeId`, into the camp's account.
+- Receipt photos (`scouts/js/receipts.js`) are shrunk JPEG `data:` URLs in IndexedDB, not in the state; an entry only
+  holds `receiptId`. Keep them `data:` URLs so the CSP needs no `blob:`. Backups carry them in a top-level
+  `receipts` map (removed again by `normalize()`); photos nothing refers to are pruned after a day.
+- New scouts file? Add it to `APP` in `scouts/sw.js`. `npm run stamp` stamps both service workers.
+- Frata's `sw.js` ignores requests under `scouts/`, so Frata's worker never answers for the scouts app.
+- Scouts tests are in `tests/scouts.spec.js`; the shared core's are in `unit/` (`npm run test:unit`).
+- scouts.frata.cc is deployed by `wrangler.scouts.jsonc` (a second Cloudflare project) from the same files.
+
+## Frata Plus
+
+- Paid features (History → By category, budgets with several categories) check `hasPlus()` in `js/plus.js`.
+  The unlock code is in `state.unlock.code`, checked offline against `UNLOCK_KEY` in `js/config.js` by
+  `js/core/plus.js` (ECDSA P-256). `UNLOCK_KEY = null` means Plus isn't offered and everything is open.
+- Never commit a private key (`*.private.jwk` is ignored). Codes are made with `scripts/unlock-codes.mjs`.
+- Tests use the key in `tests/fixtures/plus-test-key.json`: `tests/server.mjs` swaps its public half into
+  `js/config.js`, and `plusCode()` / `unlockPlus()` in `tests/helpers.js` sign and type a code.
+- Starting over and clearing the examples keep `unlock`. No pop-ups asking for money: Plus is offered only
+  where a locked feature is, and in Settings.
+
 ## Data model rules
 
 - Currencies are `'USD'` and `'LBP'` internally; the UI says "LL". Conversion uses `state.rate`.
+- Accounts live in `state.accounts` (`js/accounts.js`): the main one has the id `wallet` (renamable, never
+  removed); others can be added, renamed, marked `savings` or removed. A removed account that has entries
+  is only `hidden`, so History keeps its name. Pick accounts with `accounts()` / `pickable()`, never a
+  fixed list, and escape account names: people type them.
 - LL is **typed in thousands** ("385" = 385,000 LL). Every amount field goes through `parseInput()` /
   `toInput()` in `money.js` and is drawn with `amountField()` / `thousandsInput()` from `js/ui/amount.js`,
   which add the fixed ",000". Only the exchange-rate fields are typed literally.
@@ -69,10 +108,14 @@ CI (`.github/workflows/ci.yml`) runs lint, format check and tests on every PR.
   `tests/privacy.spec.js` enforces this. Inline `style=` is allowed.
 - **New app file?** Add it to the `APP` list in `sw.js`, then `npm run stamp`.
   `tests/precache.spec.js` fails if a file is missing from `APP` or `BUILD` is stale.
+- **App icons** come from `scripts/icon.svg` via `npm run icons`, which also writes `icons/<colour>/` and
+  `manifest-<colour>.webmanifest` for each preset accent. Rerun it after changing the icon, the presets or
+  `manifest.webmanifest`; `tests/precache.spec.js` checks the copies match.
 - **frata.cc** is deployed by Cloudflare from `main` (`wrangler.jsonc`, no build step). Only the paths
   let back in by `.assetsignore` are published; a new top-level app file or folder must be added there.
-- **User-visible change?** Add an entry at the top of `CHANGELOG` in `js/changelog.js` (next `v`, today's
-  date, short plain bullets). It shows in the "What's new" sheet.
+- **New feature or substantial bug fix?** Add an entry at the top of `CHANGELOG` in `js/changelog.js`
+  (next `v`, today's date, short plain bullets). It pops up as "What's new" for everyone after the update,
+  so leave out small or hidden fixes, tips and notes that already explain themselves, and layout tweaks.
 
 ## Testing
 

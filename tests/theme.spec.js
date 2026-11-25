@@ -109,3 +109,51 @@ for (const width of [320, 390]) {
     expect(rows).toBe(1);
   });
 }
+
+/* ---------- the logo follows the accent and theme ---------- */
+
+const coinColours = (page) =>
+  page.evaluate(() =>
+    [...document.querySelectorAll('.coins i')].map((i) => getComputedStyle(i).backgroundColor),
+  );
+const favicon = (page) =>
+  page.evaluate(() => document.querySelector('link[rel="icon"]').getAttribute('href'));
+
+test('the header coins and tab icon follow the accent; the gold coin stays gold', async ({ page }) => {
+  await openApp(page);
+  expect(await coinColours(page)).toEqual(['rgb(47, 107, 79)', 'rgb(62, 133, 98)', 'rgb(201, 162, 39)']);
+  expect(await favicon(page)).toBe('icons/favicon.png');
+
+  await page.click('.tabs [data-act=nav][data-v=settings]');
+  await page.click('[data-act=setAccent][data-v="#2457C5"]');
+  const blue = await coinColours(page);
+  for (const c of blue.slice(0, 2)) {
+    const [r, , b] = c.match(/\d+/g).map(Number);
+    expect(b, c + ' is blue').toBeGreaterThan(r);
+  }
+  expect(blue[2]).toBe('rgb(201, 162, 39)');
+  expect(await favicon(page)).toMatch(/^data:image\/png;base64,/);
+
+  // Back to green: the shipped icon again.
+  await page.click('[data-act=setAccent][data-v="#1D6A50"]');
+  expect(await favicon(page)).toBe('icons/favicon.png');
+});
+
+test('in dark mode the coins lighten and the tab icon is redrawn', async ({ page }) => {
+  await openApp(page);
+  await page.click('.tabs [data-act=nav][data-v=settings]');
+  await page.click('[data-act=setTheme][data-v=dark]');
+  expect(await coinColours(page)).toEqual(['rgb(95, 168, 130)', 'rgb(127, 181, 154)', 'rgb(217, 178, 58)']);
+  const dark = await favicon(page);
+  expect(dark).toMatch(/^data:image\/png;base64,/);
+  await page.click('[data-act=setTheme][data-v=light]');
+  expect(await favicon(page)).toBe('icons/favicon.png');
+});
+
+test('following the phone, the tab icon changes when the phone switches to dark', async ({ page }) => {
+  await page.emulateMedia({ colorScheme: 'light' });
+  await openApp(page);
+  expect(await favicon(page)).toBe('icons/favicon.png');
+  await page.emulateMedia({ colorScheme: 'dark' });
+  await expect.poll(() => favicon(page)).toMatch(/^data:image\/png;base64,/);
+});

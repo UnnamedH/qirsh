@@ -10,7 +10,15 @@ Plain HTML, CSS and JavaScript modules: no framework and no build step. The host
 
 ## Features
 
-- Wallet, Savings and Whish accounts, each holding both USD and LL
+- Accounts that are yours to name: Wallet, Savings and Whish to start with, then add, rename or remove them. Each holds both USD and LL; spend from or earn into any of them, and tap one on Home to see its own entries
+- Hide amounts on Home with one tap, for showing the app to someone
+- Swipe sideways between tabs, and pull a sheet down to close it
+- Frata Plus, a one-off purchase (Settings → Frata Plus), adds:
+  - a month's spending by category as a ring chart (History → By category)
+  - budgets that cover several categories at once (without it, a budget covers all spending or one category)
+- Fold any section on Home down to a glimpse: budgets as little rings, the month as three numbers
+- A "Buy me a coffee" link to support Frata through Whish, from the heart at the top or Settings → Support Frata
+- Feedback and bug reports from the button at the top (or Settings), by email, with the version, phone, screen size and tab filled in
 - Expenses entered as what you paid and the change you got back, or, if you turn it on, price first: say what you paid with and the change, or the rest paid on top, is worked out
 - LL typed in thousands everywhere (type 385 for 385,000 LL)
 - Transfers between accounts and exchanges between $ and LL at a rate you set
@@ -56,9 +64,11 @@ Then open http://127.0.0.1:8765. The app has to be served over `http://`: browse
 | Command                | What it does                                              |
 | ---------------------- | --------------------------------------------------------- |
 | `npm start`            | Serves the app locally at http://127.0.0.1:8765           |
-| `npm run stamp`        | Updates `BUILD` in `sw.js` after you change app files     |
+| `npm run stamp`        | Updates `BUILD` in both `sw.js` files after app changes   |
 | `npm run icons`        | Makes the PNG icons in `icons/` from `scripts/icon.svg`   |
 | `npm test`             | Runs the browser tests in `tests/` (Playwright)           |
+| `npm run test:unit`    | Runs the unit tests in `unit/` (no browser needed)        |
+| `npm run typecheck`    | Checks the types of the shared core in `js/core/` (tsc)   |
 | `npm run lint`         | Checks the code for mistakes (ESLint)                     |
 | `npm run format`       | Reformats every file (Prettier)                           |
 | `npm run format:check` | Reports files that need formatting, without changing them |
@@ -75,28 +85,41 @@ js/main.js              Entry point: first render, "What's new", service worker
 js/events.js            Every tap, input and keypress, dispatched on the element's data-act
 js/state.js             The saved state: default shape, loading, saving, repairing old data
 js/sample.js            Example data for the first launch
-js/config.js            Accounts and built-in categories
-js/money.js             Formatting and parsing amounts, USD/LL conversion
-js/ledger.js            Balances, spending totals and budget progress
-js/advances.js          Money paid for others and its paybacks
+js/config.js            The accounts and categories a new user starts with
+js/core/                The money logic as pure functions that take the state as an argument, shared with the scouts app
+js/accounts.js          Frata's accounts, bound to its saved state (wrapper around js/core/accounts.js)
+js/money.js             Frata's money helpers, bound to its rate and settings (wrapper around js/core/money.js)
+js/ledger.js            Frata's balances, totals and budget progress (wrapper around js/core/ledger.js)
+js/advances.js          Money paid for others and its paybacks (wrapper around js/core/advances.js)
 js/templates.js         Quick add (frequent and recent entries)
 js/theme.js             Accent colour palette and light/dark theme
 js/changelog.js         Release notes for "What's new"
 js/backup.js            Export and import, saving generated files
+js/feedback.js          The email feedback link (js/sheets/feedback.js shows it)
 js/handoff.js           Moving data to frata.cc in a link, and reading it on arrival
 js/report/              Monthly report: the data (monthly.js) and a small .xlsx writer (xlsx.js)
 js/pwa.js               Install tip and service worker registration
 js/util.js, icons.js    Small helpers and SVG icons
-js/ui/                  Rendering the current view, shared row/budget HTML, toast, UI state
+js/ui/                  Rendering the current view, shared row/budget HTML, toast, UI state, swipes
 js/views/               Home, History, Budgets and Settings
 js/sheets/              Bottom sheets: entry, payback, budget, "What's new"
 sw.js                   Service worker: offline-first, all-or-nothing updates
+scouts/                 Frata Scouts, a separate installable app for a scout group's funds (see below)
+scouts-worker.js        Tiny Worker for scouts.frata.cc: sends its front page to /scouts/
+wrangler.scouts.jsonc   Cloudflare deploy for scouts.frata.cc
+unit/                   Unit tests for js/core/ and the scouts data (`npm run test:unit`)
 wrangler.jsonc          Cloudflare deploy for frata.cc; .assetsignore lists the files it publishes
-manifest.webmanifest    Name, colours and icons for installing
-icons/                  App, maskable, Apple touch and favicon icons
+manifest.webmanifest    Name, colours and icons for installing (manifest-<colour> copies for each preset colour)
+icons/                  App, maskable, Apple touch and favicon icons; icons/<colour>/ for each preset colour
 scripts/                `npm run stamp` and the BUILD fingerprint; `npm run icons` and the icon's source, icon.svg
 tests/                  Playwright tests, and server.mjs, a test server that can be slow or publish a fake release
 ```
+
+## Frata Scouts
+
+`scouts/` is a second app for tracking a scout group's money: funds (cash box, bank), expenses, income, moves and exchanges in USD and LL, camps (Camp HP, Noël, Pâques, été…), each with its own account, budget, attendees and cotisation: who has paid, who has paid part and who still owes, recorded with one tap. Finishing a camp moves what is left in its account back to the caisse. Home has a tab for the caisse (entries outside every camp) and one for each open camp. Expenses and income can carry a receipt photo (camera or gallery), shrunk to a few hundred KB and kept on the phone in IndexedDB, apart from the entries; backups include the photos. Every section (totals, attending, budget, where the money went, entries, settings…) folds down to its heading and a one-line summary, and stays as you left it. The unité's name is set once in Settings; the screens are in English with the unité's own words (unité, cotisation, caisse). It is installed and updated on its own (its own `scouts/sw.js`, manifest and cache) and keeps its data under its own key, `frata-scouts.v1`, so it never touches the personal app's data. It shares the money logic in `js/core/`, the styles, the fonts and a few UI helpers with Frata, and follows the same rules: no framework, no build step, no network calls.
+
+Open it at `/scouts/` (`npm start`, then http://127.0.0.1:8765/scouts/). Leader reimbursements, a spreadsheet export and Google Sheets sync are planned next.
 
 ## Publishing updates
 
@@ -108,3 +131,24 @@ For each release that users will notice:
 2. Run `npm run stamp` before committing. It writes a fingerprint of all the app's files into `BUILD` in `sw.js`, which is how phones notice there's something new.
 
 If you add a new file, also add it to the `APP` list in `sw.js`. `npm test` fails if a file is missing from the list or if `BUILD` is out of date, so CI catches both.
+
+## Frata Plus unlock codes
+
+Plus is unlocked with a code, checked on the phone with no server: each code is signed with a private key
+that only the maker keeps, and the app carries just the public key (`UNLOCK_KEY` in `js/config.js`), which
+can check a code but not make one. While `UNLOCK_KEY` is `null`, Plus isn't offered and its features are open.
+
+```bash
+npm run plus:setup
+```
+
+Run once, on your own computer: it saves the private key in `~/frata-keys` (outside the repo), puts the public
+key in `UNLOCK_KEY`, stamps the service workers and checks a test code. Run again, it reuses the same key.
+Then for each buyer:
+
+```bash
+node scripts/unlock-codes.mjs code ~/frata-keys/frata-plus.private.jwk "Buyer's name"
+```
+
+The code is kept with the person's data, so backups and moving phones keep Plus. As the app's code is public,
+this keeps honest people honest: a code can be shared, but not forged.

@@ -1,12 +1,26 @@
-/* Fixed accounts and the built-in categories. */
+/* The accounts and categories a new user starts with. */
 
-export const ACCOUNTS = [
+/* Where feedback and bug reports go (Settings → Feedback & bugs). */
+export const CONTACT = { email: 'support@frata.cc' };
+
+/* Whish payment link for "Buy me a coffee" (Settings → Support Frata): the person picks the amount in
+   Whish. It's the link inside the maker's Whish QR code. */
+export const SUPPORT_URL = 'https://whish.money/app/pay/ynLO2j39h';
+
+/* Frata Plus: the public half of the key that signs unlock codes (scripts/unlock-codes.mjs makes the pair).
+   It can check a code but never make one, so it's safe to publish. While it's null, Plus isn't offered and
+   its features are open to everyone. npm run plus:setup fills it in. */
+export const UNLOCK_KEY = null;
+
+/* Frata's code is public, so anyone can check what it does with their data (Settings, at the bottom). */
+export const REPO_URL = 'https://github.com/UnnamedH/qirsh';
+
+/* People can rename these, add more and remove all but the first (see js/accounts.js). */
+export const DEFAULT_ACCOUNTS = [
   { id: 'wallet', name: 'Wallet' },
-  { id: 'savings', name: 'Savings' },
+  { id: 'savings', name: 'Savings', savings: true },
   { id: 'whish', name: 'Whish' },
 ];
-
-export const accName = (id) => (ACCOUNTS.find((a) => a.id === id) || { name: id }).name;
 
 export const DEFAULT_CATS = [
   ['food', 'Food', 'expense', '🍽️'],

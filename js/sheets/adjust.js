@@ -1,5 +1,6 @@
 /* Sheet for correcting an account's balance to what it really holds, e.g. after missed entries. */
-import { ACCOUNTS, accName } from '../config.js';
+import { accName } from '../accounts.js';
+import { accountOptions } from './entry.js';
 import { ICON } from '../icons.js';
 import { balances, catName } from '../ledger.js';
 import { fmt, parseInput, toInput } from '../money.js';
@@ -98,8 +99,7 @@ function viewSheet(f) {
     '<strong>' +
     fmt(t.amount, t.currency, { sign: true }) +
     '</strong>. It changed the balance only and isn’t counted as spending or income.</p>' +
-    (t.note ? '<p class="note">' + esc(t.note) + '</p>' : '') +
-    '<p class="note">Deleting it puts the balance back to what it was.</p>';
+    (t.note ? '<p class="note">' + esc(t.note) + '</p>' : '');
   h +=
     '<div class="sheet-actions"><button class="btn danger' +
     (armed === 'adjust' ? ' armed' : '') +
@@ -118,13 +118,8 @@ export function adjustSheet() {
     ICON.close +
     '</button></div>';
   h +=
-    '<p class="note">Missed some entries? Enter what the account actually holds now, and Frata records the difference.</p>';
-  h +=
     '<label class="field"><span>Account</span><select id="a-acct">' +
-    ACCOUNTS.map(
-      (a) =>
-        '<option value="' + a.id + '"' + (f.account === a.id ? ' selected' : '') + '>' + a.name + '</option>',
-    ).join('') +
+    accountOptions(f.account) +
     '</select></label>';
   h +=
     '<div class="grid2">' +
@@ -165,12 +160,6 @@ export function adjustSheet() {
       )
       .join('') +
     '</div>';
-  h +=
-    '<p class="note">' +
-    (f.count
-      ? 'Missing money is added as an expense, and extra money as income, so your totals and budgets include it.'
-      : 'Only the balance changes. Spending, income and budgets stay as they are.') +
-    '</p>';
   if (f.count)
     h +=
       '<div id="a-exp" hidden><span class="sub-label">Count missing money as</span>' +

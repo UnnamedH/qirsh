@@ -10,23 +10,34 @@
  * then offers to reload. Run `npm run stamp` after changing app files; tests/precache.spec.js
  * fails if BUILD is out of date or a file is missing from APP.
  */
-const BUILD = '754a2e964ed2';
+const BUILD = '0b1958eed771';
 const CACHE = 'qirsh-' + BUILD;
 const APP = [
   './',
   'index.html',
   'manifest.webmanifest',
   'css/styles.css',
+  'js/accounts.js',
   'js/advances.js',
   'js/backup.js',
   'js/changelog.js',
   'js/config.js',
+  'js/core/accounts.js',
+  'js/core/advances.js',
+  'js/core/events.js',
+  'js/core/fees.js',
+  'js/core/ledger.js',
+  'js/core/money.js',
+  'js/core/plus.js',
+  'js/core/types.js',
   'js/events.js',
+  'js/feedback.js',
   'js/handoff.js',
   'js/icons.js',
   'js/ledger.js',
   'js/main.js',
   'js/money.js',
+  'js/plus.js',
   'js/pwa.js',
   'js/report/monthly.js',
   'js/report/xlsx.js',
@@ -35,15 +46,19 @@ const APP = [
   'js/sheets/budget.js',
   'js/sheets/demo.js',
   'js/sheets/entry.js',
+  'js/sheets/feedback.js',
   'js/sheets/news.js',
   'js/sheets/payback.js',
   'js/sheets/sheet.js',
+  'js/sheets/plus.js',
+  'js/sheets/support.js',
   'js/state.js',
   'js/templates.js',
   'js/theme.js',
   'js/ui/amount.js',
   'js/ui/format.js',
   'js/ui/render.js',
+  'js/ui/swipe.js',
   'js/ui/toast.js',
   'js/ui/ui-state.js',
   'js/util.js',
@@ -93,6 +108,9 @@ self.addEventListener('activate', (e) => {
 self.addEventListener('fetch', (e) => {
   const req = e.request;
   if (req.method !== 'GET' || new URL(req.url).origin !== location.origin) return;
+  // The scouts app (scouts/) shares this address but is a separate app with its own worker and cache.
+  // This worker's scope covers it, so without this a visitor with Frata installed would be shown Frata.
+  if (new URL(req.url).pathname.startsWith(new URL('scouts/', location).pathname)) return;
   // Every page load is answered with the stored app page; everything else with its stored copy.
   // Only a file that is not stored (which should not happen) goes to the network.
   // The page is stored as './', not 'index.html': some hosts (Cloudflare) redirect index.html to the

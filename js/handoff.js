@@ -79,3 +79,29 @@ export function checkMove() {
     render();
   });
 }
+
+/* ---------- the old address ---------- */
+
+const SNOOZE_KEY = 'qirsh.moveSnooze';
+
+/* The old GitHub Pages address, which keeps working until everyone has moved. Tests set
+   `window.__frataOldAddress` to stand in for it. */
+export const onOldAddress = () =>
+  window.__frataOldAddress === true || /\.github\.io$/.test(location.hostname);
+
+/** True when the banner asking to move should show: on the old address, unless put off for today. */
+export function moveDue(now = Date.now()) {
+  if (!onOldAddress()) return false;
+  try {
+    return !(+localStorage.getItem(SNOOZE_KEY) > now);
+  } catch (e) {
+    return true;
+  }
+}
+
+/** "Later": asks again tomorrow. */
+export function snoozeMove(now = Date.now()) {
+  try {
+    localStorage.setItem(SNOOZE_KEY, String(now + 864e5));
+  } catch (e) {}
+}

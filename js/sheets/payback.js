@@ -152,7 +152,6 @@ export function repaySheet() {
     '" placeholder="Optional"></label><label class="field"><span>Date</span><input id="f-date" type="date" value="' +
     esc(f.date) +
     '"></label></div>';
-  h += '<p class="note">Goes back into your wallet. It isn’t counted as income.</p>';
   h +=
     '<p class="form-error" id="f-err" hidden></p><div class="sheet-actions">' +
     (f.mode === 'edit'

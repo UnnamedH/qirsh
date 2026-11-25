@@ -7,6 +7,10 @@ export const hist = {
   month: new Date(new Date().getFullYear(), new Date().getMonth(), 1),
   filter: 'all',
   q: '',
+  // Set when an account is tapped on Home: History then shows only that account's entries.
+  account: null,
+  // 'list' of entries, or 'chart' of the month's spending by category.
+  mode: 'list',
 };
 
 export let pendingImport = null,

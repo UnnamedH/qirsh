@@ -11,11 +11,21 @@ import {
 } from './backup.js';
 import { csvName, monthlyCsv, monthlyWorkbook, reportName } from './report/monthly.js';
 import { CHANGELOG } from './changelog.js';
-import { checkMove } from './handoff.js';
-import { ACCOUNTS, accName } from './config.js';
-import { catName, catOf } from './ledger.js';
-import { other, parseAmt, parseInput, toInput } from './money.js';
-import { HINT_KEY } from './pwa.js';
+import { feedbackTipSeen } from './feedback.js';
+import { FRATA_URL, checkMove, moveLink, snoozeMove } from './handoff.js';
+import {
+  MAIN,
+  accName,
+  addAccount,
+  otherAccount,
+  removeAccount,
+  renameAccount,
+  restoreAccount,
+  setSavings,
+} from './accounts.js';
+import { balances, budgetCats, catName, catOf } from './ledger.js';
+import { fmt, other, parseAmt, parseInput, toInput } from './money.js';
+import { dismissSafariTip } from './pwa.js';
 import {
   adjustForm,
   adjustView,
@@ -25,7 +35,8 @@ import {
   setAdjustAccount,
   updateAdjustPreview,
 } from './sheets/adjust.js';
-import { readBudget, saveBudget } from './sheets/budget.js';
+import { readBudget, saveBudget, toggleBudgetCat } from './sheets/budget.js';
+import { tryUnlock } from './plus.js';
 import {
   autoTo,
   defaultAdjCur,
@@ -39,13 +50,23 @@ import {
 import { markPriceTipDone } from './sheets/demo.js';
 import { setNewsList } from './sheets/news.js';
 import { afterRepay, repayForm, saveRepay } from './sheets/payback.js';
-import { closeSheet, drawSheet, form, openSheet, setForm, sheetKind } from './sheets/sheet.js';
-import { KEY, blankState, discardRescued, save, setState, state, syncFromStorage } from './state.js';
+import { closeSheet, drawSheet, focusSoon, form, openSheet, setForm, sheetKind } from './sheets/sheet.js';
+import {
+  KEY,
+  blankState,
+  discardRescued,
+  normalize,
+  save,
+  setState,
+  state,
+  syncFromStorage,
+} from './state.js';
 import { cloneForToday, templates } from './templates.js';
 import { DEFAULT_ACCENT, applyTheme, hexRgb } from './theme.js';
 import { amountText, txTitle } from './ui/format.js';
 import { fitThousands } from './ui/amount.js';
 import { commit, render } from './ui/render.js';
+import { swipeEnd, swipeMove, swipeStart } from './ui/swipe.js';
 import { setUndoFn, toast, undoFn } from './ui/toast.js';
 import {
   armed,
@@ -65,6 +86,15 @@ import { isSampleBudget, isSampleTx } from './sample.js';
 import { $, firstGlyph, uid, ymd } from './util.js';
 import { historyList, historyTxs } from './views/history.js';
 
+/* Shows a tab, from the tab bar or at the end of a swipe. */
+function goTab(v) {
+  hist.account = null;
+  setView(v);
+  closeSheet();
+  render();
+  window.scrollTo(0, 0);
+}
+
 document.addEventListener('click', (e) => {
   const el = e.target.closest('[data-act]');
   if (!el) return;
@@ -79,18 +109,17 @@ document.addEventListener('click', (e) => {
     act !== 'rdel' &&
     act !== 'keepRest' &&
     act !== 'adel' &&
+    act !== 'accRemove' &&
     act !== 'discardRescued'
   )
     setArmed(null);
   switch (act) {
     case 'nav':
-      setView(v);
-      closeSheet();
-      render();
-      window.scrollTo(0, 0);
+      goTab(v);
       break;
     case 'new':
-      setForm(newTxForm(view === 'home' || view === 'history' ? 'expense' : 'expense'));
+      // On an account's page, a new entry starts in that account.
+      setForm(newTxForm('expense', view === 'history' && hist.account ? { account: hist.account } : {}));
       openSheet('tx');
       break;
     case 'close':
@@ -119,10 +148,12 @@ document.addEventListener('click', (e) => {
         rate: state.rate,
         settings: state.settings,
         categories: state.categories,
+        accounts: keptAccounts(),
         tx: own,
         budgets: state.budgets.filter((b) => !isSampleBudget(b)),
+        unlock: state.unlock,
       };
-      setState(Object.assign(blankState(), keep));
+      setState(normalize(Object.assign(blankState(), keep)));
       commit();
       toast(
         own.length
@@ -166,7 +197,7 @@ document.addEventListener('click', (e) => {
               pay: [{ cur: 'USD', v: '' }],
               toCurrency: 'LBP',
             })
-          : newTxForm('transfer', { from: 'wallet', to: 'savings' }),
+          : newTxForm('transfer', { from: MAIN, to: otherAccount(MAIN) }),
       );
       openSheet('tx');
       break;
@@ -174,9 +205,84 @@ document.addEventListener('click', (e) => {
       form.setRate = !form.setRate;
       updatePreview();
       break;
-    case 'transferTo':
-      setForm(newTxForm('transfer', { from: 'wallet', to: id }));
-      openSheet('tx');
+    case 'accView':
+      // An account's page is History showing only that account, with its balance and Correct balance.
+      setView('history');
+      hist.account = id;
+      hist.filter = 'all';
+      hist.month = new Date(new Date().getFullYear(), new Date().getMonth(), 1);
+      closeSheet();
+      render();
+      window.scrollTo(0, 0);
+      break;
+    case 'accAll':
+      hist.account = null;
+      setView('home');
+      render();
+      window.scrollTo(0, 0);
+      break;
+    case 'facct':
+      readForm();
+      form.account = v;
+      drawSheet();
+      break;
+    case 'fold':
+      // Folded sections are kept as true; open ones are simply left out.
+      if (state.settings.homeFold[v]) delete state.settings.homeFold[v];
+      else state.settings.homeFold[v] = true;
+      commit();
+      break;
+    case 'toggleAccs': {
+      const open = el.getAttribute('aria-expanded') === 'true';
+      state.settings.accountsOpen = !open;
+      commit();
+      break;
+    }
+    case 'accAdd': {
+      const id = addAccount('New account');
+      if (!id) {
+        toast('That’s as many accounts as Frata holds. Remove one to add another.');
+        break;
+      }
+      commit();
+      // Straight into naming it.
+      const n = $('[data-accname="' + id + '"]');
+      if (n) {
+        n.focus();
+        n.select();
+      }
+      break;
+    }
+    case 'accRemove': {
+      if (armed !== 'acc:' + v) {
+        setArmed('acc:' + v);
+        render();
+        break;
+      }
+      setArmed(null);
+      const prev = structuredClone(state),
+        name = accName(v),
+        left = balances()[v] || { USD: 0, LBP: 0 },
+        moved = ['USD', 'LBP']
+          .filter((c) => Math.round(left[c] * 100))
+          .map((c) => fmt(left[c], c))
+          .join(' and ');
+      removeAccount(v);
+      commit();
+      toast(name + ' removed' + (moved ? ' · ' + moved + ' moved to ' + accName(MAIN) : ''), () => {
+        setState(prev);
+        commit();
+        toast(name + ' is back.');
+      });
+      break;
+    }
+    case 'accRestore':
+      if (restoreAccount(v)) commit();
+      else toast('That’s as many accounts as Frata holds. Remove one first.');
+      break;
+    case 'toggleHide':
+      state.settings.hide = !state.settings.hide;
+      commit();
       break;
     case 'editTx': {
       const t = state.tx.find((x) => x.id === id);
@@ -209,7 +315,7 @@ document.addEventListener('click', (e) => {
         autoTo();
       } else if (v === 'transfer') {
         form.pay = form.pay.slice(0, 1);
-        if (form.from === form.to) form.to = form.from === 'wallet' ? 'savings' : 'wallet';
+        if (form.from === form.to) form.to = otherAccount(form.from);
         form.toCurrency = form.pay[0].cur;
         form.toTouched = false;
         autoTo();
@@ -249,10 +355,7 @@ document.addEventListener('click', (e) => {
       const cur = ls.length ? other(ls[0].cur) : form.pay.length > 1 ? 'LBP' : other(form.pay[0].cur);
       ls.push({ cur, v: '' });
       drawSheet();
-      setTimeout(() => {
-        const n = $('#f-' + k + (ls.length - 1));
-        if (n) n.focus();
-      }, 40);
+      focusSoon('#f-' + k + (ls.length - 1));
       break;
     }
     case 'lrm': {
@@ -265,20 +368,14 @@ document.addEventListener('click', (e) => {
       readForm();
       openPaid(form);
       drawSheet();
-      setTimeout(() => {
-        const n = $('#f-paid');
-        if (n) n.focus();
-      }, 40);
+      focusSoon('#f-paid');
       break;
     case 'adj2Add':
       readForm();
       form.adj2 = { cur: other(form.adj.cur), v: '' };
       form.adj.touched = false;
       drawSheet();
-      setTimeout(() => {
-        const n = $('#f-adj2');
-        if (n) n.focus();
-      }, 40);
+      focusSoon('#f-adj2');
       break;
     case 'adj2Rm':
       readForm();
@@ -469,7 +566,7 @@ document.addEventListener('click', (e) => {
       render();
       break;
     case 'newBudget':
-      setForm({ id: null, categoryId: null, period: 'month', amount: '', currency: 'USD' });
+      setForm({ id: null, categoryIds: [], period: 'month', amount: '', currency: 'USD' });
       openSheet('budget');
       break;
     case 'editBudget': {
@@ -477,7 +574,7 @@ document.addEventListener('click', (e) => {
       if (!b) break;
       setForm({
         id: b.id,
-        categoryId: b.categoryId,
+        categoryIds: [...budgetCats(b)],
         period: b.period,
         amount: toInput(b.amount, b.currency),
         currency: b.currency,
@@ -485,6 +582,16 @@ document.addEventListener('click', (e) => {
       openSheet('budget');
       break;
     }
+    case 'bcat':
+      readBudget();
+      toggleBudgetCat(v);
+      drawSheet();
+      break;
+    case 'bcatAll':
+      readBudget();
+      form.categoryIds = [];
+      drawSheet();
+      break;
     case 'bperiod':
       readBudget();
       form.period = v;
@@ -518,6 +625,10 @@ document.addEventListener('click', (e) => {
       break;
     case 'month':
       hist.month = new Date(hist.month.getFullYear(), hist.month.getMonth() + +v, 1);
+      render();
+      break;
+    case 'hmode':
+      hist.mode = v;
       render();
       break;
     case 'hfilter':
@@ -572,12 +683,40 @@ document.addEventListener('click', (e) => {
         if (t.categoryId === id) t.categoryId = to;
         if (t.keptCat === id) t.keptCat = to;
       });
-      state.budgets = state.budgets.filter((b) => b.categoryId !== id);
+      // A budget loses the deleted category; one left with none would become an overall cap, so it goes.
+      state.budgets = state.budgets.filter((b) => {
+        const ids = budgetCats(b);
+        if (!ids.includes(id)) return true;
+        b.categoryIds = ids.filter((x) => x !== id);
+        delete b.categoryId;
+        return b.categoryIds.length > 0;
+      });
       state.categories = state.categories.filter((x) => x.id !== id);
       commit();
       toast('Deleted ' + c.name);
       break;
     }
+    case 'plusOpen':
+      setForm({});
+      openSheet('plus');
+      break;
+    case 'plusUnlock':
+      unlockPlus();
+      break;
+    case 'supportOpen':
+      setForm({});
+      openSheet('support');
+      break;
+    case 'feedbackOpen':
+      feedbackTipSeen();
+      render();
+      setForm({});
+      openSheet('feedback');
+      break;
+    case 'feedbackTipDone':
+      feedbackTipSeen();
+      render();
+      break;
     case 'backupNow': {
       setView('settings');
       render();
@@ -613,10 +752,8 @@ document.addEventListener('click', (e) => {
       commit();
       toast('Price first is on. Tap + to try it.');
       break;
-    case 'hideInstallHint':
-      try {
-        localStorage.setItem(HINT_KEY, 'dismissed');
-      } catch (e) {}
+    case 'safariTipDone':
+      dismissSafariTip(v);
       render();
       break;
     case 'exportSave':
@@ -676,6 +813,13 @@ document.addEventListener('click', (e) => {
       replaceData(next, 'Your data is here: ' + next.tx.length + ' entries');
       break;
     }
+    case 'moveGo':
+      moveAway();
+      break;
+    case 'moveLater':
+      snoozeMove();
+      render();
+      break;
     case 'moveCancel':
       setPendingMove(null);
       render();
@@ -695,8 +839,14 @@ document.addEventListener('click', (e) => {
       {
         setArmed(null);
         const prev = state;
-        const keep = { rate: state.rate, settings: state.settings, categories: state.categories };
-        setState(Object.assign(blankState(), keep));
+        const keep = {
+          rate: state.rate,
+          settings: state.settings,
+          categories: state.categories,
+          accounts: keptAccounts(),
+          unlock: state.unlock,
+        };
+        setState(normalize(Object.assign(blankState(), keep)));
         commit();
         toast('All data cleared', () => {
           setState(prev);
@@ -707,6 +857,42 @@ document.addEventListener('click', (e) => {
       break;
   }
 });
+
+/* Checks the typed Frata Plus code on the phone and, if it's genuine, keeps it with the data. */
+async function unlockPlus() {
+  const field = $('#plus-code');
+  if (!field) return;
+  form.code = field.value;
+  const info = await tryUnlock(field.value);
+  if (sheetKind !== 'plus') return;
+  if (!info) {
+    const err = $('#plus-err');
+    err.textContent = field.value.trim()
+      ? 'That code doesn’t work. Check it was copied in full.'
+      : 'Paste the code you were sent.';
+    err.hidden = false;
+    return;
+  }
+  commit();
+  drawSheet();
+  toast('Frata Plus unlocked. Thank you!');
+}
+
+/* Starting over keeps the accounts in use, like the categories; removed ones go, as their entries do. */
+const keptAccounts = () => state.accounts.filter((a) => !a.hidden).map((a) => Object.assign({}, a));
+
+/* Opens frata.cc carrying this copy's data. Too much for a link: off to the backup instead. */
+async function moveAway() {
+  const empty = state.sample && !state.tx.some((t) => !isSampleTx(t));
+  const link = empty ? FRATA_URL : await moveLink(state);
+  if (!link) {
+    toast('Too much data for a link. Make a backup here and import it on frata.cc.');
+    setView('settings');
+    render();
+    return;
+  }
+  location.href = link;
+}
 
 /* Swaps in imported or moved data, with Undo to bring back what was there before. */
 function replaceData(next, message) {
@@ -783,7 +969,7 @@ document.addEventListener('change', (e) => {
   if (sheetKind === 'tx' && (t.id === 'f-from' || t.id === 'f-to')) {
     readForm();
     if (form.from === form.to) {
-      const pick = ACCOUNTS.find((a) => a.id !== t.value).id;
+      const pick = otherAccount(t.value);
       if (t.id === 'f-from') form.to = pick;
       else form.from = pick;
     }
@@ -815,6 +1001,21 @@ document.addEventListener('change', (e) => {
       setArmed('rate:' + r);
       render();
     } else setRate(r);
+  }
+  if (t.dataset.accname) {
+    // Saved without redrawing: the field already shows the new name, and a redraw while the person is
+    // tapping the next button (the field loses focus first) would swallow that tap.
+    if (renameAccount(t.dataset.accname, t.value)) save();
+    else {
+      render();
+      toast('An account needs a name.');
+    }
+    return;
+  }
+  if (t.dataset.accsave) {
+    setSavings(t.dataset.accsave, t.checked);
+    commit();
+    return;
   }
   if (t.dataset.open) {
     // An empty field means zero; anything else that isn't a number is refused, not saved as zero.
@@ -884,6 +1085,19 @@ function onReturn() {
 document.addEventListener('visibilitychange', onReturn);
 window.addEventListener('pageshow', onReturn);
 
+/* The phone switched between light and dark: the theme follows it, and so does the tab icon. */
+if (window.matchMedia) {
+  const dark = matchMedia('(prefers-color-scheme: dark)');
+  if (dark.addEventListener) dark.addEventListener('change', () => applyTheme());
+}
+
 /* A new version finished downloading in the background (see js/pwa.js). */
 window.addEventListener('qirsh:update-ready', () => render());
 window.addEventListener('hashchange', checkMove);
+
+/* Swipes: drag a sheet down to close it, swipe sideways between tabs (js/ui/swipe.js). The move
+   listener isn't passive, so a swipe can stop the page scrolling while it runs. */
+document.addEventListener('touchstart', swipeStart, { passive: true });
+document.addEventListener('touchmove', swipeMove, { passive: false });
+document.addEventListener('touchend', () => swipeEnd(goTab));
+document.addEventListener('touchcancel', () => swipeEnd(goTab));

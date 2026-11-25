@@ -45,6 +45,7 @@
   padding-bottom: env(safe-area-inset-bottom, 0px);
 }
 html {
+  overflow-x: clip;
   scroll-padding-top: env(safe-area-inset-top, 0px);
 }
 body {
@@ -68,6 +69,10 @@ img {
   --accent: #1d6a50;
   --accent-ink: #ffffff;
   --accent-soft: #e0eee8;
+  /* The logo's coins. The two greens follow a chosen accent (see palette in theme.js); the gold never changes. */
+  --coin-1: #2f6b4f;
+  --coin-2: #3e8562;
+  --coin-3: #c9a227;
   --warn: #a86d12;
   --bad: #b23f37;
   --bad-soft: #f7e3e1;
@@ -86,6 +91,9 @@ img {
     --accent: #55b892;
     --accent-ink: #06140f;
     --accent-soft: #16332a;
+    --coin-1: #5fa882;
+    --coin-2: #7fb59a;
+    --coin-3: #d9b23a;
     --warn: #e2a94b;
     --bad: #e57f76;
     --bad-soft: #3a1f1c;
@@ -102,6 +110,9 @@ img {
   --accent: #55b892;
   --accent-ink: #06140f;
   --accent-soft: #16332a;
+  --coin-1: #5fa882;
+  --coin-2: #7fb59a;
+  --coin-3: #d9b23a;
   --warn: #e2a94b;
   --bad: #e57f76;
   --bad-soft: #3a1f1c;
@@ -121,6 +132,12 @@ html {
   text-size-adjust: 100%;
 }
 body {
+  /* Every page is at least as tall as the screen (less the notch and home bar the root pads for), so a
+     short page fills it like a long one, and nothing depends on the page being scrollable. */
+  display: flex;
+  flex-direction: column;
+  min-height: calc(100vh - env(safe-area-inset-top, 0px) - env(safe-area-inset-bottom, 0px));
+  min-height: calc(100dvh - env(safe-area-inset-top, 0px) - env(safe-area-inset-bottom, 0px));
   background: var(--bg);
   color: var(--fg);
   font-family: var(--f-body);
@@ -212,9 +229,6 @@ h2 {
   gap: 2px;
   margin-right: 2px;
   flex: none;
-  --coin-1: #2f6b4f;
-  --coin-2: #3e8562;
-  --coin-3: #c9a227;
 }
 .coins i {
   display: block;
@@ -233,19 +247,6 @@ h2 {
   height: 7px;
   background: var(--coin-3);
 }
-/* A step lighter in dark mode, so the green doesn't sink into the background. */
-@media (prefers-color-scheme: dark) {
-  :root:not([data-theme='light']) .coins {
-    --coin-1: #5fa882;
-    --coin-2: #7fb59a;
-    --coin-3: #d9b23a;
-  }
-}
-:root[data-theme='dark'] .coins {
-  --coin-1: #5fa882;
-  --coin-2: #7fb59a;
-  --coin-3: #d9b23a;
-}
 /* Geist has no Arabic letters, so the phone's own Arabic font is used. */
 .brand-ar {
   font-size: 16px;
@@ -258,8 +259,46 @@ h2 {
   font-size: 13px;
   color: var(--muted);
 }
+.top-sub {
+  white-space: nowrap;
+  /* Never wider than the room left by the logo and buttons: as a last resort it ends in "…" rather
+     than pushing the header, and with it the whole page, wider than the screen. */
+  min-width: 0;
+  overflow: hidden;
+  text-overflow: ellipsis;
+}
+.top-end {
+  display: flex;
+  align-items: center;
+  min-width: 0;
+  /* The last icon's drawing ends flush with the page's right edge, like the cards below; the buttons'
+     own padding (9px each side of an icon) is pulled out. */
+  margin-right: -9.7px;
+}
+.top-end .icon-btn {
+  width: 34px;
+}
+.top-end .icon-btn svg {
+  width: 22px;
+  height: 22px;
+}
+/* The date and the two icons sit evenly: the same 18px from drawing to drawing. */
+.top-end .top-sub {
+  margin-right: 9.7px;
+}
 
+main {
+  flex: 1;
+}
+/* A page following a sideways swipe must not make the screen scroll sideways. The browser is also told
+   up front that pages only scroll up and down (pinch-zoom stays), so a sideways swipe goes straight to
+   the tab swipe in js/ui/swipe.js instead of the browser first trying to handle it. */
+main {
+  overflow-x: clip;
+  touch-action: pan-y pinch-zoom;
+}
 main .wrap {
+  position: relative;
   padding-block: 6px calc(130px + env(safe-area-inset-bottom, 0px));
   display: flex;
   flex-direction: column;
@@ -269,6 +308,12 @@ main .wrap {
   display: flex;
   flex-direction: column;
   gap: 26px;
+}
+/* The tab coming in next to the current one during a swipe (js/ui/swipe.js). */
+.view.paging {
+  position: absolute;
+  left: max(16px, env(safe-area-inset-left, 0px));
+  right: max(16px, env(safe-area-inset-right, 0px));
 }
 .sec {
   display: flex;
@@ -350,6 +395,234 @@ main .wrap {
   font-size: 12px;
   color: var(--muted);
 }
+/* Home sections fold down to their header and a tiny summary of what's inside (js/views/home.js). */
+.fold-title {
+  flex: 1;
+  min-width: 0;
+}
+.fold-head {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  width: 100%;
+  background: none;
+  border: 0;
+  padding: 0;
+  font: inherit;
+  color: inherit;
+  text-align: left;
+}
+.fold-head > svg {
+  width: 16px;
+  height: 16px;
+  color: var(--muted);
+  flex: none;
+  transition: transform 0.15s;
+}
+.fold-head[aria-expanded='true'] > svg {
+  transform: rotate(90deg);
+}
+.fold-sum {
+  margin-left: auto;
+  display: flex;
+  align-items: center;
+  gap: 4px;
+  min-width: 0;
+  font-size: 13px;
+  font-weight: 400;
+  color: var(--muted);
+}
+.fold-sum .glyph {
+  width: 20px;
+  height: 20px;
+  font-size: 11px;
+}
+.mini-stats {
+  display: flex;
+  gap: 10px;
+  font-variant-numeric: tabular-nums;
+}
+.mini-stats .in {
+  color: var(--accent);
+}
+/* Frata Plus: the card in History while it's locked, and the list of what it adds. */
+.plus-teaser h3 {
+  margin: 0 0 4px;
+  font-size: 16px;
+}
+.plus-list {
+  margin: 0 0 12px;
+  padding-left: 20px;
+  line-height: 1.5;
+}
+.plus-ok {
+  color: var(--accent);
+  font-weight: 600;
+}
+/* History → By category: the month's spending as a ring, biggest slice in the accent colour. The other
+   colours are mid-tones that read on both the light and dark backgrounds. */
+.pie-card {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  gap: 16px;
+}
+.pie {
+  position: relative;
+  width: min(220px, 70vw);
+  aspect-ratio: 1;
+}
+.pie svg {
+  width: 100%;
+  height: 100%;
+}
+.pie circle {
+  fill: none;
+  stroke-width: 6;
+}
+.pie-total {
+  position: absolute;
+  inset: 0;
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  justify-content: center;
+  gap: 2px;
+}
+.pie-total strong {
+  font-size: 20px;
+}
+.pie-legend {
+  width: 100%;
+  display: flex;
+  flex-direction: column;
+  gap: 8px;
+}
+.pie-row {
+  display: flex;
+  align-items: center;
+  gap: 10px;
+  font-size: 14.5px;
+}
+.pie-name {
+  flex: 1;
+  min-width: 0;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+.pie-pct {
+  width: 3.2em;
+  text-align: right;
+  color: var(--muted);
+  font-variant-numeric: tabular-nums;
+}
+.pie-dot {
+  width: 12px;
+  height: 12px;
+  border-radius: 50%;
+  flex: none;
+}
+.pie .pie-0 {
+  stroke: var(--accent);
+}
+.pie .pie-1 {
+  stroke: #d99a3c;
+}
+.pie .pie-2 {
+  stroke: #4f86e0;
+}
+.pie .pie-3 {
+  stroke: #d0607a;
+}
+.pie .pie-4 {
+  stroke: #8a76c8;
+}
+.pie .pie-5 {
+  stroke: #2fa39b;
+}
+.pie .pie-rest {
+  stroke: #98a0a8;
+}
+.pie-dot.pie-0 {
+  background: var(--accent);
+}
+.pie-dot.pie-1 {
+  background: #d99a3c;
+}
+.pie-dot.pie-2 {
+  background: #4f86e0;
+}
+.pie-dot.pie-3 {
+  background: #d0607a;
+}
+.pie-dot.pie-4 {
+  background: #8a76c8;
+}
+.pie-dot.pie-5 {
+  background: #2fa39b;
+}
+.pie-dot.pie-rest {
+  background: #98a0a8;
+}
+.ring {
+  width: 18px;
+  height: 18px;
+  transform: rotate(-90deg);
+}
+.ring circle {
+  fill: none;
+  stroke: var(--line);
+  stroke-width: 3;
+}
+.ring .fill {
+  stroke: var(--accent);
+  stroke-linecap: round;
+}
+.ring.warn .fill {
+  stroke: var(--warn);
+}
+.ring.over .fill {
+  stroke: var(--bad);
+}
+/* Accounts besides the main one, folded into one row on Home until opened. */
+.accs {
+  display: flex;
+  flex-direction: column;
+  gap: 10px;
+}
+.accs-head {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  background: none;
+  border: 0;
+  padding: 4px 0;
+  text-align: left;
+  color: inherit;
+}
+/* Quiet, like the label beside it: the tiles carry the amounts. */
+.accs-total {
+  margin-left: auto;
+  font-size: 12.5px;
+  color: var(--muted);
+  font-variant-numeric: tabular-nums;
+}
+.accs-head svg {
+  width: 16px;
+  height: 16px;
+  color: var(--muted);
+  transition: transform 0.15s;
+}
+.accs-head[aria-expanded='true'] svg {
+  transform: rotate(90deg);
+}
+.acc-name .label {
+  min-width: 0;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
 .accounts {
   display: grid;
   grid-template-columns: 1fr 1fr;
@@ -384,10 +657,89 @@ main .wrap {
   align-items: center;
   gap: 6px;
 }
-.acc-name .move {
-  font-size: 12.5px;
-  color: var(--accent);
-  font-weight: 600;
+.acc-name svg {
+  width: 16px;
+  height: 16px;
+  color: var(--muted);
+}
+.acc-open {
+  background: none;
+  border: 0;
+  padding: 6px 0;
+  display: inline-flex;
+  align-items: center;
+  gap: 4px;
+}
+.acc-open svg {
+  width: 14px;
+  height: 14px;
+}
+.balance-head {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  margin: -8px 0 -6px;
+}
+/* "Hide amounts": balances blurred, for showing the app to someone. */
+.priv {
+  transition: filter 0.15s;
+}
+.hide-amounts .priv {
+  filter: blur(9px);
+  user-select: none;
+}
+/* Settings → Accounts: a name to edit, a savings switch and Remove on each line. */
+.acct-row {
+  display: flex;
+  align-items: center;
+  gap: 10px;
+}
+.acct-row .input {
+  flex: 1;
+  min-width: 0;
+}
+.acct-save {
+  display: flex;
+  align-items: center;
+  gap: 4px;
+  font-size: 13.5px;
+  color: var(--muted);
+}
+.acct-save input {
+  accent-color: var(--accent);
+}
+.acct-main {
+  font-size: 13.5px;
+  padding: 0 6px;
+}
+/* Which account an entry is paid from or lands in. */
+.acct-pick {
+  display: flex;
+  align-items: center;
+  gap: 10px;
+  margin: 12px 0 4px;
+}
+.acct-pick .seg {
+  flex: 1;
+}
+/* History showing one account. */
+.acct-head {
+  display: flex;
+  align-items: center;
+  gap: 10px;
+  margin-bottom: 12px;
+}
+.acct-name {
+  flex: 1;
+  min-width: 0;
+}
+.acct-name h2 {
+  margin: 0;
+  font-size: 20px;
+}
+.acct-name p {
+  margin: 2px 0 0;
+  color: var(--muted);
 }
 
 /* segmented */
@@ -416,7 +768,19 @@ main .wrap {
   display: flex;
 }
 .seg.wide button {
-  flex: 1;
+  flex: 1 1 0;
+  min-width: 0;
+  padding-inline: 4px;
+  white-space: nowrap;
+  overflow: hidden;
+  text-overflow: ellipsis;
+}
+/* The narrowest phones: four tabs such as Expense / Income / Transfer / Exchange still read in full. */
+@media (max-width: 359px) {
+  .seg.wide button {
+    font-size: 12.5px;
+    padding-inline: 2px;
+  }
 }
 
 /* lists */
@@ -684,6 +1048,13 @@ button.row:first-child {
   font-weight: 550;
   font-size: 14.5px;
 }
+/* Links that look like buttons, such as the feedback links. */
+a.btn {
+  display: inline-flex;
+  align-items: center;
+  color: inherit;
+  text-decoration: none;
+}
 .btn.primary {
   background: var(--accent);
   border-color: var(--accent);
@@ -709,6 +1080,7 @@ button.row:first-child {
 .link {
   border: 0;
   background: none;
+  text-decoration: none;
   color: var(--accent);
   font-weight: 600;
   font-size: 14px;
@@ -737,6 +1109,18 @@ button.row:first-child {
   font-size: 16px;
   min-width: 0;
 }
+.field input[type='date'] {
+  /* Safari gives a date field a width of its own, wider than a half-width column; this lets it fit. */
+  -webkit-appearance: none;
+  appearance: none;
+  display: block;
+  max-width: 100%;
+  min-height: 44px;
+  text-align: left;
+}
+.field input[type='date']::-webkit-date-and-time-value {
+  text-align: left;
+}
 .field textarea {
   font-family: var(--f-num);
   font-size: 16px;
@@ -745,7 +1129,7 @@ button.row:first-child {
 }
 .grid2 {
   display: grid;
-  grid-template-columns: 1fr 1fr;
+  grid-template-columns: minmax(0, 1fr) minmax(0, 1fr);
   gap: 10px;
 }
 .card {
@@ -962,11 +1346,14 @@ button.row:first-child {
   width: 26px;
   height: 26px;
 }
+/* The tab bar is pinned to the bottom of the screen on every page. Its own layer keeps Safari from
+   moving it when the page is short or the browser's bars change. */
 .tabs {
   position: fixed;
   left: 0;
   right: 0;
   bottom: 0;
+  transform: translateZ(0);
   z-index: 24;
   background: var(--surface);
   border-top: 1px solid var(--line);
@@ -1002,6 +1389,8 @@ button.row:first-child {
   inset: 0;
   background: var(--scrim);
   z-index: 40;
+  /* Dragging the dimmed page behind a sheet moves nothing. */
+  touch-action: none;
 }
 .sheet {
   position: fixed;
@@ -1012,7 +1401,11 @@ button.row:first-child {
   width: 100%;
   max-width: 520px;
   max-height: 90vh;
-  overflow: auto;
+  max-height: 90dvh;
+  /* Up and down only: the sheet never moves sideways, however wide a field is in Safari. */
+  overflow-x: hidden;
+  overflow-y: auto;
+  touch-action: pan-y;
   background: var(--bg);
   border-radius: 20px 20px 0 0;
   padding: 8px max(16px, env(safe-area-inset-right, 0px)) calc(20px + env(safe-area-inset-bottom, 0px))
@@ -1021,6 +1414,8 @@ button.row:first-child {
   flex-direction: column;
   gap: 14px;
   animation: up 0.18s ease-out;
+  /* Pulling the sheet down mustn't scroll the page behind it or trigger pull-to-refresh. */
+  overscroll-behavior: contain;
 }
 @keyframes up {
   from {

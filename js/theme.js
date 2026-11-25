@@ -94,6 +94,9 @@ function palette(hex) {
       accent: hslCss(h, s, lightA),
       'accent-ink': '#FFFFFF',
       'accent-soft': hslCss(h, Math.min(s, 45), 92),
+      // The logo's two coloured coins, in the accent's hue. The gold coin stays gold.
+      'coin-1': hslCss(h, Math.min(s, 40), 30),
+      'coin-2': hslCss(h, Math.min(s, 36), 38),
       scrim: 'rgba(10,16,20,.38)',
     },
     dark: {
@@ -105,6 +108,8 @@ function palette(hex) {
       accent: hslCss(h, Math.min(s, 70), darkA),
       'accent-ink': hslCss(h, 50, 6),
       'accent-soft': hslCss(h, Math.min(s, 40), 16),
+      'coin-1': hslCss(h, Math.min(s, 32), 52),
+      'coin-2': hslCss(h, Math.min(s, 28), 60),
       scrim: 'rgba(0,0,0,.55)',
     },
   };
@@ -138,8 +143,110 @@ export function applyTheme() {
       ';color-scheme:dark}'
     : '';
   const bg = p ? { light: p.light.bg, dark: p.dark.bg } : BG_DEFAULT;
+  applyFavicon(p);
+  applyAppIcon(s.accent);
   document.querySelectorAll('meta[name="theme-color"]').forEach((m) => {
     const dark = /dark/.test(m.media || '');
     m.content = s.theme === 'light' ? bg.light : s.theme === 'dark' ? bg.dark : dark ? bg.dark : bg.light;
   });
+}
+
+/* ---------- favicon ---------- */
+
+const COIN_DEFAULT = { light: '#2F6B4F', dark: '#5FA882' };
+const GOLD = { light: '#C9A227', dark: '#D9B23A' };
+const FAVICON = 'icons/favicon.png';
+let faviconKey = null;
+
+/** True when the dark palette is showing: picked in Settings, or the phone is dark and the app follows it. */
+export const isDark = () =>
+  state.settings.theme === 'dark' ||
+  (state.settings.theme !== 'light' &&
+    !!window.matchMedia &&
+    matchMedia('(prefers-color-scheme: dark)').matches);
+
+/**
+ * The tab icon follows the accent and light/dark theme: the app's icon (scripts/icon.svg), drawn in the
+ * logo's first coin colour. The home-screen icon follows the preset colours only (see applyAppIcon).
+ */
+function applyFavicon(p) {
+  const mode = isDark() ? 'dark' : 'light';
+  const link = document.querySelector('link[rel="icon"]');
+  if (!link) return;
+  const bg = p ? p[mode]['coin-1'] : COIN_DEFAULT[mode];
+  const key = mode + bg;
+  if (key === faviconKey) return;
+  faviconKey = key;
+  // The built-in green in light mode is exactly the shipped file.
+  if (!p && mode === 'light') {
+    link.href = FAVICON;
+    return;
+  }
+  const url = drawIcon(64, bg, mode === 'dark' ? '#0E1311' : '#E6F0EA', GOLD[mode]);
+  if (url) link.href = url;
+}
+
+/* ---------- home-screen icon ---------- */
+
+/**
+ * The preset an accent has home-screen icons for, as the folder and manifest name ('amber'), or null for
+ * the default green and for custom colours, which use the original icons. `npm run icons` makes them.
+ */
+export function iconSet(accent) {
+  const a = (accent || DEFAULT_ACCENT).toUpperCase();
+  if (a === DEFAULT_ACCENT.toUpperCase()) return null;
+  const preset = ACCENTS.find(([c]) => c.toUpperCase() === a);
+  return preset ? preset[1].toLowerCase() : null;
+}
+
+/** The app icon's background for an accent: the logo's first coin, the same colour as the tab icon. */
+export const iconColour = (hex) => palette(hex).light['coin-1'];
+
+/**
+ * The home-screen icon is read from the manifest (Android) or the touch icon (iPhone) when the app is
+ * installed, so those links point at the chosen colour's files before that happens. An app installed
+ * earlier keeps its icon until the phone checks the manifest again, or until it's reinstalled.
+ */
+function applyAppIcon(accent) {
+  const set = iconSet(accent);
+  const want = {
+    manifest: set ? 'manifest-' + set + '.webmanifest' : 'manifest.webmanifest',
+    'apple-touch-icon': set ? 'icons/' + set + '/apple-touch-icon.png' : 'icons/apple-touch-icon.png',
+  };
+  for (const [rel, href] of Object.entries(want)) {
+    const link = document.querySelector('link[rel="' + rel + '"]');
+    if (link && link.getAttribute('href') !== href) link.setAttribute('href', href);
+  }
+}
+
+/** Draws the f-and-coin icon (same shapes as scripts/icon.svg, on a 120 grid) and returns a PNG data URL. */
+function drawIcon(size, bg, ink, gold) {
+  try {
+    const c = document.createElement('canvas');
+    c.width = c.height = size;
+    const x = c.getContext('2d');
+    x.scale(size / 120, size / 120);
+    x.fillStyle = bg;
+    x.beginPath();
+    if (x.roundRect) x.roundRect(0, 0, 120, 120, 28);
+    else x.rect(0, 0, 120, 120);
+    x.fill();
+    x.strokeStyle = ink;
+    x.lineWidth = 11;
+    x.lineCap = 'round';
+    x.beginPath();
+    x.moveTo(54, 92);
+    x.lineTo(54, 52);
+    x.quadraticCurveTo(54, 32, 76, 32);
+    x.moveTo(38, 58);
+    x.lineTo(70, 58);
+    x.stroke();
+    x.fillStyle = gold;
+    x.beginPath();
+    x.arc(84, 84, 11, 0, Math.PI * 2);
+    x.fill();
+    return c.toDataURL('image/png');
+  } catch (e) {
+    return null;
+  }
 }

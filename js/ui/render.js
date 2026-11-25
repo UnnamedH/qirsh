@@ -1,6 +1,8 @@
 /* Draws the current view. */
-import { updateReady } from '../pwa.js';
 import { backupDue } from '../backup.js';
+import { feedbackTipDue } from '../feedback.js';
+import { moveDue } from '../handoff.js';
+import { IOS, updateReady } from '../pwa.js';
 import { isSampleTx } from '../sample.js';
 import { rescuedData, save, saveConflict, saveFailed, state } from '../state.js';
 import { applyTheme } from '../theme.js';
@@ -14,6 +16,7 @@ import { renderSettings } from '../views/settings.js';
 
 export function render() {
   applyTheme();
+  document.documentElement.classList.toggle('hide-amounts', state.settings.hide);
   renderAlerts();
   ['home', 'history', 'budgets', 'settings'].forEach((v) => {
     $('#v-' + v).hidden = v !== view;
@@ -22,15 +25,26 @@ export function render() {
     if (b.dataset.v === view) b.setAttribute('aria-current', 'page');
     else b.removeAttribute('aria-current');
   });
-  $('#topSub').textContent = {
-    home: DAYS[new Date().getDay()] + ' ' + new Date().getDate() + ' ' + MONTHS[new Date().getMonth()],
-    history: 'History',
-    budgets: 'Budgets',
-    settings: 'Settings',
-  }[view];
-  ({ home: renderHome, history: renderHistory, budgets: renderBudgets, settings: renderSettings })[view]();
+  // On Home, the date. Narrower screens shorten the month, then drop the weekday, so it stays on one line
+  // beside the buttons whatever the date: "Wed 25 November" is a good deal wider than "Tue 1 May".
+  const now = new Date(),
+    month = MONTHS[now.getMonth()],
+    wide = (w) => !window.matchMedia || !matchMedia('(max-width: ' + w + 'px)').matches;
+  $('#topSub').textContent =
+    view === 'home'
+      ? (wide(339) ? DAYS[now.getDay()] + ' ' : '') +
+        now.getDate() +
+        ' ' +
+        (wide(389) ? month : month.slice(0, 3))
+      : { history: 'History', budgets: 'Budgets', settings: 'Settings' }[view];
+  drawView(view);
   updateNotesList();
-  fitAllThousands($('main'));
+}
+
+/** Draws one tab's content. A swipe also uses it to draw the tab coming in next to the current one. */
+export function drawView(v) {
+  ({ home: renderHome, history: renderHistory, budgets: renderBudgets, settings: renderSettings })[v]();
+  fitAllThousands($('#v-' + v));
 }
 
 /* Warnings shown above every view while there is a problem with saved data. */
@@ -45,6 +59,7 @@ function renderAlerts() {
       '<div class="banner bad" role="alert"><p><strong>Your last change wasn’t saved.</strong> Frata was changed in another tab or window, and this one has now caught up. Please make the change again.</p></div>',
     );
   if (pendingMove) alerts.push(moveAlert(pendingMove));
+  if (moveDue()) alerts.push(leaveAlert());
   if (rescuedData() && view !== 'settings')
     alerts.push(
       '<div class="banner bad" role="alert"><p>Your saved data couldn’t be read, so Frata started empty. A copy was kept on this device.</p><button class="btn sm" data-act="nav" data-v="settings">Open Backup</button></div>',
@@ -56,6 +71,11 @@ function renderAlerts() {
           ? 'It’s been over a month since your last backup.'
           : 'You haven’t made a backup yet.') +
         ' Your entries live only on this phone.</p><button class="btn sm primary" data-act="backupNow">Back up</button><button class="btn sm" data-act="backupLater">Later</button></div>',
+    );
+  // One nudge at a time: the backup reminder matters more.
+  else if (view === 'home' && feedbackTipDue())
+    alerts.push(
+      '<div class="banner"><p><strong>New:</strong> suggest ideas and report bugs with the chat button at the top.</p><button class="btn sm primary" data-act="feedbackOpen">Send feedback</button><button class="btn sm" data-act="feedbackTipDone">Got it</button></div>',
     );
   if (updateReady)
     alerts.push(
@@ -87,6 +107,31 @@ function moveAlert(m) {
     '. ' +
     here +
     '</p><div class="btn-row"><button class="btn primary sm" data-act="moveConfirm">Use this data</button><button class="btn sm" data-act="moveCancel">Not now</button></div></div>'
+  );
+}
+
+/* On the old address: asks people to take their data to frata.cc. */
+function leaveAlert() {
+  const empty = state.sample && !state.tx.some((t) => !isSampleTx(t));
+  let p, btn;
+  if (empty) {
+    p = ' Open it there from now on.';
+    btn = '<button class="btn primary sm" data-act="moveGo">Open frata.cc</button>';
+  } else if (IOS) {
+    // On iPhone the Home Screen app and Safari keep separate data, so a link can land in the wrong one.
+    p =
+      ' To take your data along, make a backup here, then add frata.cc to your Home Screen and import the backup in its Settings.';
+    btn = '<button class="btn primary sm" data-act="backupNow">Back up</button>';
+  } else {
+    p = ' Move your data there in one tap, then use Frata from the new address.';
+    btn = '<button class="btn primary sm" data-act="moveGo">Move my data</button>';
+  }
+  return (
+    '<div class="banner" role="status" style="flex-direction:column;align-items:stretch"><p><strong>Frata has a new home: frata.cc.</strong>' +
+    p +
+    '</p><div class="btn-row">' +
+    btn +
+    '<button class="btn sm" data-act="moveLater">Later</button></div></div>'
   );
 }
 

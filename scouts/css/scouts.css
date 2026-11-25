@@ -1,0 +1,236 @@
+/* Frata Scouts: the same look as Frata (../css/styles.css) in a blue palette, plus the few things that
+   are different here. */
+:root {
+  --bg: #f3f5fa;
+  --fg: #141a26;
+  --muted: #5a6577;
+  --line: #dce1ec;
+  --accent: #2457c5;
+  --accent-ink: #ffffff;
+  --accent-soft: #e1e8f8;
+  --coin-1: #2457c5;
+  --coin-2: #4a79db;
+  --coin-3: #c9a227;
+}
+@media (prefers-color-scheme: dark) {
+  :root:not([data-theme='light']) {
+    --bg: #0e1118;
+    --surface: #161b25;
+    --fg: #e6eaf2;
+    --muted: #93a0b5;
+    --line: #252c3a;
+    --accent: #7da2f0;
+    --accent-ink: #0a1226;
+    --accent-soft: #1b2745;
+    --coin-1: #7da2f0;
+    --coin-2: #9db8f4;
+    --coin-3: #d9b23a;
+  }
+}
+:root[data-theme='dark'] {
+  --bg: #0e1118;
+  --surface: #161b25;
+  --fg: #e6eaf2;
+  --muted: #93a0b5;
+  --line: #252c3a;
+  --accent: #7da2f0;
+  --accent-ink: #0a1226;
+  --accent-soft: #1b2745;
+  --coin-1: #7da2f0;
+  --coin-2: #9db8f4;
+  --coin-3: #d9b23a;
+}
+
+.brand-sub {
+  font-weight: 500;
+  color: var(--accent);
+  margin-left: 2px;
+}
+
+.acc-row {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  padding: 6px 0;
+}
+.acc-row .input {
+  flex: 1;
+  min-width: 0;
+}
+.acc-row.gone .input {
+  text-decoration: line-through;
+  opacity: 0.6;
+}
+.open-pair {
+  display: inline-flex;
+  align-items: center;
+  gap: 6px;
+  flex-wrap: wrap;
+  justify-content: flex-end;
+}
+.open-pair > input.num {
+  width: 6.5em;
+}
+.foot {
+  text-align: center;
+  color: var(--muted);
+  font-size: 12.5px;
+  margin: 24px 0 8px;
+}
+
+/* Five tabs. */
+.tabs .wrap {
+  grid-template-columns: repeat(5, 1fr);
+}
+
+/* Who pays a fee: a tick list of members. */
+.who-head {
+  display: flex;
+  justify-content: space-between;
+  align-items: baseline;
+  gap: 12px;
+}
+.who-head .links {
+  margin-top: 0;
+}
+.who {
+  display: flex;
+  flex-direction: column;
+  /* The sheet is a flex column that scrolls as a whole. A list that scrolls on its own is allowed to shrink
+     in it, down to a sliver, so it is left to grow instead and the sheet scrolls past it. */
+  flex: none;
+  border: 1px solid var(--line);
+  border-radius: var(--r);
+  background: var(--surface);
+}
+.tick {
+  display: flex;
+  align-items: center;
+  gap: 10px;
+  padding: 10px 14px;
+  border-top: 1px solid var(--line);
+}
+.tick:first-child {
+  border-top: 0;
+}
+.tick input {
+  width: 18px;
+  height: 18px;
+  accent-color: var(--accent);
+  flex: none;
+}
+.tick em {
+  font-style: normal;
+  color: var(--muted);
+  font-size: 13px;
+}
+
+/* A member's status on a fee sits at the start of the line under their name. */
+.row-sub .pill {
+  font-size: 10px;
+  padding: 0 6px;
+  margin-right: 2px;
+  vertical-align: 1px;
+}
+
+/* Home's tabs: the caisse and each open camp. They scroll sideways when there are many camps. */
+.home-tabs {
+  display: flex;
+  gap: 6px;
+  overflow-x: auto;
+  scrollbar-width: none;
+  margin: 0 -2px 4px;
+  padding: 2px;
+}
+.home-tabs::-webkit-scrollbar {
+  display: none;
+}
+.home-tabs button {
+  flex: none;
+  border: 1px solid var(--line);
+  background: var(--surface);
+  color: var(--fg);
+  border-radius: 999px;
+  padding: 7px 14px;
+  font: inherit;
+  font-size: 14px;
+  font-weight: 550;
+  white-space: nowrap;
+}
+.home-tabs button[aria-pressed='true'] {
+  background: var(--accent);
+  border-color: var(--accent);
+  color: var(--accent-ink);
+}
+
+/* Save stays in reach at the bottom of a long form, such as an event with many members to tick. */
+.sheet .sheet-actions {
+  position: sticky;
+  bottom: calc(-20px - env(safe-area-inset-bottom, 0px));
+  background: var(--bg);
+  padding: 10px 0 calc(20px + env(safe-area-inset-bottom, 0px));
+  margin-bottom: calc(-20px - env(safe-area-inset-bottom, 0px));
+  z-index: 1;
+}
+
+/* Receipts: the button to add one, and the small picture once there is one. */
+.receipt-add {
+  align-self: flex-start;
+}
+.receipt {
+  display: flex;
+  gap: 12px;
+  align-items: center;
+}
+.receipt-thumb {
+  flex: none;
+  width: 76px;
+  height: 76px;
+  padding: 0;
+  border: 1px solid var(--line);
+  border-radius: 12px;
+  overflow: hidden;
+  background: var(--surface);
+}
+.receipt-thumb img {
+  width: 100%;
+  height: 100%;
+  object-fit: cover;
+  display: block;
+}
+.receipt-side {
+  display: flex;
+  flex-direction: column;
+  gap: 8px;
+  min-width: 0;
+}
+.clip {
+  flex: none;
+  font-size: 14px;
+  margin-right: 8px;
+}
+
+/* Full-screen view of a receipt: tap anywhere to close. */
+.viewer {
+  position: fixed;
+  inset: 0;
+  z-index: 60;
+  background: rgba(0, 0, 0, 0.92);
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  padding: env(safe-area-inset-top, 0px) 0 env(safe-area-inset-bottom, 0px);
+}
+.viewer img {
+  max-width: 100%;
+  max-height: 100%;
+  object-fit: contain;
+}
+.viewer-close {
+  position: absolute;
+  top: calc(10px + env(safe-area-inset-top, 0px));
+  right: 12px;
+  color: #fff;
+  font-size: 28px;
+  line-height: 1;
+}

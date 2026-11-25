@@ -1,0 +1,137 @@
+<!doctype html>
+<html lang="en">
+  <head>
+    <meta charset="utf-8" />
+    <!--
+      Content Security Policy: the browser refuses to load scripts, fonts or images from, or send any
+      request to, a site other than this one. Inline styles are allowed because the app sets colours
+      and widths with them; inline scripts are not.
+    -->
+    <meta
+      http-equiv="Content-Security-Policy"
+      content="default-src 'self'; script-src 'self'; style-src 'self' 'unsafe-inline'; font-src 'self'; img-src 'self' data:; connect-src 'self'; manifest-src 'self'; worker-src 'self'; object-src 'none'; base-uri 'none'; form-action 'none'"
+    />
+    <meta name="viewport" content="width=device-width,initial-scale=1,viewport-fit=cover" />
+    <title>Frata Scouts</title>
+    <meta
+      name="description"
+      content="Track a scout group's funds, events and expenses in dollars and lira."
+    />
+    <link rel="manifest" href="manifest.webmanifest" />
+    <link rel="icon" type="image/png" href="../icons/blue/icon-192.png" />
+    <link rel="apple-touch-icon" href="../icons/blue/apple-touch-icon.png" />
+    <meta name="theme-color" content="#F3F5FA" media="(prefers-color-scheme: light)" />
+    <meta name="theme-color" content="#0E1118" media="(prefers-color-scheme: dark)" />
+    <meta name="mobile-web-app-capable" content="yes" />
+    <meta name="apple-mobile-web-app-capable" content="yes" />
+    <meta name="apple-mobile-web-app-title" content="Frata Scouts" />
+    <meta name="apple-mobile-web-app-status-bar-style" content="black-translucent" />
+    <link rel="stylesheet" href="../css/styles.css" />
+    <link rel="stylesheet" href="css/scouts.css" />
+    <link rel="preload" href="../fonts/geist-latin.woff2" as="font" type="font/woff2" crossorigin />
+    <link rel="preload" href="../fonts/geist-mono-latin.woff2" as="font" type="font/woff2" crossorigin />
+  </head>
+  <body>
+    <header class="top">
+      <div class="wrap">
+        <h1 class="brand">frata<span class="brand-sub">scouts</span></h1>
+        <div class="top-end"><span class="top-sub" id="topSub"></span></div>
+      </div>
+    </header>
+
+    <main>
+      <div class="wrap">
+        <div id="alerts" hidden></div>
+        <section class="view" id="v-home"></section>
+        <section class="view" id="v-events" hidden></section>
+        <section class="view" id="v-members" hidden></section>
+        <section class="view" id="v-history" hidden></section>
+        <section class="view" id="v-settings" hidden></section>
+      </div>
+    </main>
+
+    <button class="fab" id="fab" data-act="new" aria-label="Add entry">
+      <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linecap="round">
+        <path d="M12 5v14M5 12h14" />
+      </svg>
+    </button>
+
+    <nav class="tabs" aria-label="Sections">
+      <div class="wrap">
+        <button data-act="nav" data-v="home" aria-current="page">
+          <svg
+            viewBox="0 0 24 24"
+            fill="none"
+            stroke="currentColor"
+            stroke-width="1.8"
+            stroke-linejoin="round"
+          >
+            <path d="M4 10.5 12 4l8 6.5V20h-5.5v-5h-5v5H4z" /></svg
+          >Home
+        </button>
+        <button data-act="nav" data-v="events">
+          <svg
+            viewBox="0 0 24 24"
+            fill="none"
+            stroke="currentColor"
+            stroke-width="1.8"
+            stroke-linejoin="round"
+          >
+            <path d="M12 4 3.5 19h17z" />
+            <path d="M12 12.5 9.5 19h5z" /></svg
+          >Events
+        </button>
+        <button data-act="nav" data-v="members">
+          <svg
+            viewBox="0 0 24 24"
+            fill="none"
+            stroke="currentColor"
+            stroke-width="1.8"
+            stroke-linecap="round"
+          >
+            <circle cx="9" cy="8.5" r="3.2" />
+            <path d="M3.5 19c.6-3.2 2.8-5 5.5-5s4.9 1.8 5.5 5" />
+            <circle cx="16.8" cy="9.5" r="2.5" />
+            <path d="M15.6 14.2c2.6-.2 4.4 1.4 4.9 4.3" /></svg
+          >Members
+        </button>
+        <button data-act="nav" data-v="history">
+          <svg
+            viewBox="0 0 24 24"
+            fill="none"
+            stroke="currentColor"
+            stroke-width="1.8"
+            stroke-linecap="round"
+          >
+            <path d="M8 6h12M8 12h12M8 18h12M4 6h.01M4 12h.01M4 18h.01" /></svg
+          >History
+        </button>
+        <button data-act="nav" data-v="settings">
+          <svg
+            viewBox="0 0 24 24"
+            fill="none"
+            stroke="currentColor"
+            stroke-width="1.8"
+            stroke-linecap="round"
+          >
+            <path d="M4 7h10M18 7h2M4 17h4M12 17h8" />
+            <circle cx="16" cy="7" r="2" />
+            <circle cx="10" cy="17" r="2" /></svg
+          >Settings
+        </button>
+      </div>
+    </nav>
+
+    <div class="scrim" id="scrim" data-act="close" hidden></div>
+    <div class="sheet" id="sheet" role="dialog" aria-modal="true" hidden></div>
+    <div class="toast" id="toast" role="status" hidden></div>
+    <input type="file" id="importFile" accept="application/json,.json" hidden />
+    <input type="file" id="receiptFile" accept="image/*" hidden />
+    <div class="viewer" id="viewer" data-act="viewerClose" role="dialog" aria-label="Receipt" hidden>
+      <img id="viewerImg" alt="Receipt" />
+      <button class="icon-btn viewer-close" data-act="viewerClose" aria-label="Close">×</button>
+    </div>
+
+    <script type="module" src="js/main.js"></script>
+  </body>
+</html>

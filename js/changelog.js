@@ -4,10 +4,61 @@ import { KEY } from './state.js';
 /* Newest first. Each release adds an entry here with the next v, then runs `npm run stamp` for sw.js. */
 export const CHANGELOG = [
   {
+    v: 19,
+    date: '2026-11-25',
+    items: [
+      'New: Frata Plus, paid once in Settings → Frata Plus. It adds a chart of where the month’s money went (History → By category) and budgets that cover several categories, like Food, Coffee and Groceries together.',
+      'Every expense in History shows what it cost, with what you paid and any change underneath, however you typed it in.',
+    ],
+  },
+  {
+    v: 18,
+    date: '2026-11-15',
+    items: ['Ideas or bugs? Tap the chat button at the top of any page to send them by email.'],
+  },
+  {
+    v: 17,
+    date: '2026-11-15',
+    items: [
+      'Tap a heading on Home, like Quick add or Budgets, to fold it away. Folded, it still shows a glimpse: your budgets as little rings, and the month’s spent, earned and net.',
+      'The app icon now matches the colour you pick in Settings → Appearance. Pick it before adding Frata to your Home Screen, or add it again to update the icon. Your own custom colour keeps the green icon.',
+    ],
+  },
+  {
+    v: 16,
+    date: '2026-11-15',
+    items: [
+      'Make the accounts your own in Settings → Accounts: rename them, add more, like a bank or another wallet, or remove ones you don’t use. Removing one moves what’s left in it to your Wallet, and its past entries keep its name.',
+      'Mark which accounts are savings, and the monthly report adds up what you set aside in all of them.',
+      'On Home, your other accounts fold into one row with their total. Tap it to open or close the list.',
+      'Found a bug or have an idea? Settings → Feedback & bugs opens an email to me.',
+    ],
+  },
+  {
+    v: 15,
+    date: '2026-11-14',
+    items: [
+      'Swipe left or right to move between Home, History, Budgets and Settings.',
+      'Pull a sheet, like a new entry, down to close it.',
+    ],
+  },
+  {
+    v: 14,
+    date: '2026-11-13',
+    items: [
+      'Tap the eye next to Wallet on Home to blur your balances, so you can show the app to someone without showing what you have. Tap it again to see them.',
+      'Spend from Savings or Whish, or put income straight into them: choose the account at the top of a new entry. Wallet is chosen unless you change it.',
+      'Tap Wallet, Savings or Whish on Home to see that account’s entries and balance. Correct balance is there too: it has moved from Settings.',
+      'Moving money between accounts is under + → Transfer. The extra Transfer button on Home is gone; Exchange stays.',
+    ],
+  },
+  {
     v: 13,
     date: '2026-11-12',
     items: [
       'Qirsh is now Frata (فراطة), Lebanese for small change. It has a new icon and a new look at the top of the app.',
+      'The coins at the top, and the icon in your browser tab, take on the accent colour you pick in Settings → Appearance, in light and dark.',
+      'Frata has a new home at frata.cc. On the old address, a banner moves your data there in one tap (on iPhone, with a backup file).',
       'Nothing else changes: your entries, settings and backups are all where they were. On iPhone, the Home Screen icon may keep the old look until you add the app again.',
     ],
   },
