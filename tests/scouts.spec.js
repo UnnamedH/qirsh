@@ -1,3 +1,4 @@
+import fs from 'node:fs';
 import { test, expect } from './helpers.js';
 
 /* Frata Scouts (scouts/). Each test serves it under its own prefix, /t/<id>/scouts/, so the test
@@ -882,4 +883,259 @@ test('Members, Events and Settings fold too, and a rate waiting for an answer st
   await expect(page.locator('[data-act=rateConfirm]')).toBeVisible();
   await page.click('[data-act=fold][data-v=setRate]');
   await expect(page.locator('[data-act=rateConfirm]')).toBeVisible();
+});
+
+/* ---------- receipts ---------- */
+
+/** A large, busy picture like a phone photo, as PNG bytes (made in the page, so no image files are needed). */
+const photo = (page, w = 4000, h = 3000) =>
+  page
+    .evaluate(
+      async ({ w, h }) => {
+        const c = document.createElement('canvas');
+        c.width = w;
+        c.height = h;
+        const g = c.getContext('2d');
+        g.fillStyle = '#f4efe2';
+        g.fillRect(0, 0, w, h);
+        // Lines of "print" and some noise, like a till receipt.
+        for (let i = 0; i < 4000; i++) {
+          g.fillStyle = `hsl(${(i * 47) % 360} 30% ${20 + (i % 50)}%)`;
+          g.fillRect((i * 97) % w, (i * 131) % h, 20 + (i % 180), 6 + (i % 14));
+        }
+        return c.toDataURL('image/png').split(',')[1];
+      },
+      { w, h },
+    )
+    .then((b64) => ({ name: 'receipt.png', mimeType: 'image/png', buffer: Buffer.from(b64, 'base64') }));
+
+/** The stored receipts, as { id: dataUrl }. */
+const stored = (page) => page.evaluate(() => window.__scouts.receipts.all());
+
+/** The size in bytes and the pixel size of a data: URL picture. */
+const measure = (page, url) =>
+  page.evaluate(async (u) => {
+    const img = new Image();
+    img.src = u;
+    await img.decode();
+    return {
+      bytes: Math.round((u.length - u.indexOf(',') - 1) * 0.75),
+      w: img.naturalWidth,
+      h: img.naturalHeight,
+    };
+  }, url);
+
+/** Opens the new-entry form, fills in an amount and attaches a photo. Leaves the form open. */
+async function startEntryWithReceipt(page, type = 'expense', amount = 12) {
+  await page.click(`.btn[data-act=new][data-v=${type}]`);
+  await page.fill('#f-amount', String(amount));
+  await page.setInputFiles('#receiptFile', await photo(page));
+  await expect(page.locator('#sheet .receipt-thumb img')).toBeVisible();
+}
+
+test('a receipt photo is shrunk, kept on the phone and linked to the entry', async ({ page }) => {
+  await openScouts(page);
+  await startEntryWithReceipt(page);
+  await page.click('#sheet [data-act=fsave]');
+  const t = (await st(page)).tx[0];
+  expect(t.receiptId).toBeTruthy();
+  const all = await stored(page);
+  expect(Object.keys(all)).toEqual([t.receiptId]);
+  // A 4000x3000 photo comes out as a JPEG of at most 1600 pixels and a few hundred KB.
+  expect(all[t.receiptId]).toMatch(/^data:image\/jpeg;base64,/);
+  const m = await measure(page, all[t.receiptId]);
+  expect(Math.max(m.w, m.h)).toBeLessThanOrEqual(1600);
+  expect(m.bytes).toBeLessThan(330 * 1024);
+  expect(m.w / m.h).toBeCloseTo(4 / 3, 1);
+  // The entry's row is marked, and the photo is not part of the saved entries.
+  await expect(page.locator('#v-home .clip')).toHaveCount(1);
+  expect(await page.evaluate(() => localStorage.getItem('frata-scouts.v1').length)).toBeLessThan(5000);
+});
+
+test('the receipt is still there after a reload, and can be viewed, replaced and removed', async ({
+  page,
+}) => {
+  await openScouts(page);
+  await startEntryWithReceipt(page, 'income', 30);
+  await page.click('#sheet [data-act=fsave]');
+  const first = (await st(page)).tx[0].receiptId;
+  await page.reload();
+  await page.waitForFunction(() => window.__scouts);
+  await page.click('#v-home [data-act=editTx]');
+  await expect(page.locator('#sheet .receipt-thumb img')).toBeVisible();
+  // Tapping the picture shows it in full, and a tap closes it.
+  await page.click('#sheet [data-act=receiptView]');
+  await expect(page.locator('#viewer')).toBeVisible();
+  await expect(page.locator('#viewerImg')).toHaveAttribute('src', /^data:image\/jpeg/);
+  await page.click('#viewer');
+  await expect(page.locator('#viewer')).toBeHidden();
+  // Replace it: the entry gets a new receipt.
+  await page.click('#sheet [data-act=receiptPick]');
+  await page.setInputFiles('#receiptFile', await photo(page, 1200, 900));
+  await expect.poll(async () => Object.keys(await stored(page)).length).toBe(2);
+  await page.click('#sheet [data-act=fsave]');
+  const second = (await st(page)).tx[0].receiptId;
+  expect(second).not.toBe(first);
+  // Remove it: the entry has none.
+  await page.click('#v-home [data-act=editTx]');
+  await page.click('#sheet [data-act=receiptRemove]');
+  await expect(page.locator('#sheet .receipt-add')).toBeVisible();
+  await page.click('#sheet [data-act=fsave]');
+  expect((await st(page)).tx[0].receiptId).toBeUndefined();
+  await expect(page.locator('#v-home .clip')).toHaveCount(0);
+});
+
+test('a receipt is for an expense or an income, not for a move between funds', async ({ page }) => {
+  await openScouts(page);
+  await page.click('.btn[data-act=new][data-v=expense]');
+  await expect(page.locator('#sheet .receipt-add')).toBeVisible();
+  await page.click('#sheet [data-act=ftype][data-v=income]');
+  await expect(page.locator('#sheet .receipt-add')).toBeVisible();
+  await page.click('#sheet [data-act=ftype][data-v=transfer]');
+  await expect(page.locator('#sheet .receipt-add')).toHaveCount(0);
+  await page.click('#sheet [data-act=ftype][data-v=exchange]');
+  await expect(page.locator('#sheet .receipt-add')).toHaveCount(0);
+});
+
+test('a picture that is not an image is refused, and nothing is saved', async ({ page }) => {
+  await openScouts(page);
+  await page.click('.btn[data-act=new][data-v=expense]');
+  await page.setInputFiles('#receiptFile', {
+    name: 'notes.png',
+    mimeType: 'image/png',
+    buffer: Buffer.from('not a picture'),
+  });
+  await expect(page.locator('#toast')).toContainText('Couldn’t add that picture');
+  await expect(page.locator('#sheet .receipt-add')).toBeVisible();
+  expect(await stored(page)).toEqual({});
+});
+
+test('showing receipts trips no Content Security Policy rule and contacts no other site', async ({
+  page,
+  baseURL,
+}) => {
+  const elsewhere = [];
+  page.on('request', (r) => {
+    const u = new URL(r.url());
+    if (['http:', 'https:'].includes(u.protocol) && u.origin !== new URL(baseURL).origin)
+      elsewhere.push(r.url());
+  });
+  await page.addInitScript(() => {
+    window.__csp = [];
+    document.addEventListener('securitypolicyviolation', (e) =>
+      window.__csp.push(e.violatedDirective + ' ' + e.blockedURI),
+    );
+  });
+  await openScouts(page);
+  await startEntryWithReceipt(page);
+  await page.click('#sheet [data-act=receiptView]');
+  await expect(page.locator('#viewer')).toBeVisible();
+  await page.click('#viewer');
+  await page.click('#sheet [data-act=fsave]');
+  expect(await page.evaluate(() => window.__csp)).toEqual([]);
+  expect(elsewhere).toEqual([]);
+});
+
+test('a backup holds the receipt photos, and restoring it brings them back', async ({ page }) => {
+  await openScouts(page);
+  await startEntryWithReceipt(page, 'expense', 12);
+  await page.click('#sheet [data-act=fsave]');
+  const id = (await st(page)).tx[0].receiptId;
+  await page.click('[data-act=nav][data-v=settings]');
+  const [download] = await Promise.all([page.waitForEvent('download'), page.click('[data-act=backupSave]')]);
+  const file = await download.path();
+  const backup = JSON.parse(fs.readFileSync(file, 'utf8'));
+  expect(Object.keys(backup.receipts)).toEqual([id]);
+  expect(backup.receipts[id]).toMatch(/^data:image\/jpeg;base64,/);
+  // Lose everything: the photos and the entries.
+  await page.evaluate(
+    () =>
+      new Promise((resolve) => {
+        const req = indexedDB.deleteDatabase('frata-scouts-receipts');
+        req.onsuccess = req.onerror = req.onblocked = () => resolve();
+      }),
+  );
+  await page.evaluate(() => localStorage.removeItem('frata-scouts.v1'));
+  await page.goto(page.url());
+  await page.waitForFunction(() => window.__scouts);
+  expect((await st(page)).tx).toEqual([]);
+  // Restore the file.
+  await page.click('[data-act=nav][data-v=settings]');
+  await page.setInputFiles('#importFile', file);
+  await expect(page.locator('#alerts')).toContainText('Replace everything here?');
+  await page.click('[data-act=importConfirm]');
+  expect((await st(page)).tx[0].receiptId).toBe(id);
+  await expect.poll(async () => Object.keys(await stored(page))).toEqual([id]);
+  await page.click('[data-act=nav][data-v=history]');
+  await page.click('#v-history [data-act=editTx]');
+  await expect(page.locator('#sheet .receipt-thumb img')).toBeVisible();
+});
+
+test('a backup file that is missing a photo restores the entry and says so', async ({ page }) => {
+  await openScouts(page);
+  await page.click('[data-act=nav][data-v=settings]');
+  await page.setInputFiles('#importFile', {
+    name: 'backup.json',
+    mimeType: 'application/json',
+    buffer: Buffer.from(
+      JSON.stringify({
+        app: 'frata-scouts',
+        tx: [
+          {
+            id: 'a',
+            type: 'expense',
+            date: '2026-03-01',
+            currency: 'USD',
+            amount: 9,
+            categoryId: 'food',
+            receiptId: 'gone',
+          },
+          {
+            id: 'b',
+            type: 'expense',
+            date: '2026-03-02',
+            currency: 'USD',
+            amount: 8,
+            categoryId: 'food',
+            receiptId: 'bad',
+          },
+        ],
+        // 'bad' is not a picture, and 'gone' is not in the file at all.
+        receipts: { bad: 'javascript:alert(1)' },
+      }),
+    ),
+  });
+  await page.click('[data-act=importConfirm]');
+  await expect(page.locator('#toast')).toContainText('2 receipts were missing');
+  expect((await st(page)).tx.map((t) => t.amount).sort()).toEqual([8, 9]);
+  expect(await stored(page)).toEqual({});
+  // The entry opens without a picture, offering to add one again.
+  await page.click('[data-act=nav][data-v=home]');
+  await page.locator('#v-home [data-act=editTx]').first().click();
+  await expect(page.locator('#sheet .receipt-thumb')).toHaveCount(0);
+  await expect(page.locator('#sheet .receipt-add')).toBeVisible();
+});
+
+test('photos nothing refers to are cleared after a day, never sooner', async ({ page }) => {
+  await openScouts(page);
+  // Two photos with no entry: one made just now (a form not yet saved, or a delete that can be undone), one old.
+  await page.evaluate(
+    () =>
+      new Promise((resolve, reject) => {
+        const req = indexedDB.open('frata-scouts-receipts', 1);
+        req.onsuccess = () => {
+          const tx = req.result.transaction('receipts', 'readwrite'),
+            url = 'data:image/png;base64,iVBORw0KGgo=';
+          tx.objectStore('receipts').put({ id: 'fresh', data: url, createdAt: Date.now() });
+          tx.objectStore('receipts').put({ id: 'old', data: url, createdAt: Date.now() - 2 * 864e5 });
+          tx.oncomplete = () => resolve();
+          tx.onerror = () => reject(tx.error);
+        };
+        req.onerror = () => reject(req.error);
+      }),
+  );
+  expect(Object.keys(await stored(page)).sort()).toEqual(['fresh', 'old']);
+  await page.reload();
+  await page.waitForFunction(() => window.__scouts);
+  await expect.poll(async () => Object.keys(await stored(page))).toEqual(['fresh']);
 });
