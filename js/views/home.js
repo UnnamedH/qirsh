@@ -2,7 +2,7 @@
 import { fmtAdv, owed } from '../advances.js';
 import { MAIN, accName, accounts } from '../accounts.js';
 import { ICON } from '../icons.js';
-import { balances, budgetName, budgetStatus, combinedUSD, range, sumIn } from '../ledger.js';
+import { balances, budgetCats, budgetName, budgetStatus, combinedUSD, range, sumIn } from '../ledger.js';
 import { dispCur, fmt, fmtDisp, fmtTotal } from '../money.js';
 import { safariTip } from '../pwa.js';
 import { priceTipBanner, showPriceTip } from '../sheets/demo.js';
@@ -25,10 +25,10 @@ export function renderHome() {
   const spent = sumIn(mr, 'expense', null, dispCur()),
     inc = sumIn(mr, 'income', null, dispCur());
   const overall =
-    state.budgets.find((x) => !x.categoryId && x.period === 'month') ||
-    state.budgets.find((x) => !x.categoryId);
+    state.budgets.find((x) => !budgetCats(x).length && x.period === 'month') ||
+    state.budgets.find((x) => !budgetCats(x).length);
   const watchAll = state.budgets
-    .filter((x) => x.categoryId)
+    .filter((x) => budgetCats(x).length)
     .map((x) => ({ b: x, s: budgetStatus(x) }))
     .sort((a, c) => c.s.pct - a.s.pct);
   const watch = watchAll.slice(0, 3);

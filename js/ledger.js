@@ -26,3 +26,9 @@ export const catOf = (id) => core.catOf(state, id);
 export const catName = (id) => core.catName(state, id);
 
 export const budgetName = (b) => core.budgetName(state, b);
+
+/** A range's spending by category, biggest first (see core). */
+export const spendByCategory = (r, cur, account) => core.spendByCategory(state, r, cur, account);
+
+/** The categories a budget covers; empty means all spending. */
+export const budgetCats = (b) => core.budgetCats(b);

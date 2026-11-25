@@ -1,6 +1,6 @@
 /* Sheet for adding and editing budgets. */
 import { ICON } from '../icons.js';
-import { budgetName } from '../ledger.js';
+import { budgetCats, budgetName } from '../ledger.js';
 import { parseInput } from '../money.js';
 import { amountField } from '../ui/amount.js';
 import { curToggle } from './entry.js';
@@ -20,21 +20,27 @@ export function budgetSheet() {
     '</h2><button class="icon-btn" data-act="close" aria-label="Close">' +
     ICON.close +
     '</button></div>';
+  // Any number of categories; none picked means all spending (an overall cap).
+  const picked = f.categoryIds || [];
   h +=
-    '<label class="field"><span>Applies to</span><select id="b-cat"><option value="">All spending (overall cap)</option>' +
+    '<div class="field"><span>Applies to</span><div class="chips" role="group" aria-label="Categories">' +
+    '<button class="chip" data-act="bcatAll" aria-pressed="' +
+    !picked.length +
+    '">All spending</button>' +
     cats
       .map(
         (c) =>
-          '<option value="' +
+          '<button class="chip" data-act="bcat" data-v="' +
           esc(c.id) +
-          '"' +
-          (f.categoryId === c.id ? ' selected' : '') +
-          '>' +
+          '" aria-pressed="' +
+          picked.includes(c.id) +
+          '">' +
+          (c.icon ? esc(c.icon) + ' ' : '') +
           esc(c.name) +
-          '</option>',
+          '</button>',
       )
       .join('') +
-    '</select></label>';
+    '</div></div>';
   h +=
     '<div class="field"><span>Resets every</span><div class="seg wide">' +
     [
@@ -74,11 +80,18 @@ export function budgetSheet() {
 }
 
 export function readBudget() {
-  const c = $('#b-cat'),
-    a = $('#b-amount');
-  if (c) form.categoryId = c.value || null;
+  const a = $('#b-amount');
   if (a) form.amount = a.value;
 }
+
+/** Picks or unpicks a category for the budget being edited. */
+export function toggleBudgetCat(id) {
+  const ids = form.categoryIds || [];
+  form.categoryIds = ids.includes(id) ? ids.filter((x) => x !== id) : [...ids, id];
+}
+
+/* Two budgets for the same categories and period would count the same spending twice. */
+const sameCats = (a, b) => a.length === b.length && a.every((id) => b.includes(id));
 
 export function saveBudget() {
   readBudget();
@@ -90,18 +103,23 @@ export function saveBudget() {
     err.hidden = false;
     return;
   }
+  const ids = f.categoryIds || [];
   const dup = state.budgets.find(
-    (b) => b.id !== f.id && (b.categoryId || null) === (f.categoryId || null) && b.period === f.period,
+    (b) => b.id !== f.id && sameCats(budgetCats(b), ids) && b.period === f.period,
   );
   if (dup) {
     err.textContent =
-      'A ' + f.period + 'ly budget for ' + budgetName(f) + ' already exists. Edit that one instead.';
+      'A ' +
+      f.period +
+      'ly budget for ' +
+      budgetName({ categoryIds: ids }) +
+      ' already exists. Edit that one instead.';
     err.hidden = false;
     return;
   }
   const b = {
     id: f.id || uid(),
-    categoryId: f.categoryId || null,
+    categoryIds: ids,
     period: f.period,
     amount: a,
     currency: f.currency,

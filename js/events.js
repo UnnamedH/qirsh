@@ -23,7 +23,7 @@ import {
   restoreAccount,
   setSavings,
 } from './accounts.js';
-import { balances, catName, catOf } from './ledger.js';
+import { balances, budgetCats, catName, catOf } from './ledger.js';
 import { fmt, other, parseAmt, parseInput, toInput } from './money.js';
 import { dismissSafariTip } from './pwa.js';
 import {
@@ -35,7 +35,7 @@ import {
   setAdjustAccount,
   updateAdjustPreview,
 } from './sheets/adjust.js';
-import { readBudget, saveBudget } from './sheets/budget.js';
+import { readBudget, saveBudget, toggleBudgetCat } from './sheets/budget.js';
 import {
   autoTo,
   defaultAdjCur,
@@ -564,7 +564,7 @@ document.addEventListener('click', (e) => {
       render();
       break;
     case 'newBudget':
-      setForm({ id: null, categoryId: null, period: 'month', amount: '', currency: 'USD' });
+      setForm({ id: null, categoryIds: [], period: 'month', amount: '', currency: 'USD' });
       openSheet('budget');
       break;
     case 'editBudget': {
@@ -572,7 +572,7 @@ document.addEventListener('click', (e) => {
       if (!b) break;
       setForm({
         id: b.id,
-        categoryId: b.categoryId,
+        categoryIds: [...budgetCats(b)],
         period: b.period,
         amount: toInput(b.amount, b.currency),
         currency: b.currency,
@@ -580,6 +580,16 @@ document.addEventListener('click', (e) => {
       openSheet('budget');
       break;
     }
+    case 'bcat':
+      readBudget();
+      toggleBudgetCat(v);
+      drawSheet();
+      break;
+    case 'bcatAll':
+      readBudget();
+      form.categoryIds = [];
+      drawSheet();
+      break;
     case 'bperiod':
       readBudget();
       form.period = v;
@@ -613,6 +623,10 @@ document.addEventListener('click', (e) => {
       break;
     case 'month':
       hist.month = new Date(hist.month.getFullYear(), hist.month.getMonth() + +v, 1);
+      render();
+      break;
+    case 'hmode':
+      hist.mode = v;
       render();
       break;
     case 'hfilter':
@@ -667,7 +681,14 @@ document.addEventListener('click', (e) => {
         if (t.categoryId === id) t.categoryId = to;
         if (t.keptCat === id) t.keptCat = to;
       });
-      state.budgets = state.budgets.filter((b) => b.categoryId !== id);
+      // A budget loses the deleted category; one left with none would become an overall cap, so it goes.
+      state.budgets = state.budgets.filter((b) => {
+        const ids = budgetCats(b);
+        if (!ids.includes(id)) return true;
+        b.categoryIds = ids.filter((x) => x !== id);
+        delete b.categoryId;
+        return b.categoryIds.length > 0;
+      });
       state.categories = state.categories.filter((x) => x.id !== id);
       commit();
       toast('Deleted ' + c.name);

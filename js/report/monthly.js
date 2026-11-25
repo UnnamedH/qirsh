@@ -5,7 +5,7 @@
  */
 import { owed, paybacksOf } from '../advances.js';
 import { accName, isSavings } from '../accounts.js';
-import { catName, inRange, sumIn, sumUSD } from '../ledger.js';
+import { budgetCats, budgetName, catName, inRange, sumIn, sumUSD } from '../ledger.js';
 import { backVec, other, toUSD, txCostUSD } from '../money.js';
 import { state } from '../state.js';
 import { txTitle } from '../ui/format.js';
@@ -104,9 +104,9 @@ export function monthlyData(month) {
       .map((b) => {
         // In the budget's own currency, each entry at its own rate, like the Budgets screen.
         const limit = +b.amount;
-        const spent = sumIn(r, 'expense', b.categoryId || null, b.currency);
+        const spent = sumIn(r, 'expense', budgetCats(b), b.currency);
         return {
-          name: b.categoryId ? catName(b.categoryId) : 'All spending',
+          name: budgetName(b),
           limit,
           spent,
           currency: b.currency,

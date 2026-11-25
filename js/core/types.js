@@ -5,7 +5,11 @@
 /** @typedef {{ id: string, name: string, hidden?: boolean, savings?: boolean }} Account */
 /** @typedef {{ id: string, name: string, type?: string, icon?: string }} Category */
 /** @typedef {{ start: Date, end: Date }} Range */
-/** @typedef {{ amount: number | string, currency: Cur, period: string, categoryId?: string | null }} Budget */
+/**
+ * A budget covers all spending (no categories) or the categories in `categoryIds`. `categoryId` is the
+ * older single-category form, still read so older data and the scouts app keep working.
+ * @typedef {{ amount: number | string, currency: Cur, period: string, categoryIds?: string[], categoryId?: string | null }} Budget
+ */
 /**
  * An entry, after normalize(). Only the fields the core reads are listed; apps may keep more.
  * @typedef {object} Tx

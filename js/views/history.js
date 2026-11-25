@@ -1,6 +1,6 @@
 /* History view. */
 import { ICON } from '../icons.js';
-import { balances, inRange, sumIn } from '../ledger.js';
+import { balances, catOf, inRange, spendByCategory, sumIn } from '../ledger.js';
 import { dispCur, entryValueIn, fmt, fmtTotal } from '../money.js';
 import { accName } from '../accounts.js';
 import { state } from '../state.js';
@@ -56,6 +56,29 @@ export function renderHistory() {
     h +=
       '<div class="btn-row"><button class="btn sm" data-act="reportXlsx">Monthly report (Excel)</button>' +
       '<button class="btn sm ghost" data-act="reportCsv">Entries (CSV)</button></div>';
+  h +=
+    '<div class="seg wide" role="tablist" aria-label="Show">' +
+    [
+      ['list', 'List'],
+      ['chart', 'By category'],
+    ]
+      .map(
+        ([k, l]) =>
+          '<button data-act="hmode" data-v="' +
+          k +
+          '" aria-pressed="' +
+          (hist.mode === k) +
+          '">' +
+          l +
+          '</button>',
+      )
+      .join('') +
+    '</div>';
+  if (hist.mode === 'chart') {
+    h += spendingChart(r, acc);
+    $('#v-history').innerHTML = h;
+    return;
+  }
   h +=
     '<div class="filters"><div class="seg">' +
     [
@@ -162,4 +185,65 @@ export function historyList(txs) {
   });
   flush();
   return h;
+}
+
+/* Slices beyond this many are added up as "Everything else", so the chart stays readable. */
+const SLICES = 6;
+
+/* The month's spending as a ring split by category, biggest first, with a legend. Each slice is a
+   circle drawn as a dash of its share of the ring (a circle of circumference 100), like the budget rings. */
+function spendingChart(r, acc) {
+  const cur = dispCur();
+  let parts = spendByCategory(r, cur, acc);
+  if (!parts.length) return '<div class="list"><p class="empty">No spending this month.</p></div>';
+  if (parts.length > SLICES + 1)
+    parts = parts
+      .slice(0, SLICES)
+      .concat([{ id: 'rest', total: parts.slice(SLICES).reduce((s, x) => s + x.total, 0) }]);
+  const total = parts.reduce((s, x) => s + x.total, 0);
+  const label = (id) => {
+    if (id === 'rest') return 'Everything else';
+    const c = id && catOf(id);
+    return c ? (c.icon ? c.icon + ' ' : '') + c.name : 'Uncategorised';
+  };
+  let at = 0;
+  const slices = parts
+    .map((x, i) => {
+      const share = (x.total / total) * 100;
+      const dash =
+        '<circle class="pie-' +
+        (x.id === 'rest' ? 'rest' : i) +
+        '" cx="21" cy="21" r="15.9155" stroke-dasharray="' +
+        share.toFixed(3) +
+        ' ' +
+        (100 - share).toFixed(3) +
+        '" stroke-dashoffset="' +
+        (25 - at).toFixed(3) +
+        '"/>';
+      at += share;
+      return dash;
+    })
+    .join('');
+  return (
+    '<div class="card pie-card"><div class="pie"><svg viewBox="0 0 42 42" role="img" aria-label="Spending by category">' +
+    slices +
+    '</svg><div class="pie-total"><span class="label">Spent</span><strong class="amt priv">' +
+    fmtTotal(total) +
+    '</strong></div></div><div class="pie-legend">' +
+    parts
+      .map(
+        (x, i) =>
+          '<div class="pie-row"><i class="pie-dot pie-' +
+          (x.id === 'rest' ? 'rest' : i) +
+          '"></i><span class="pie-name">' +
+          esc(label(x.id)) +
+          '</span><span class="amt priv">' +
+          fmtTotal(x.total) +
+          '</span><span class="pie-pct">' +
+          Math.round((x.total / total) * 100) +
+          '%</span></div>',
+      )
+      .join('') +
+    '</div></div>'
+  );
 }

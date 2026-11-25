@@ -25,13 +25,17 @@ export function render() {
     if (b.dataset.v === view) b.setAttribute('aria-current', 'page');
     else b.removeAttribute('aria-current');
   });
-  // On Home, the date; a narrow screen shortens the month so it stays on one line beside the buttons.
+  // On Home, the date. Narrower screens shorten the month, then drop the weekday, so it stays on one line
+  // beside the buttons whatever the date: "Wed 25 November" is a good deal wider than "Tue 1 May".
   const now = new Date(),
     month = MONTHS[now.getMonth()],
-    narrow = !!window.matchMedia && matchMedia('(max-width: 359px)').matches;
+    wide = (w) => !window.matchMedia || !matchMedia('(max-width: ' + w + 'px)').matches;
   $('#topSub').textContent =
     view === 'home'
-      ? DAYS[now.getDay()] + ' ' + now.getDate() + ' ' + (narrow ? month.slice(0, 3) : month)
+      ? (wide(339) ? DAYS[now.getDay()] + ' ' : '') +
+        now.getDate() +
+        ' ' +
+        (wide(389) ? month : month.slice(0, 3))
       : { history: 'History', budgets: 'Budgets', settings: 'Settings' }[view];
   drawView(view);
   updateNotesList();

@@ -261,10 +261,16 @@ h2 {
 }
 .top-sub {
   white-space: nowrap;
+  /* Never wider than the room left by the logo and buttons: as a last resort it ends in "…" rather
+     than pushing the header, and with it the whole page, wider than the screen. */
+  min-width: 0;
+  overflow: hidden;
+  text-overflow: ellipsis;
 }
 .top-end {
   display: flex;
   align-items: center;
+  min-width: 0;
   /* The last icon's drawing ends flush with the page's right edge, like the cards below; the buttons'
      own padding (9px each side of an icon) is pulled out. */
   margin-right: -9.7px;
@@ -438,6 +444,112 @@ main .wrap {
 }
 .mini-stats .in {
   color: var(--accent);
+}
+/* History → By category: the month's spending as a ring, biggest slice in the accent colour. The other
+   colours are mid-tones that read on both the light and dark backgrounds. */
+.pie-card {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  gap: 16px;
+}
+.pie {
+  position: relative;
+  width: min(220px, 70vw);
+  aspect-ratio: 1;
+}
+.pie svg {
+  width: 100%;
+  height: 100%;
+}
+.pie circle {
+  fill: none;
+  stroke-width: 6;
+}
+.pie-total {
+  position: absolute;
+  inset: 0;
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  justify-content: center;
+  gap: 2px;
+}
+.pie-total strong {
+  font-size: 20px;
+}
+.pie-legend {
+  width: 100%;
+  display: flex;
+  flex-direction: column;
+  gap: 8px;
+}
+.pie-row {
+  display: flex;
+  align-items: center;
+  gap: 10px;
+  font-size: 14.5px;
+}
+.pie-name {
+  flex: 1;
+  min-width: 0;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+.pie-pct {
+  width: 3.2em;
+  text-align: right;
+  color: var(--muted);
+  font-variant-numeric: tabular-nums;
+}
+.pie-dot {
+  width: 12px;
+  height: 12px;
+  border-radius: 50%;
+  flex: none;
+}
+.pie .pie-0 {
+  stroke: var(--accent);
+}
+.pie .pie-1 {
+  stroke: #d99a3c;
+}
+.pie .pie-2 {
+  stroke: #4f86e0;
+}
+.pie .pie-3 {
+  stroke: #d0607a;
+}
+.pie .pie-4 {
+  stroke: #8a76c8;
+}
+.pie .pie-5 {
+  stroke: #2fa39b;
+}
+.pie .pie-rest {
+  stroke: #98a0a8;
+}
+.pie-dot.pie-0 {
+  background: var(--accent);
+}
+.pie-dot.pie-1 {
+  background: #d99a3c;
+}
+.pie-dot.pie-2 {
+  background: #4f86e0;
+}
+.pie-dot.pie-3 {
+  background: #d0607a;
+}
+.pie-dot.pie-4 {
+  background: #8a76c8;
+}
+.pie-dot.pie-5 {
+  background: #2fa39b;
+}
+.pie-dot.pie-rest {
+  background: #98a0a8;
 }
 .ring {
   width: 18px;

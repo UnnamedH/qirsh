@@ -13,6 +13,8 @@ Plain HTML, CSS and JavaScript modules: no framework and no build step. The host
 - Accounts that are yours to name: Wallet, Savings and Whish to start with, then add, rename or remove them. Each holds both USD and LL; spend from or earn into any of them, and tap one on Home to see its own entries
 - Hide amounts on Home with one tap, for showing the app to someone
 - Swipe sideways between tabs, and pull a sheet down to close it
+- A month's spending by category as a ring chart (History → By category)
+- Budgets for all spending or any set of categories
 - Fold any section on Home down to a glimpse: budgets as little rings, the month as three numbers
 - A "Buy me a coffee" link to support Frata through Whish, from the heart at the top or Settings → Support Frata
 - Feedback and bug reports from the button at the top (or Settings), by email, with the version, phone, screen size and tab filled in
