@@ -30,7 +30,7 @@
   <body>
     <header class="top">
       <div class="wrap">
-        <h1 class="brand">
+        <h1 class="brand" translate="no">
           <span class="coins" aria-hidden="true"><i></i><i></i><i></i></span>frata<span
             class="brand-ar"
             lang="ar"
@@ -42,6 +42,8 @@
           <span class="top-sub" id="topSub"></span>
           <button class="icon-btn" data-act="supportOpen" aria-label="Support Frata" title="Support Frata">
             <svg
+              aria-hidden="true"
+              focusable="false"
               viewBox="0 0 24 24"
               fill="none"
               stroke="currentColor"
@@ -58,6 +60,8 @@
             title="Feedback and bugs"
           >
             <svg
+              aria-hidden="true"
+              focusable="false"
               viewBox="0 0 24 24"
               fill="none"
               stroke="currentColor"
@@ -82,7 +86,15 @@
     </main>
 
     <button class="fab" id="fab" data-act="new" aria-label="Add transaction">
-      <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linecap="round">
+      <svg
+        aria-hidden="true"
+        focusable="false"
+        viewBox="0 0 24 24"
+        fill="none"
+        stroke="currentColor"
+        stroke-width="2.2"
+        stroke-linecap="round"
+      >
         <path d="M12 5v14M5 12h14" />
       </svg>
     </button>
@@ -91,6 +103,8 @@
       <div class="wrap">
         <button data-act="nav" data-v="home" aria-current="page">
           <svg
+            aria-hidden="true"
+            focusable="false"
             viewBox="0 0 24 24"
             fill="none"
             stroke="currentColor"
@@ -102,6 +116,8 @@
         </button>
         <button data-act="nav" data-v="history">
           <svg
+            aria-hidden="true"
+            focusable="false"
             viewBox="0 0 24 24"
             fill="none"
             stroke="currentColor"
@@ -112,13 +128,22 @@
           >History
         </button>
         <button data-act="nav" data-v="budgets">
-          <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8">
+          <svg
+            aria-hidden="true"
+            focusable="false"
+            viewBox="0 0 24 24"
+            fill="none"
+            stroke="currentColor"
+            stroke-width="1.8"
+          >
             <circle cx="12" cy="12" r="8" />
             <path d="M12 4v8l5.7 5.7" /></svg
           >Budgets
         </button>
         <button data-act="nav" data-v="settings">
           <svg
+            aria-hidden="true"
+            focusable="false"
             viewBox="0 0 24 24"
             fill="none"
             stroke="currentColor"

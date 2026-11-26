@@ -60,6 +60,12 @@ export function drawSheet() {
                     : sheetKind === 'terms'
                       ? termsSheet()
                       : budgetSheet());
+  // The dialog is named after its title ("New entry", "Frata Plus"…), for screen readers.
+  const title = el.querySelector('.sheet-head h2');
+  if (title) {
+    title.id = 'sheetTitle';
+    el.setAttribute('aria-labelledby', 'sheetTitle');
+  } else el.removeAttribute('aria-labelledby');
   fitAllThousands(el);
   if (sheetKind === 'tx') updatePreview();
   if (sheetKind === 'adjust') updateAdjustPreview();
