@@ -9,6 +9,7 @@ import { newsSheet } from './news.js';
 import { plusSheet } from './plus.js';
 import { repaySheet } from './payback.js';
 import { supportSheet } from './support.js';
+import { termsSheet } from './terms.js';
 import { fitAllThousands } from '../ui/amount.js';
 import { render } from '../ui/render.js';
 import { $ } from '../util.js';
@@ -56,7 +57,9 @@ export function drawSheet() {
                   ? supportSheet()
                   : sheetKind === 'plus'
                     ? plusSheet()
-                    : budgetSheet());
+                    : sheetKind === 'terms'
+                      ? termsSheet()
+                      : budgetSheet());
   fitAllThousands(el);
   if (sheetKind === 'tx') updatePreview();
   if (sheetKind === 'adjust') updateAdjustPreview();

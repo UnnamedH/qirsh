@@ -696,6 +696,10 @@ document.addEventListener('click', (e) => {
       toast('Deleted ' + c.name);
       break;
     }
+    case 'termsOpen':
+      setForm({});
+      openSheet('terms');
+      break;
     case 'plusOpen':
       setForm({});
       openSheet('plus');

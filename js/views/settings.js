@@ -264,6 +264,7 @@ export function renderSettings() {
     '<section class="sec"><h2>Privacy</h2><div class="card">' +
     '<p class="note">Everything you enter stays on this phone, in this browser. Frata has no account and no server, and it never sends your data anywhere: the browser is set to block it from contacting any other website. Nobody else can see your data, not even the people who make Frata.</p>' +
     '<p class="note">Your data isn’t encrypted on the phone, so anyone who can unlock your phone and open Frata can see it. Clearing this browser’s data or removing the app deletes it, so keep a backup.</p>' +
+    '<div class="links"><button class="link" data-act="termsOpen">Privacy &amp; terms</button></div>' +
     '</div></section>';
   // Deleting everything sits last, out of the way of everyday settings.
   h +=

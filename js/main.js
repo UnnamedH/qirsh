@@ -45,6 +45,12 @@ if (newsList.length) {
   openSheet('news');
 }
 
+// frata.cc/#terms opens Privacy & terms, so the page can be linked to (from Whish, for example).
+if (location.hash === '#terms' && !newsList.length) {
+  setForm({});
+  openSheet('terms');
+}
+
 // Data brought from the old address waits for the person to confirm it.
 checkMove();
 

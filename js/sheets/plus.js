@@ -56,7 +56,7 @@ export function plusSheet() {
     '</textarea></label>' +
     '<p class="form-error" id="plus-err" hidden></p>' +
     '<p class="note">The code is checked on this phone: nothing is sent anywhere. It’s kept with your data, so ' +
-    'backups and moving to a new phone keep Plus.</p>' +
+    'backups and moving to a new phone keep Plus. <button class="link" data-act="termsOpen">Terms and refunds</button></p>' +
     '<div class="sheet-actions"><button class="btn primary" data-act="plusUnlock">Unlock</button></div>';
   return h;
 }

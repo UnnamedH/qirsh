@@ -445,6 +445,14 @@ main .wrap {
 .mini-stats .in {
   color: var(--accent);
 }
+/* Privacy & terms: headings between the paragraphs. */
+.terms-h {
+  margin: 14px 0 4px;
+  font-size: 15px;
+}
+.terms .note {
+  margin: 0 0 8px;
+}
 /* Frata Plus: the card in History while it's locked, and the list of what it adds. */
 .plus-teaser h3 {
   margin: 0 0 4px;
