@@ -21,6 +21,7 @@ test('while locked, By category shows what Plus adds instead of the chart', asyn
   await page.click('.plus-teaser [data-act=plusOpen]');
   await expect(page.locator('#sheet h2')).toHaveText('Frata Plus');
   await expect(page.locator('#plus-code')).toBeVisible();
+  await expect(page.locator('#sheet')).toContainText('Frata Plus is $5, paid once.');
 });
 
 test('while locked, a budget covers one category: picking another replaces it', async ({ page }) => {
