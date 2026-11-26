@@ -1,28 +1,13 @@
 /* Budgets view. */
-import { budgetCats, budgetStatus, range } from '../ledger.js';
+import { budgetCats, budgetStatus } from '../ledger.js';
 import { state } from '../state.js';
 import { budgetHtml } from '../ui/format.js';
-import { $, DAYS, MONTHS, addDays } from '../util.js';
+import { $ } from '../util.js';
 
 export function renderBudgets() {
   const overall = state.budgets.filter((b) => !budgetCats(b).length),
     cats = state.budgets.filter((b) => budgetCats(b).length);
-  const wr = range('week');
-  const wEnd = addDays(wr.end, -1);
-  let h =
-    '<p class="note">This week runs ' +
-    DAYS[wr.start.getDay()] +
-    ' ' +
-    wr.start.getDate() +
-    ' – ' +
-    DAYS[wEnd.getDay()] +
-    ' ' +
-    wEnd.getDate() +
-    ' ' +
-    MONTHS[wEnd.getMonth()].slice(0, 3) +
-    '. LL and USD spending are combined at 1 USD = ' +
-    state.rate.toLocaleString('en-US') +
-    ' LL.</p>';
+  let h = '';
   h +=
     '<section class="sec"><div class="sec-head"><h2>Overall cap</h2></div>' +
     (overall.length

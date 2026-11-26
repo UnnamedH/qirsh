@@ -119,6 +119,7 @@ test('exporting a backup clears the reminder', async ({ page }) => {
   await openApp(page, { storage: stateWith(40) });
   await expect(reminder(page)).toHaveCount(1);
   await page.click('.tabs [data-act=nav][data-v=settings]');
+  await page.click('[data-act=backupMode][data-v=out]');
   const download = page.waitForEvent('download');
   await page.click('[data-act=exportSave]');
   await download;

@@ -77,6 +77,7 @@ import {
   setPendingImport,
   setPendingMove,
   setQuickTab,
+  setUi,
   setShowOpening,
   setView,
   showOpening,
@@ -696,6 +697,15 @@ document.addEventListener('click', (e) => {
       toast('Deleted ' + c.name);
       break;
     }
+    case 'backupMode':
+      setUi.backup = setUi.backup === v ? null : v;
+      render();
+      break;
+    case 'catEdit':
+      setUi.catEdit = !setUi.catEdit;
+      setArmed(null);
+      render();
+      break;
     case 'termsOpen':
       setForm({});
       openSheet('terms');
@@ -722,6 +732,8 @@ document.addEventListener('click', (e) => {
       render();
       break;
     case 'backupNow': {
+      // Straight to the ways of backing up, not just the section.
+      setUi.backup = 'out';
       setView('settings');
       render();
       const sec = $('#backupSec');

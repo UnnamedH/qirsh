@@ -57,6 +57,7 @@ test('importing a backup and clearing all data can both be undone', async ({ pag
   const before = (await appState(page)).tx.length;
   await page.click('.tabs [data-act=nav][data-v=settings]');
 
+  await page.click('[data-act=backupMode][data-v=in]');
   await page.click('[data-act=importPaste]');
   await page.fill('#importTxt', JSON.stringify({ tx: [] }));
   await page.click('[data-act=importLoad]');

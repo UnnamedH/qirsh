@@ -12,7 +12,7 @@ import { toInput } from '../money.js';
 import { rescuedData, state } from '../state.js';
 import { ACCENTS, DEFAULT_ACCENT } from '../theme.js';
 import { thousandsInput } from '../ui/amount.js';
-import { armed, pendingImport, showOpening } from '../ui/ui-state.js';
+import { armed, pendingImport, setUi, showOpening } from '../ui/ui-state.js';
 import { $, dayLabel, esc } from '../util.js';
 
 export function renderSettings() {
@@ -151,7 +151,11 @@ export function renderSettings() {
     '</div></section>';
   const used = (id) => state.tx.filter((t) => t.categoryId === id).length;
   h +=
-    '<section class="sec"><h2>Categories</h2><div class="card">' +
+    '<section class="sec"><div class="sec-head"><h2>Categories</h2><button class="link" data-act="catEdit" aria-pressed="' +
+    setUi.catEdit +
+    '">' +
+    (setUi.catEdit ? 'Done' : 'Edit') +
+    '</button></div><div class="card">' +
     ['expense', 'income']
       .map((type) => {
         const list = state.categories.filter((c) => c.type === type);
@@ -176,35 +180,8 @@ export function renderSettings() {
                 '" value="' +
                 esc(c.name) +
                 '" aria-label="Category name">' +
-                '<button class="icon-btn" data-act="catMove" data-id="' +
-                esc(c.id) +
-                '" data-v="-1" aria-label="Move ' +
-                esc(c.name) +
-                ' up"' +
-                (i === 0 ? ' disabled' : '') +
-                '>' +
-                ICON.up +
-                '</button>' +
-                '<button class="icon-btn" data-act="catMove" data-id="' +
-                esc(c.id) +
-                '" data-v="1" aria-label="Move ' +
-                esc(c.name) +
-                ' down"' +
-                (i === list.length - 1 ? ' disabled' : '') +
-                '>' +
-                ICON.down +
-                '</button>' +
-                (PROTECTED.includes(c.id)
-                  ? '<span class="icon-btn" aria-hidden="true"></span>'
-                  : '<button class="icon-btn' +
-                    (armed === 'cat:' + c.id ? ' armed' : '') +
-                    '" data-act="delCat" data-id="' +
-                    esc(c.id) +
-                    '" aria-label="Delete ' +
-                    esc(c.name) +
-                    '">' +
-                    ICON.trash +
-                    '</button>') +
+                // Moving and deleting only show while editing, so the list is just the names.
+                (setUi.catEdit ? catTools(c, i, list) : '') +
                 '</div>' +
                 (armed === 'cat:' + c.id
                   ? '<p class="note" style="color:var(--bad)">Tap the bin again to delete.' +
@@ -225,24 +202,28 @@ export function renderSettings() {
     '<p class="label">New category</p><div class="cat-row"><input class="input emoji" id="newCatIcon" placeholder="+" autocomplete="off" aria-label="Emoji for new category"><input class="input" id="newCatName" placeholder="Name" aria-label="New category name">' +
     '<select class="input" id="newCatType" style="flex:0 0 auto;width:auto" aria-label="Type"><option value="expense">Spending</option><option value="income">Income</option></select></div>' +
     '<div class="btn-row"><button class="btn sm" data-act="addCat">Add category</button></div></div></section>';
-  if (plusOffered())
-    h +=
-      '<section class="sec" id="plusSec"><h2>Frata Plus</h2><div class="card">' +
-      plusStatus() +
-      '</div></section>';
+  // Frata itself: Plus, feedback and support, together so they take one section, not three.
   h +=
-    '<section class="sec" id="feedbackSec"><h2>Feedback &amp; bugs</h2><div class="card">' +
+    '<section class="sec" id="frataSec"><h2>Frata</h2><div class="card frata-card">' +
+    (plusOffered() ? '<div id="plusSec"><h3>Frata Plus</h3>' + plusStatus() + '</div>' : '') +
+    '<div id="feedbackSec"><h3>Feedback &amp; bugs</h3>' +
     feedbackButtons() +
-    '</div></section>';
-  h +=
-    '<section class="sec" id="supportSec"><h2>Support Frata</h2><div class="card">' +
+    '</div><div id="supportSec"><h3>Support Frata</h3>' +
     supportButtons() +
-    '</div></section>';
+    '</div></div></section>';
   h +=
     '<section class="sec" id="backupSec"><h2>Backup</h2><div class="card"><p class="note">' +
     (state.lastExport ? 'Last export: ' + dayLabel(state.lastExport.slice(0, 10)) + '.' : 'No export yet.') +
     '</p>' +
-    '<div class="btn-row"><button class="btn" data-act="exportShare">Share</button><button class="btn" data-act="exportSave">Save file</button><button class="btn" data-act="exportCopy">Copy JSON</button></div>' +
+    // Two choices; each shows its ways to do it, so the section isn't a wall of buttons.
+    '<div class="btn-row"><button class="btn" data-act="backupMode" data-v="out" aria-expanded="' +
+    (setUi.backup === 'out') +
+    '">Back up</button><button class="btn" data-act="backupMode" data-v="in" aria-expanded="' +
+    (setUi.backup === 'in') +
+    '">Restore</button></div>' +
+    (setUi.backup === 'out'
+      ? '<div class="btn-row"><button class="btn sm" data-act="exportShare">Share</button><button class="btn sm" data-act="exportSave">Save file</button><button class="btn sm" data-act="exportCopy">Copy JSON</button></div>'
+      : '') +
     '<div id="exportOut"></div>' +
     (rescuedData()
       ? '<div class="banner bad" style="flex-direction:column;align-items:stretch"><p>Saved data that couldn’t be read was kept on this device. Download it to keep it safe, or discard it once you no longer need it.</p><div class="btn-row"><button class="btn sm" data-act="exportRescued">Download it</button><button class="btn sm danger' +
@@ -251,7 +232,10 @@ export function renderSettings() {
         (armed === 'rescue' ? 'Tap again to discard' : 'Discard') +
         '</button></div></div>'
       : '') +
-    '<div class="btn-row"><button class="btn" data-act="importPick">Import file</button><button class="btn ghost" data-act="importPaste">Paste JSON</button></div><div id="importArea"></div>' +
+    (setUi.backup === 'in'
+      ? '<div class="btn-row"><button class="btn sm" data-act="importPick">Import file</button><button class="btn sm ghost" data-act="importPaste">Paste JSON</button></div>'
+      : '') +
+    '<div id="importArea"></div>' +
     (pendingImport
       ? '<div class="banner" style="flex-direction:column;align-items:stretch"><p>This backup has <strong>' +
         pendingImport.tx.length +
@@ -262,8 +246,7 @@ export function renderSettings() {
     '</div></section>';
   h +=
     '<section class="sec"><h2>Privacy</h2><div class="card">' +
-    '<p class="note">Everything you enter stays on this phone, in this browser. Frata has no account and no server, and it never sends your data anywhere: the browser is set to block it from contacting any other website. Nobody else can see your data, not even the people who make Frata.</p>' +
-    '<p class="note">Your data isn’t encrypted on the phone, so anyone who can unlock your phone and open Frata can see it. Clearing this browser’s data or removing the app deletes it, so keep a backup.</p>' +
+    '<p class="note">Your data stays on this phone. Frata never sends it anywhere.</p>' +
     '<div class="links"><button class="link" data-act="termsOpen">Privacy &amp; terms</button></div>' +
     '</div></section>';
   // Deleting everything sits last, out of the way of everyday settings.
@@ -360,4 +343,39 @@ function openingFields() {
         '</label></div>',
     )
     .join('');
+}
+
+/* A category's move up, move down and delete buttons, shown while the categories are being edited. */
+function catTools(c, i, list) {
+  return (
+    '<button class="icon-btn" data-act="catMove" data-id="' +
+    esc(c.id) +
+    '" data-v="-1" aria-label="Move ' +
+    esc(c.name) +
+    ' up"' +
+    (i === 0 ? ' disabled' : '') +
+    '>' +
+    ICON.up +
+    '</button>' +
+    '<button class="icon-btn" data-act="catMove" data-id="' +
+    esc(c.id) +
+    '" data-v="1" aria-label="Move ' +
+    esc(c.name) +
+    ' down"' +
+    (i === list.length - 1 ? ' disabled' : '') +
+    '>' +
+    ICON.down +
+    '</button>' +
+    (PROTECTED.includes(c.id)
+      ? '<span class="icon-btn" aria-hidden="true"></span>'
+      : '<button class="icon-btn' +
+        (armed === 'cat:' + c.id ? ' armed' : '') +
+        '" data-act="delCat" data-id="' +
+        esc(c.id) +
+        '" aria-label="Delete ' +
+        esc(c.name) +
+        '">' +
+        ICON.trash +
+        '</button>')
+  );
 }

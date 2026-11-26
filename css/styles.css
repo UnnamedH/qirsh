@@ -445,6 +445,21 @@ main .wrap {
 .mini-stats .in {
   color: var(--accent);
 }
+/* Settings → Backup: the spots where a copied or pasted backup appears take no room until used. */
+#exportOut:empty,
+#importArea:empty {
+  display: none;
+}
+/* Settings → Frata: Plus, feedback and support in one card, each under a small heading. */
+.frata-card > div + div {
+  border-top: 1px solid var(--line);
+  margin-top: 14px;
+  padding-top: 14px;
+}
+.frata-card h3 {
+  margin: 0 0 8px;
+  font-size: 15px;
+}
 /* Privacy & terms: headings between the paragraphs. */
 .terms-h {
   margin: 14px 0 4px;

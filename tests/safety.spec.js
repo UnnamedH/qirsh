@@ -131,6 +131,7 @@ test('a category name is shown as text in the delete prompt', async ({ page }) =
     s.categories.find((c) => c.id === 'other').name = name;
   }, evil);
   await page.click('.tabs [data-act=nav][data-v=settings]');
+  await page.click('[data-act=catEdit]');
   await page.click('[data-act=delCat][data-id=coffee]');
   await expect(page.locator('#v-settings')).toContainText(evil);
   expect(await page.evaluate(() => window.__xss)).toBeUndefined();
@@ -139,6 +140,7 @@ test('a category name is shown as text in the delete prompt', async ({ page }) =
 test('a malformed backup imports without breaking the app', async ({ page }) => {
   await openApp(page);
   await page.click('.tabs [data-act=nav][data-v=settings]');
+  await page.click('[data-act=backupMode][data-v=in]');
   await page.click('[data-act=importPaste]');
   await page.fill(
     '#importTxt',

@@ -4,11 +4,9 @@ import { ICON } from '../icons.js';
 
 /* A link people tap, never a request the app makes: Frata itself still sends nothing anywhere. */
 export const supportButtons = () =>
-  '<p class="note">If Frata helps you, you can buy me a coffee. It keeps frata.cc running and the maintainer happy.</p>' +
   '<div class="btn-row"><a class="btn primary" href="' +
   SUPPORT_URL +
-  '" target="_blank" rel="noopener">☕ Buy me a coffee</a></div>' +
-  '<p class="note">Opens Whish, where you choose the amount.</p>';
+  '" target="_blank" rel="noopener">☕ Buy me a coffee</a></div>';
 
 export const supportSheet = () =>
   '<div class="sheet-head"><h2>Support Frata</h2><button class="icon-btn" data-act="close" aria-label="Close">' +

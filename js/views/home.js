@@ -68,12 +68,12 @@ export function renderHome() {
     '</button></div>' +
     '<button class="balance-total priv" data-act="toggleDisplay" title="Switch currency">' +
     fmtDisp(combinedUSD(w)) +
-    '<small>total</small></button>' +
+    '</button>' +
     '<div class="balance-split priv"><span>' +
     fmt(w.USD, 'USD') +
-    '<em>cash USD</em></span><span>' +
+    '</span><span>' +
     fmt(w.LBP, 'LBP') +
-    '<em>cash LL</em></span></div>' +
+    '</span></div>' +
     '<div class="moves"><button class="btn sm" data-act="newMove" data-v="exchange"><b aria-hidden="true">⇄</b>Exchange</button></div></section>';
   h += otherAccounts(b);
   const open = state.tx

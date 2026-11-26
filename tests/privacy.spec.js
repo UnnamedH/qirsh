@@ -117,7 +117,7 @@ test('Settings explains where the data lives', async ({ page }) => {
   await page.click('.tabs [data-act=nav][data-v=settings]');
   const privacy = page.locator('#v-settings .sec', { has: page.locator('h2', { hasText: 'Privacy' }) });
   await expect(privacy).toContainText('stays on this phone');
-  await expect(privacy).toContainText('never sends your data anywhere');
+  await expect(privacy).toContainText('never sends it anywhere');
 });
 
 test('Settings ends with Backup, Privacy, then Reset, and links to the source', async ({ page }) => {
