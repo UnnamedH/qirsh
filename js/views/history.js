@@ -52,11 +52,6 @@ export function renderHistory() {
     '</span></div><div class="stat"><span class="label">Entries</span><span class="amt">' +
     txs.length +
     '</span></div></div>';
-  // The monthly report covers every account, so it's offered only on the full History.
-  if (!acc)
-    h +=
-      '<div class="btn-row"><button class="btn sm" data-act="reportXlsx">Monthly report (Excel)</button>' +
-      '<button class="btn sm ghost" data-act="reportCsv">Entries (CSV)</button></div>';
   h +=
     '<div class="seg wide" role="tablist" aria-label="Show">' +
     [
@@ -104,6 +99,11 @@ export function renderHistory() {
     esc(hist.q) +
     '" aria-label="Search notes"></div>';
   h += '<div id="histList">' + historyList(txs) + '</div>';
+  // The monthly report covers every account, so it's offered only on the full History, after the list.
+  if (!acc)
+    h +=
+      '<div class="btn-row"><button class="btn sm" data-act="reportXlsx">Monthly report (Excel)</button>' +
+      '<button class="btn sm ghost" data-act="reportCsv">Entries (CSV)</button></div>';
   $('#v-history').innerHTML = h;
 }
 

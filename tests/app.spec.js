@@ -30,12 +30,36 @@ test('built-in categories come with emojis', async ({ page }) => {
   await expect(page.locator('[data-act=fcat][data-v=transport]')).toHaveText('🚌 Transport');
 });
 
-test('backup offers share, save and copy', async ({ page }) => {
+test('Back up offers share, save and copy, and Restore offers a file or pasted text', async ({ page }) => {
   await openApp(page);
   await page.click('[data-act=nav][data-v=settings]');
-  for (const act of ['exportShare', 'exportSave', 'exportCopy', 'importPick', 'importPaste']) {
-    await expect(page.locator(`[data-act=${act}]`)).toBeVisible();
-  }
+  const shown = (acts) => Promise.all(acts.map((a) => page.locator(`[data-act=${a}]`).count()));
+  // Only the two choices at first.
+  expect(await shown(['exportShare', 'exportSave', 'exportCopy', 'importPick', 'importPaste'])).toEqual([
+    0, 0, 0, 0, 0,
+  ]);
+  await page.click('[data-act=backupMode][data-v=out]');
+  expect(await shown(['exportShare', 'exportSave', 'exportCopy', 'importPick', 'importPaste'])).toEqual([
+    1, 1, 1, 0, 0,
+  ]);
+  await page.click('[data-act=backupMode][data-v=in]');
+  expect(await shown(['exportShare', 'exportSave', 'exportCopy', 'importPick', 'importPaste'])).toEqual([
+    0, 0, 0, 1, 1,
+  ]);
+  await page.click('[data-act=backupMode][data-v=in]');
+  expect(await shown(['importPick', 'importPaste'])).toEqual([0, 0]);
+});
+
+test('categories show their move and delete buttons only while editing', async ({ page }) => {
+  await openApp(page);
+  await page.click('[data-act=nav][data-v=settings]');
+  await expect(page.locator('[data-act=catMove]')).toHaveCount(0);
+  await expect(page.locator('[data-act=delCat]')).toHaveCount(0);
+  await page.click('[data-act=catEdit]');
+  await expect(page.locator('[data-act=catEdit]')).toHaveText('Done');
+  await expect(page.locator('[data-act=delCat][data-id=coffee]')).toBeVisible();
+  await page.click('[data-act=catEdit]');
+  await expect(page.locator('[data-act=delCat]')).toHaveCount(0);
 });
 
 test('service worker caches the app and it opens offline', async ({ page, context }) => {
@@ -89,6 +113,7 @@ test.describe('on iPhone', () => {
     await expect(note(page)).toContainText('Keep your entries safe');
     await note(page).locator('[data-act=backupNow]').click();
     await expect(page.locator('#backupSec')).toBeInViewport();
+    await expect(page.locator('#backupSec [data-act=exportSave]')).toBeVisible();
     await page.click('.tabs [data-act=nav][data-v=home]');
     await page.click('[data-act=safariTipDone]');
     await page.reload();

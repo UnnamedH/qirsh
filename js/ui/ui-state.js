@@ -13,6 +13,10 @@ export const hist = {
   mode: 'list',
 };
 
+/* Settings: which backup choices are open ('out' to back up, 'in' to restore, or null), and whether the
+   categories show their move and delete buttons. */
+export const setUi = { backup: null, catEdit: false };
+
 export let pendingImport = null,
   pendingMove = null,
   armed = null,
