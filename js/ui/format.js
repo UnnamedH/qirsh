@@ -117,13 +117,23 @@ export function txAmt(t) {
   if (p.length === 1 && !k.length) return '<span class="amt">' + p[0] + '</span>';
   // Every expense shows what it cost, with how it was paid underneath, however it was typed in. The
   // price is in the price currency if it was entered price first, otherwise in the first one paid in.
+  // A long line wraps between amounts, never inside one, so the row's title keeps its room.
   const cur = t.priceCur || t.currency;
+  const nw = (s) => '<span class="nw">' + s + '</span>';
+  // The "·" stays with the first amount given back, and "back" with the last.
+  const back = k.length
+    ? ' ' + k.map((x, i) => nw((i ? '' : '· ') + x + (i === k.length - 1 ? ' back' : ''))).join(' + ')
+    : '';
   return (
     '<span class="amt has-chg"><span>' +
     fmt(entryValueIn(t, cur), cur) +
-    '</span><span class="chg">paid ' +
-    p.join(' + ') +
-    (k.length ? ' · ' + k.join(' + ') + ' back' : '') +
+    '</span><span class="chg">' +
+    nw('paid ' + p[0]) +
+    p
+      .slice(1)
+      .map((x) => ' + ' + nw(x))
+      .join('') +
+    back +
     '</span></span>'
   );
 }

@@ -1196,6 +1196,17 @@ a.btn {
 .amt .chg {
   font-size: 12px;
   color: var(--muted);
+  white-space: normal;
+  text-align: right;
+}
+/* An expense paid in parts can have a long "paid … back" line: it wraps (between amounts, see .nw) rather
+   than push the row's title off the screen. */
+.row .amt.has-chg {
+  flex: none;
+  max-width: 60%;
+}
+.nw {
+  white-space: nowrap;
 }
 .cur-tag {
   flex: none;
