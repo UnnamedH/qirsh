@@ -379,7 +379,7 @@ main .wrap {
 .balance-split {
   display: flex;
   flex-wrap: wrap;
-  gap: 6px 18px;
+  gap: 6px 14px;
   font-family: var(--f-num);
   font-variant-numeric: tabular-nums;
   font-size: 15px;
@@ -388,6 +388,11 @@ main .wrap {
   display: flex;
   gap: 6px;
   align-items: baseline;
+}
+/* A thin line between the dollar and lira amounts, so they read as two separate balances. */
+.balance-split span + span {
+  border-left: 1px solid var(--line);
+  padding-left: 14px;
 }
 .balance-split em {
   font-style: normal;
