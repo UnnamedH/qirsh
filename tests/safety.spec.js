@@ -131,6 +131,7 @@ test('a category name is shown as text in the delete prompt', async ({ page }) =
     s.categories.find((c) => c.id === 'other').name = name;
   }, evil);
   await page.click('.tabs [data-act=nav][data-v=settings]');
+  await page.click('[data-act=setPage][data-v=categories]');
   await page.click('[data-act=catEdit]');
   await page.click('[data-act=delCat][data-id=coffee]');
   await expect(page.locator('#v-settings')).toContainText(evil);

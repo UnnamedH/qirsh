@@ -16,6 +16,14 @@ import { armed, pendingImport, setUi, showOpening } from '../ui/ui-state.js';
 import { $, dayLabel, esc } from '../util.js';
 
 export function renderSettings() {
+  if (setUi.page) {
+    $('#v-settings').innerHTML =
+      '<button class="link back-link" data-act="setPage" data-v="">' +
+      ICON.left +
+      'Settings</button>' +
+      (setUi.page === 'accounts' ? accountsPage() : categoriesPage());
+    return;
+  }
   const s = state.settings;
   let h =
     '<section class="sec"><h2>Exchange rate</h2><div class="card"><div class="set-row"><label class="field"><span>LL for 1 USD</span><input id="rate" class="num" inputmode="numeric" value="' +
@@ -139,69 +147,8 @@ export function renderSettings() {
     (preset ? '' : check) +
     '</label></div>' +
     '</div></section>';
-  h +=
-    '<section class="sec" id="accountsSec"><h2>Accounts</h2><div class="card">' +
-    accountRows() +
-    '<div class="links"><button class="link" data-act="toggleOpening" aria-expanded="' +
-    showOpening +
-    '">' +
-    (showOpening ? 'Hide starting balances' : 'Edit starting balances') +
-    '</button></div>' +
-    (showOpening ? openingFields() : '') +
-    '</div></section>';
-  const used = (id) => state.tx.filter((t) => t.categoryId === id).length;
-  h +=
-    '<section class="sec"><div class="sec-head"><h2>Categories</h2><button class="link" data-act="catEdit" aria-pressed="' +
-    setUi.catEdit +
-    '">' +
-    (setUi.catEdit ? 'Done' : 'Edit') +
-    '</button></div><div class="card">' +
-    ['expense', 'income']
-      .map((type) => {
-        const list = state.categories.filter((c) => c.type === type);
-        return (
-          '<p class="label">' +
-          (type === 'expense' ? 'Spending' : 'Income') +
-          '</p>' +
-          list
-            .map(
-              (c, i) =>
-                '<div class="cat-row"><input class="input emoji" data-caticon="' +
-                esc(c.id) +
-                '" value="' +
-                esc(c.icon || '') +
-                '" placeholder="' +
-                esc(c.name.charAt(0)) +
-                '" autocomplete="off" aria-label="Emoji for ' +
-                esc(c.name) +
-                '">' +
-                '<input class="input" data-cat="' +
-                esc(c.id) +
-                '" value="' +
-                esc(c.name) +
-                '" aria-label="Category name">' +
-                // Moving and deleting only show while editing, so the list is just the names.
-                (setUi.catEdit ? catTools(c, i, list) : '') +
-                '</div>' +
-                (armed === 'cat:' + c.id
-                  ? '<p class="note" style="color:var(--bad)">Tap the bin again to delete.' +
-                    (used(c.id)
-                      ? ' Its ' +
-                        used(c.id) +
-                        ' entries move to "' +
-                        esc(catName(type === 'expense' ? 'other' : 'other-in')) +
-                        '".'
-                      : '') +
-                    '</p>'
-                  : ''),
-            )
-            .join('')
-        );
-      })
-      .join('') +
-    '<p class="label">New category</p><div class="cat-row"><input class="input emoji" id="newCatIcon" placeholder="+" autocomplete="off" aria-label="Emoji for new category"><input class="input" id="newCatName" placeholder="Name" aria-label="New category name">' +
-    '<select class="input" id="newCatType" style="flex:0 0 auto;width:auto" aria-label="Type"><option value="expense">Spending</option><option value="income">Income</option></select></div>' +
-    '<div class="btn-row"><button class="btn sm" data-act="addCat">Add category</button></div></div></section>';
+  // Accounts and categories are long lists, so each has its own page (setUi.page) behind a row here.
+  h += settingsLinks();
   // Frata itself: Plus, feedback and support, together so they take one section, not three.
   h +=
     '<section class="sec" id="frataSec"><h2>Frata</h2><div class="card frata-card">' +
@@ -377,5 +324,100 @@ function catTools(c, i, list) {
         '">' +
         ICON.trash +
         '</button>')
+  );
+}
+
+/* Settings → Accounts: names, savings, removing, and the starting balances. */
+function accountsPage() {
+  return (
+    '<section class="sec" id="accountsSec"><h2>Accounts</h2><div class="card">' +
+    accountRows() +
+    '<div class="links"><button class="link" data-act="toggleOpening" aria-expanded="' +
+    showOpening +
+    '">' +
+    (showOpening ? 'Hide starting balances' : 'Edit starting balances') +
+    '</button></div>' +
+    (showOpening ? openingFields() : '') +
+    '</div></section>'
+  );
+}
+
+/* Settings → Categories: names and emojis, and with Edit, the order and deleting. */
+function categoriesPage() {
+  const used = (id) => state.tx.filter((t) => t.categoryId === id).length;
+  return (
+    '<section class="sec"><div class="sec-head"><h2>Categories</h2><button class="link" data-act="catEdit" aria-pressed="' +
+    setUi.catEdit +
+    '">' +
+    (setUi.catEdit ? 'Done' : 'Edit') +
+    '</button></div><div class="card">' +
+    ['expense', 'income']
+      .map((type) => {
+        const list = state.categories.filter((c) => c.type === type);
+        return (
+          '<p class="label">' +
+          (type === 'expense' ? 'Spending' : 'Income') +
+          '</p>' +
+          list
+            .map(
+              (c, i) =>
+                '<div class="cat-row"><input class="input emoji" data-caticon="' +
+                esc(c.id) +
+                '" value="' +
+                esc(c.icon || '') +
+                '" placeholder="' +
+                esc(c.name.charAt(0)) +
+                '" autocomplete="off" aria-label="Emoji for ' +
+                esc(c.name) +
+                '">' +
+                '<input class="input" data-cat="' +
+                esc(c.id) +
+                '" value="' +
+                esc(c.name) +
+                '" aria-label="Category name">' +
+                // Moving and deleting only show while editing, so the list is just the names.
+                (setUi.catEdit ? catTools(c, i, list) : '') +
+                '</div>' +
+                (armed === 'cat:' + c.id
+                  ? '<p class="note" style="color:var(--bad)">Tap the bin again to delete.' +
+                    (used(c.id)
+                      ? ' Its ' +
+                        used(c.id) +
+                        ' entries move to "' +
+                        esc(catName(type === 'expense' ? 'other' : 'other-in')) +
+                        '".'
+                      : '') +
+                    '</p>'
+                  : ''),
+            )
+            .join('')
+        );
+      })
+      .join('') +
+    '<p class="label">New category</p><div class="cat-row"><input class="input emoji" id="newCatIcon" placeholder="+" autocomplete="off" aria-label="Emoji for new category"><input class="input" id="newCatName" placeholder="Name" aria-label="New category name">' +
+    '<select class="input" id="newCatType" style="flex:0 0 auto;width:auto" aria-label="Type"><option value="expense">Spending</option><option value="income">Income</option></select></div>' +
+    '<div class="btn-row"><button class="btn sm" data-act="addCat">Add category</button></div></div></section>'
+  );
+}
+
+/* The rows that open Accounts and Categories, each with a short summary of what's inside. */
+function settingsLinks() {
+  const accs = accounts();
+  const n = (type) => state.categories.filter((c) => c.type === type).length;
+  const row = (page, title, sub) =>
+    '<button class="row nav-row" data-act="setPage" data-v="' +
+    page +
+    '"><span class="row-main"><span class="row-title">' +
+    title +
+    '</span><span class="row-sub">' +
+    sub +
+    '</span></span>' +
+    ICON.right +
+    '</button>';
+  return (
+    '<section class="sec"><div class="list">' +
+    row('accounts', 'Accounts', esc(accs.map((a) => a.name).join(', '))) +
+    row('categories', 'Categories', n('expense') + ' spending · ' + n('income') + ' income') +
+    '</div></section>'
   );
 }

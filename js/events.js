@@ -90,6 +90,8 @@ import { historyList, historyTxs } from './views/history.js';
 /* Shows a tab, from the tab bar or at the end of a swipe. */
 function goTab(v) {
   hist.account = null;
+  // A tab always opens at its start: Settings itself, not the Accounts or Categories page left open.
+  setUi.page = null;
   setView(v);
   closeSheet();
   render();
@@ -701,6 +703,13 @@ document.addEventListener('click', (e) => {
       setUi.backup = setUi.backup === v ? null : v;
       render();
       break;
+    case 'setPage':
+      setUi.page = v || null;
+      setUi.catEdit = false;
+      setArmed(null);
+      render();
+      window.scrollTo(0, 0);
+      break;
     case 'catEdit':
       setUi.catEdit = !setUi.catEdit;
       setArmed(null);
@@ -734,6 +743,7 @@ document.addEventListener('click', (e) => {
     case 'backupNow': {
       // Straight to the ways of backing up, not just the section.
       setUi.backup = 'out';
+      setUi.page = null;
       setView('settings');
       render();
       const sec = $('#backupSec');
@@ -903,6 +913,7 @@ async function moveAway() {
   const link = empty ? FRATA_URL : await moveLink(state);
   if (!link) {
     toast('Too much data for a link. Make a backup here and import it on frata.cc.');
+    setUi.page = null;
     setView('settings');
     render();
     return;

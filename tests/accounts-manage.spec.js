@@ -21,6 +21,7 @@ const accountId = (page, name) =>
 
 async function addAccount(page, name) {
   await nav(page, 'settings');
+  await page.click('[data-act=setPage][data-v=accounts]');
   await page.click('[data-act=accAdd]');
   const field = page.locator('#accountsSec .acct-row .input').last();
   await expect(field).toBeFocused();
@@ -75,6 +76,7 @@ test('folding the other accounts is remembered', async ({ page }) => {
 test('accounts can be renamed, including Wallet, but not to nothing', async ({ page }) => {
   await setUp(page);
   await nav(page, 'settings');
+  await page.click('[data-act=setPage][data-v=accounts]');
   await nameField(page, 'wallet').fill('Cash');
   await nameField(page, 'wallet').blur();
   await nameField(page, 'whish').fill('<b>OMT</b>');
@@ -91,6 +93,7 @@ test('accounts can be renamed, including Wallet, but not to nothing', async ({ p
   await expect(page.locator('.acc[data-id=whish] b')).toHaveCount(0);
   // Wallet has no Remove: there is always a main account.
   await nav(page, 'settings');
+  await page.click('[data-act=setPage][data-v=accounts]');
   await expect(page.locator('#accountsSec [data-act=accRemove][data-v=wallet]')).toHaveCount(0);
 });
 
@@ -105,6 +108,7 @@ test('removing a used account moves its money to Wallet and keeps its history', 
   await page.click('[data-act=fsave]');
 
   await nav(page, 'settings');
+  await page.click('[data-act=setPage][data-v=accounts]');
   const remove = page.locator('#accountsSec [data-act=accRemove][data-v=whish]');
   await remove.click();
   await expect(remove).toHaveText('Tap again');
@@ -129,6 +133,7 @@ test('removing a used account moves its money to Wallet and keeps its history', 
 
   // And it can come back.
   await nav(page, 'settings');
+  await page.click('[data-act=setPage][data-v=accounts]');
   await page.click('[data-act=accRestore][data-v=whish]');
   await nav(page, 'home');
   await expect(page.locator('.acc[data-id=whish]')).toBeVisible();
@@ -169,6 +174,7 @@ test('the report counts money moved into any account marked as savings', async (
   expect(await report()).toBe(20);
 
   await nav(page, 'settings');
+  await page.click('[data-act=setPage][data-v=accounts]');
   await page.check('[data-accsave=whish]');
   expect(await report()).toBe(27);
   await page.uncheck('[data-accsave=savings]');
