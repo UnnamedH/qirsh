@@ -76,6 +76,7 @@ test('deleting a category takes it out of budgets, and drops a budget left with 
     );
   });
   await page.click('.tabs [data-act=nav][data-v=settings]');
+  await page.click('[data-act=setPage][data-v=categories]');
   await page.click('[data-act=catEdit]');
   const del = page.locator('[data-act=delCat][data-id=coffee]');
   await del.click();

@@ -358,6 +358,7 @@ test('typed amounts: decimal commas work, and anything that isn’t a number is 
 test('a mistyped starting balance is refused, not saved as zero', async ({ page }) => {
   await openApp(page);
   await page.click('.tabs [data-act=nav][data-v=settings]');
+  await page.click('[data-act=setPage][data-v=accounts]');
   await page.click('[data-act=toggleOpening]');
   const field = page.locator('[data-open=wallet][data-cur=USD]');
   const before = (await appState(page)).opening.wallet.USD;

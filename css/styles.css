@@ -445,6 +445,24 @@ main .wrap {
 .mini-stats .in {
   color: var(--accent);
 }
+/* Settings: the rows that open Accounts and Categories, and the way back from them. */
+.nav-row svg {
+  flex: none;
+  width: 18px;
+  height: 18px;
+  color: var(--muted);
+}
+.back-link {
+  display: inline-flex;
+  align-items: center;
+  gap: 2px;
+  align-self: flex-start;
+  margin-left: -6px;
+}
+.back-link svg {
+  width: 20px;
+  height: 20px;
+}
 /* Settings → Backup: the spots where a copied or pasted backup appears take no room until used. */
 #exportOut:empty,
 #importArea:empty {

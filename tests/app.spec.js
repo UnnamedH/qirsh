@@ -53,6 +53,7 @@ test('Back up offers share, save and copy, and Restore offers a file or pasted t
 test('categories show their move and delete buttons only while editing', async ({ page }) => {
   await openApp(page);
   await page.click('[data-act=nav][data-v=settings]');
+  await page.click('[data-act=setPage][data-v=categories]');
   await expect(page.locator('[data-act=catMove]')).toHaveCount(0);
   await expect(page.locator('[data-act=delCat]')).toHaveCount(0);
   await page.click('[data-act=catEdit]');
@@ -125,4 +126,30 @@ test.describe('on iPhone', () => {
 test('the Home Screen note is not shown on Android', async ({ page }) => {
   await openApp(page);
   await expect(page.locator('[data-act=safariTipDone]')).toHaveCount(0);
+});
+
+test('Accounts and Categories have their own pages in Settings, and the tab bar leads back', async ({
+  page,
+}) => {
+  await openApp(page);
+  await page.click('[data-act=nav][data-v=settings]');
+  // Settings itself has a row for each, with a summary, and not the lists.
+  await expect(page.locator('[data-act=setPage][data-v=accounts]')).toContainText('Wallet, Savings, Whish');
+  await expect(page.locator('[data-act=setPage][data-v=categories]')).toContainText('12 spending · 4 income');
+  await expect(page.locator('#accountsSec')).toHaveCount(0);
+  await expect(page.locator('[data-cat]')).toHaveCount(0);
+
+  await page.click('[data-act=setPage][data-v=accounts]');
+  await expect(page.locator('#accountsSec')).toBeVisible();
+  await expect(page.locator('#rate')).toHaveCount(0);
+  await page.click('#v-settings .back-link');
+  await expect(page.locator('#rate')).toBeVisible();
+
+  await page.click('[data-act=setPage][data-v=categories]');
+  await expect(page.locator('[data-cat=coffee]')).toBeVisible();
+  // Leaving through the tab bar and coming back shows Settings itself.
+  await page.click('[data-act=nav][data-v=home]');
+  await page.click('[data-act=nav][data-v=settings]');
+  await expect(page.locator('#rate')).toBeVisible();
+  await expect(page.locator('[data-cat]')).toHaveCount(0);
 });
