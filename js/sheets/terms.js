@@ -1,12 +1,12 @@
 /* Privacy & terms: what Frata keeps and where, the Frata Plus terms, and the "as is" notice. Also at #terms. */
-import { CONTACT } from '../config.js';
+import { CONTACT, PLUS_PRICE } from '../config.js';
 import { ICON } from '../icons.js';
 import { esc } from '../util.js';
 
 /* Change this whenever the text below changes in substance. */
 export const TERMS_UPDATED = '26 November 2026';
 /* How long after buying Frata Plus a refund can be asked for. */
-export const REFUND_DAYS = 14;
+export const REFUND_DAYS = 7;
 
 const mail = () => '<a class="link" href="mailto:' + esc(CONTACT.email) + '">' + esc(CONTACT.email) + '</a>';
 const sec = (title, paras) =>
@@ -33,7 +33,9 @@ export const termsSheet = () =>
     'Emails are only used to reply to you. To have yours deleted, just ask.',
   ]) +
   sec('Frata Plus', [
-    'Frata Plus is a one-off payment, made through Whish under Whish’s own terms. It unlocks the features listed in Settings → Frata Plus, and what you’ve unlocked stays unlocked.',
+    'Frata Plus is a one-off payment of ' +
+      PLUS_PRICE +
+      ', made through Whish under Whish’s own terms. It unlocks the features listed in Settings → Frata Plus, and what you’ve unlocked stays unlocked.',
     'Your unlock code is made for you, with the name you give. It works on any phone you use, offline, and is kept with your data, so backups and moving phones keep Plus. Please don’t share it. If you lose it, email and it will be sent again.',
     'To send and re-send codes, the name, email address and payment details you give are kept, and never shared or sold.',
     'Changed your mind? Ask within ' + REFUND_DAYS + ' days of paying for a full refund, no questions asked.',

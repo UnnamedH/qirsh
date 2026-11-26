@@ -1,5 +1,5 @@
 /* Frata Plus: what it adds, how to get it, and where to type the unlock code. */
-import { CONTACT, SUPPORT_URL } from '../config.js';
+import { CONTACT, PLUS_PRICE, SUPPORT_URL } from '../config.js';
 import { ICON } from '../icons.js';
 import { plusInfo } from '../plus.js';
 import { esc } from '../util.js';
@@ -25,7 +25,9 @@ export const plusStatus = () => {
     ? '<p class="note">Unlocked' +
         (p.name ? ' for ' + esc(p.name) : '') +
         '. Thank you for supporting Frata!</p>'
-    : '<p class="note">Adds a spending chart and budgets for several categories. Pay once, keep it for good.</p>' +
+    : '<p class="note">Adds a spending chart and budgets for several categories. ' +
+        PLUS_PRICE +
+        ', paid once, yours to keep.</p>' +
         '<div class="btn-row"><button class="btn primary" data-act="plusOpen">Get Frata Plus</button></div>';
 };
 
@@ -44,7 +46,11 @@ export function plusSheet() {
     return h;
   }
   h +=
-    '<p class="note">1. Pay with Whish. 2. Email me the name you paid under. 3. I’ll send you a code to paste below.</p>' +
+    '<p class="note">Frata Plus is ' +
+    PLUS_PRICE +
+    ', paid once. 1. Pay ' +
+    PLUS_PRICE +
+    ' with Whish. 2. Email me the name you paid under. 3. I’ll send you a code to paste below.</p>' +
     '<div class="btn-row"><a class="btn" href="' +
     SUPPORT_URL +
     '" target="_blank" rel="noopener">Pay with Whish</a><a class="btn" href="' +

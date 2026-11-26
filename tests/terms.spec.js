@@ -10,7 +10,8 @@ test('Settings → Privacy opens Privacy & terms, with a date and a way to get i
   await expect(sheetTitle(page)).toHaveText('Privacy & terms');
   const sheet = page.locator('#sheet .terms');
   await expect(sheet).toContainText('Last updated');
-  await expect(sheet).toContainText('within 14 days');
+  await expect(sheet).toContainText('within 7 days');
+  await expect(sheet).toContainText('one-off payment of $5');
   await expect(sheet).toContainText('provided as is');
   // Its only links are emails: reading the terms never leaves the app.
   const hrefs = await sheet.locator('a').evaluateAll((as) => as.map((a) => a.getAttribute('href')));

@@ -7,6 +7,9 @@ export const CONTACT = { email: 'support@frata.cc' };
    Whish. It's the link inside the maker's Whish QR code. */
 export const SUPPORT_URL = 'https://whish.money/app/pay/ynLO2j39h';
 
+/* What Frata Plus costs, paid once through Whish (the Support Frata link above). */
+export const PLUS_PRICE = '$5';
+
 /* Frata Plus: the public half of the key that signs unlock codes (scripts/unlock-codes.mjs makes the pair).
    It can check a code but never make one, so it's safe to publish. While it's null, Plus isn't offered and
    its features are open to everyone. npm run plus:setup fills it in. */
