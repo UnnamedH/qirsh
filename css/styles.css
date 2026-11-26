@@ -1081,6 +1081,28 @@ button.row:first-child {
 }
 
 /* buttons, fields */
+/* A double tap on a control never zooms the page, and nothing waits to see if a second tap is coming. */
+button,
+a,
+input,
+select,
+textarea,
+label {
+  touch-action: manipulation;
+}
+/* Mouse and trackpad users get feedback before they click. Phones skip it, so a tap leaves no stuck hover. */
+@media (hover: hover) and (pointer: fine) {
+  .btn:hover {
+    filter: brightness(0.96);
+  }
+  .link:hover {
+    text-decoration: underline;
+  }
+  button.row:hover,
+  .row > button.row-btn:hover {
+    background: var(--line);
+  }
+}
 .btn {
   border: 1px solid var(--line);
   background: var(--surface);

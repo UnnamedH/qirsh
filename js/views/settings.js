@@ -26,7 +26,7 @@ export function renderSettings() {
   }
   const s = state.settings;
   let h =
-    '<section class="sec"><h2>Exchange rate</h2><div class="card"><div class="set-row"><label class="field"><span>LL for 1 USD</span><input id="rate" class="num" inputmode="numeric" value="' +
+    '<section class="sec"><h2>Exchange rate</h2><div class="card"><div class="set-row"><label class="field"><span>LL for 1 USD</span><input id="rate" class="num" inputmode="numeric" autocomplete="off" value="' +
     (armed && armed.startsWith('rate:')
       ? (+armed.slice(5)).toLocaleString('en-US')
       : state.rate.toLocaleString('en-US')) +
@@ -223,7 +223,7 @@ function accountRows() {
       const main = a.id === MAIN,
         sure = armed === 'acc:' + a.id;
       return (
-        '<div class="acct-row"><input class="input" data-accname="' +
+        '<div class="acct-row"><input class="input" autocomplete="off" data-accname="' +
         esc(a.id) +
         '" value="' +
         esc(a.name) +
@@ -275,7 +275,7 @@ function openingFields() {
       (a) =>
         '<div class="grid2"><label class="field"><span>' +
         esc(a.name) +
-        ' USD</span><input class="num" data-open="' +
+        ' USD</span><input class="num" autocomplete="off" data-open="' +
         esc(a.id) +
         '" data-cur="USD" inputmode="decimal" value="' +
         ((state.opening[a.id] || {}).USD || 0) +
@@ -370,7 +370,7 @@ function categoriesPage() {
                 '" autocomplete="off" aria-label="Emoji for ' +
                 esc(c.name) +
                 '">' +
-                '<input class="input" data-cat="' +
+                '<input class="input" autocomplete="off" data-cat="' +
                 esc(c.id) +
                 '" value="' +
                 esc(c.name) +

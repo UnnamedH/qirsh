@@ -95,7 +95,7 @@ export function renderHistory() {
       )
       .join('') +
     '</div>' +
-    '<input class="input search" id="hq" type="search" placeholder="Search notes" value="' +
+    '<input class="input search" id="hq" type="search" autocomplete="off" placeholder="Search notes…" value="' +
     esc(hist.q) +
     '" aria-label="Search notes"></div>';
   h += '<div id="histList">' + historyList(txs) + '</div>';
