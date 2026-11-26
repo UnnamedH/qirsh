@@ -90,3 +90,42 @@ test('a plain expense still shows just its amount', async ({ page }) => {
   await expect(amt).toHaveText('$2');
   await expect(amt.locator('.chg')).toHaveCount(0);
 });
+
+test('a long “paid … back” line wraps instead of pushing the entry off the screen', async ({ page }) => {
+  await page.setViewportSize({ width: 360, height: 800 });
+  await openApp(page);
+  await page.evaluate(() => {
+    const s = window.__qirsh.state;
+    s.tx.push({
+      id: 'long',
+      type: 'expense',
+      date: new Date().toISOString().slice(0, 10),
+      createdAt: Date.now(),
+      amount: 100,
+      amount2: 2500000,
+      currency: 'USD',
+      back: { USD: 37, LBP: 1450000 },
+      priceCur: 'LBP',
+      categoryId: 'groceries',
+      account: 'wallet',
+      rate: s.rate,
+      note: 'Big grocery run at the supermarket',
+    });
+  });
+  await toHistory(page);
+  const row = page.locator('#histList .row', { hasText: 'Big grocery' });
+  await expect(row.locator('.chg')).toHaveText('paid $100 + 2,500,000 LL · $37 + 1,450,000 LL back');
+  const box = await row.evaluate((r) => {
+    const amt = r.querySelector('.amt').getBoundingClientRect();
+    return {
+      right: amt.right,
+      width: innerWidth,
+      title: r.querySelector('.row-title').getBoundingClientRect().width,
+      // No amount is split across two lines.
+      split: [...r.querySelectorAll('.nw')].some((n) => n.getClientRects().length > 1),
+    };
+  });
+  expect(box.right).toBeLessThanOrEqual(box.width);
+  expect(box.title).toBeGreaterThan(60);
+  expect(box.split).toBe(false);
+});
