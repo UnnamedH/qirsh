@@ -5,7 +5,7 @@ import { KEY } from './state.js';
 export const CHANGELOG = [
   {
     v: 19,
-    date: '2026-11-25',
+    date: '2026-11-27',
     items: [
       'New: Frata Plus, paid once in Settings → Frata Plus. It adds a chart of where the month’s money went (History → By category) and budgets that cover several categories, like Food, Coffee and Groceries together.',
       'Every expense in History shows what it cost, with what you paid and any change underneath, however you typed it in.',
