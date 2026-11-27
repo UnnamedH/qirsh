@@ -1,5 +1,5 @@
 /* Screen readers and touch: every control has a name, icons stay silent, and sheets say what they are. */
-import { test, expect, openApp } from './helpers.js';
+import { test, expect, openApp, unlockPlus } from './helpers.js';
 
 /** Problems on the screen as it is now: unnamed controls, unlabelled fields and icons read aloud. */
 const problems = (page) =>
@@ -18,7 +18,11 @@ const problems = (page) =>
       if (!named) out.push('unlabelled ' + tag(e));
     }
     for (const e of document.querySelectorAll('svg'))
-      if (shown(e) && e.getAttribute('aria-hidden') !== 'true')
+      if (
+        shown(e) &&
+        e.getAttribute('aria-hidden') !== 'true' &&
+        !(e.getAttribute('role') === 'img' && e.getAttribute('aria-label'))
+      )
         out.push('icon read aloud in ' + tag(e.parentElement));
     return [...new Set(out)];
   });
@@ -57,4 +61,18 @@ test('controls never wait for a double tap to zoom', async ({ page }) => {
     ),
   );
   for (const a of actions) expect(a).not.toBe('auto');
+});
+
+test('the chart and Trends are as accessible as the list: the bars are a picture, the numbers are text', async ({
+  page,
+}) => {
+  await openApp(page);
+  await unlockPlus(page);
+  await page.click('.tabs [data-act=nav][data-v=history]');
+  for (const mode of ['chart', 'trends']) {
+    await page.click(`[data-act=hmode][data-v=${mode}]`);
+    expect(await problems(page), mode).toEqual([]);
+  }
+  await expect(page.locator('.trend-bars')).toHaveAttribute('aria-hidden', 'true');
+  await expect(page.locator('.trends select')).toHaveAccessibleName('Category');
 });

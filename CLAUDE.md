@@ -60,7 +60,9 @@ wrappers (`js/money.js`, `ledger.js`, `accounts.js`, `advances.js`): they load t
 
 ## Frata Plus
 
-- Paid features (History → By category, budgets with several categories) check `hasPlus()` in `js/plus.js`.
+- Paid features (History → By category and Trends, budgets with several categories) check `hasPlus()` in
+  `js/plus.js`. Trends' sums are `js/core/trends.js` (pure, with `unit/trends.test.js`): the month still going on is
+  "partial" and left out of the average, and is compared with the same days of last month.
   The unlock code is in `state.unlock.code`, checked offline against `UNLOCK_KEY` in `js/config.js` by
   `js/core/plus.js` (ECDSA P-256). `UNLOCK_KEY = null` means Plus isn't offered and everything is open.
 - Never commit a private key (`*.private.jwk` is ignored). Codes are made with `scripts/unlock-codes.mjs`.

@@ -1,5 +1,6 @@
 /* Frata's ledger: the shared core in js/core/ledger.js, bound to the app's saved data. */
 import * as core from './core/ledger.js';
+import * as trends from './core/trends.js';
 import { state } from './state.js';
 
 export { inRange } from './core/ledger.js';
@@ -32,3 +33,9 @@ export const spendByCategory = (r, cur, account) => core.spendByCategory(state, 
 
 /** The categories a budget covers; empty means all spending. */
 export const budgetCats = (b) => core.budgetCats(b);
+
+/** Month-by-month spending ending with `endMonth`, and the month against the one before it (see core/trends.js). */
+export const monthlyTrend = (endMonth, n, cur, opts) =>
+  trends.monthlyTrend(state, endMonth, n, cur, new Date(), opts);
+
+export const compareMonth = (month, cur, opts) => trends.compareMonth(state, month, new Date(), cur, opts);

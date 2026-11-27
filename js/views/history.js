@@ -1,6 +1,6 @@
 /* History view. */
 import { ICON } from '../icons.js';
-import { balances, catOf, inRange, spendByCategory, sumIn } from '../ledger.js';
+import { balances, catOf, compareMonth, inRange, monthlyTrend, spendByCategory, sumIn } from '../ledger.js';
 import { dispCur, entryValueIn, fmt, fmtTotal } from '../money.js';
 import { accName } from '../accounts.js';
 import { hasPlus } from '../plus.js';
@@ -57,6 +57,7 @@ export function renderHistory() {
     [
       ['list', 'List'],
       ['chart', 'By category'],
+      ['trends', 'Trends'],
     ]
       .map(
         ([k, l]) =>
@@ -71,7 +72,19 @@ export function renderHistory() {
       .join('') +
     '</div>';
   if (hist.mode === 'chart') {
-    h += hasPlus() ? spendingChart(r, acc) : plusTeaser();
+    h += hasPlus()
+      ? spendingChart(r, acc)
+      : plusTeaser('Spending by category', 'See where this month’s money went, as a chart.');
+    $('#v-history').innerHTML = h;
+    return;
+  }
+  if (hist.mode === 'trends') {
+    h += hasPlus()
+      ? trendsView(m, acc)
+      : plusTeaser(
+          'Trends',
+          'See how your spending moves from month to month, and what changed since last month.',
+        );
     $('#v-history').innerHTML = h;
     return;
   }
@@ -189,9 +202,12 @@ export function historyList(txs) {
 }
 
 /* In place of the chart while Plus is locked: what it would show, and the way in. */
-const plusTeaser = () =>
-  '<div class="card plus-teaser"><h3>Spending by category</h3>' +
-  '<p class="note">See where this month’s money went, as a chart. It’s part of Frata Plus.</p>' +
+const plusTeaser = (title, text) =>
+  '<div class="card plus-teaser"><h3>' +
+  title +
+  '</h3><p class="note">' +
+  text +
+  ' It’s part of Frata Plus.</p>' +
   '<div class="btn-row"><button class="btn primary" data-act="plusOpen">Get Frata Plus</button></div></div>';
 
 /* Slices beyond this many are added up as "Everything else", so the chart stays readable. */
@@ -253,4 +269,143 @@ function spendingChart(r, acc) {
       .join('') +
     '</div></div>'
   );
+}
+
+const catLabel = (id) => {
+  const c = id && catOf(id);
+  return c ? (c.icon ? c.icon + ' ' : '') + c.name : 'Uncategorised';
+};
+
+/* Spending month by month, ending with the month shown: bars, then the numbers as text (the bars are only
+   a picture), how this month compares with last, and the categories that moved most. The month still going
+   on is drawn lighter and marked "so far", and is left out of the average. */
+function trendsView(m, acc) {
+  const cur = dispCur();
+  const span = hist.span === 12 ? 12 : 6;
+  const cat = hist.cat && catOf(hist.cat) ? hist.cat : null;
+  const { months, average } = monthlyTrend(m, span, cur, { catId: cat, account: acc });
+  const cmp = compareMonth(m, cur, { catId: cat, account: acc });
+  const max = Math.max(...months.map((x) => x.spent));
+  const spendCats = state.categories.filter((c) => c.type !== 'income');
+  const short = (d) => MONTHS[d.getMonth()].slice(0, 3);
+  const tail = (d) => (d.getFullYear() !== m.getFullYear() ? ' ' + d.getFullYear() : '');
+  let h =
+    '<div class="card trends"><div class="trend-head"><div class="seg" role="group" aria-label="Months shown">' +
+    [6, 12]
+      .map(
+        (n) =>
+          '<button data-act="tspan" data-v="' +
+          n +
+          '" aria-pressed="' +
+          (span === n) +
+          '">' +
+          n +
+          ' months</button>',
+      )
+      .join('') +
+    '</div><select class="input" id="tcat" aria-label="Category"><option value="">All spending</option>' +
+    spendCats
+      .map(
+        (c) =>
+          '<option value="' +
+          esc(c.id) +
+          '"' +
+          (c.id === cat ? ' selected' : '') +
+          '>' +
+          (c.icon ? esc(c.icon) + ' ' : '') +
+          esc(c.name) +
+          '</option>',
+      )
+      .join('') +
+    '</select></div>';
+  if (!(max > 0)) return h + '<p class="empty">Nothing spent in these months.</p></div>';
+  h +=
+    '<div class="trend-bars" aria-hidden="true">' +
+    months
+      .map(
+        (x) =>
+          '<div class="trend-col' +
+          (x.partial ? ' partial' : '') +
+          (x.empty ? ' none' : '') +
+          '"><div class="trend-bar" style="height:' +
+          Math.max(x.spent > 0 ? 3 : 0, Math.round((x.spent / max) * 100)) +
+          '%"></div><span>' +
+          short(x.start) +
+          '</span></div>',
+      )
+      .join('') +
+    '</div>';
+  h += '<div class="trend-facts">';
+  if (average != null)
+    h +=
+      '<div><span class="label">Average a month</span><span class="amt priv">' +
+      fmtTotal(average) +
+      '</span></div>';
+  const diff = cmp.now - cmp.before;
+  const name = (d) => MONTHS[d.getMonth()];
+  const prev = new Date(m.getFullYear(), m.getMonth() - 1, 1);
+  h +=
+    '<div><span class="label">' +
+    (cmp.partial ? 'So far this month' : name(m)) +
+    '</span><span class="amt priv">' +
+    fmtTotal(cmp.now) +
+    '</span><span class="trend-diff priv ' +
+    (diff > 0.005 ? 'up' : diff < -0.005 ? 'down' : '') +
+    '">' +
+    (Math.abs(diff) <= 0.005
+      ? 'same as '
+      : fmtTotal(Math.abs(diff)) + (diff > 0 ? ' more than ' : ' less than ')) +
+    (cmp.partial ? 'the same days of ' : '') +
+    name(prev) +
+    '</span></div></div>';
+  h += '</div>';
+  // The numbers as text, newest first. Months before the first entry are left out.
+  h +=
+    '<div class="list trend-list">' +
+    months
+      .filter((x) => !x.empty)
+      .reverse()
+      .map(
+        (x) =>
+          '<div class="row"><span class="row-main"><span class="row-title">' +
+          short(x.start) +
+          tail(x.start) +
+          (x.partial ? ' <span class="muted">(so far)</span>' : '') +
+          '</span></span><span class="amt priv">' +
+          fmtTotal(x.spent) +
+          '</span>' +
+          // Months with no income leave the spot empty, so the column of what was earned stays readable.
+          (x.earned == null
+            ? ''
+            : '<span class="amt in priv">' + (x.earned > 0 ? '+' + fmtTotal(x.earned) : '') + '</span>') +
+          '</div>',
+      )
+      .join('') +
+    '</div>';
+  if (!cat && cmp.changes.length)
+    h +=
+      '<div class="sec"><h3 class="terms-h">Biggest changes' +
+      (cmp.partial ? ' so far' : '') +
+      '</h3><div class="list">' +
+      cmp.changes
+        .map((c) => {
+          const d = c.now - c.before;
+          return (
+            '<div class="row"><span class="row-main"><span class="row-title">' +
+            esc(catLabel(c.id)) +
+            '</span><span class="row-sub priv">' +
+            fmtTotal(c.before) +
+            ' → ' +
+            fmtTotal(c.now) +
+            '</span></span><span class="amt priv trend-diff ' +
+            (d > 0 ? 'up' : 'down') +
+            '">' +
+            (d > 0 ? '+' : '−') +
+            fmtTotal(Math.abs(d)) +
+            '</span></div>'
+          );
+        })
+        .join('') +
+      '</div></div>';
+  return h;
 }

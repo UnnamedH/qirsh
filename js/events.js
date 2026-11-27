@@ -634,6 +634,10 @@ document.addEventListener('click', (e) => {
       hist.mode = v;
       render();
       break;
+    case 'tspan':
+      hist.span = +v === 12 ? 12 : 6;
+      render();
+      break;
     case 'hfilter':
       hist.filter = v;
       render();
@@ -980,6 +984,11 @@ document.addEventListener('input', (e) => {
   if (sheetKind === 'adjust' && t.id && t.id.startsWith('a-')) {
     readAdjust();
     updateAdjustPreview();
+  }
+  if (t.id === 'tcat') {
+    hist.cat = t.value || null;
+    render();
+    return;
   }
   if (t.id === 'accentPick' && hexRgb(t.value)) {
     state.settings.accent = t.value.toUpperCase();

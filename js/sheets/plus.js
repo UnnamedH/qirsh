@@ -7,6 +7,7 @@ import { form } from './sheet.js';
 
 export const PLUS_FEATURES = [
   'History by category: a chart of where the month’s money went',
+  'Trends: your spending month by month, and what changed since last month',
   'Budgets that cover several categories at once',
 ];
 
@@ -25,7 +26,7 @@ export const plusStatus = () => {
     ? '<p class="note">Unlocked' +
         (p.name ? ' for ' + esc(p.name) : '') +
         '. Thank you for supporting Frata!</p>'
-    : '<p class="note">Adds a spending chart and budgets for several categories. ' +
+    : '<p class="note">Adds a spending chart, trends and budgets for several categories. ' +
         PLUS_PRICE +
         ', paid once, yours to keep.</p>' +
         '<div class="btn-row"><button class="btn primary" data-act="plusOpen">Get Frata Plus</button></div>';
