@@ -5,13 +5,15 @@ import { PROTECTED, REPO_URL } from '../config.js';
 import { feedbackButtons } from '../sheets/feedback.js';
 import { supportButtons } from '../sheets/support.js';
 import { plusStatus } from '../sheets/plus.js';
-import { plusOffered } from '../plus.js';
+import { hasPlus, plusOffered } from '../plus.js';
+import { recAmount, recEvery, recName } from '../recurring.js';
 import { ICON } from '../icons.js';
 import { catName } from '../ledger.js';
 import { toInput } from '../money.js';
 import { rescuedData, state } from '../state.js';
 import { ACCENTS, DEFAULT_ACCENT } from '../theme.js';
 import { thousandsInput } from '../ui/amount.js';
+import { txGlyph } from '../ui/format.js';
 import { armed, pendingImport, setUi, showOpening } from '../ui/ui-state.js';
 import { $, dayLabel, esc } from '../util.js';
 
@@ -21,7 +23,7 @@ export function renderSettings() {
       '<button class="link back-link" data-act="setPage" data-v="">' +
       ICON.left +
       'Settings</button>' +
-      (setUi.page === 'accounts' ? accountsPage() : categoriesPage());
+      (PAGES[setUi.page] || accountsPage)();
     return;
   }
   const s = state.settings;
@@ -418,6 +420,50 @@ function settingsLinks() {
     '<section class="sec"><div class="list">' +
     row('accounts', 'Accounts', esc(accs.map((a) => a.name).join(', '))) +
     row('categories', 'Categories', n('expense') + ' spending · ' + n('income') + ' income') +
+    row(
+      'recurring',
+      'Recurring',
+      state.recurring.length ? state.recurring.length + ' set up' : 'Rent, salary and other regular entries',
+    ) +
     '</div></section>'
   );
 }
+
+/* Settings → Recurring: entries that repeat. Existing ones can always be changed; setting up a new one is Plus. */
+function recurringPage() {
+  const list = state.recurring;
+  return (
+    '<section class="sec" id="recurringSec"><h2>Recurring</h2><div class="card">' +
+    '<p class="note">Entries that repeat, like rent or a salary. When one is due it shows on Home, ready to add with a tap.</p>' +
+    (list.length
+      ? '<div class="list">' +
+        list
+          .map(
+            (r) =>
+              '<div class="row"><button class="row-btn" data-act="recEdit" data-id="' +
+              esc(r.id) +
+              '">' +
+              txGlyph(r) +
+              '<span class="row-main"><span class="row-title">' +
+              esc(recName(r)) +
+              '</span><span class="row-sub">' +
+              recEvery(r) +
+              ' · next ' +
+              esc(dayLabel(r.next)) +
+              '</span></span><span class="amt priv' +
+              (r.type === 'income' ? ' in' : '') +
+              '">' +
+              recAmount(r) +
+              '</span></button></div>',
+          )
+          .join('') +
+        '</div>'
+      : '') +
+    (hasPlus()
+      ? '<div class="btn-row"><button class="btn" data-act="recNew">Add a recurring entry</button></div>'
+      : '<p class="note">Setting up a new one is part of Frata Plus.</p><div class="btn-row"><button class="btn primary" data-act="plusOpen">Get Frata Plus</button></div>') +
+    '</div></section>'
+  );
+}
+
+const PAGES = { accounts: accountsPage, categories: categoriesPage, recurring: recurringPage };

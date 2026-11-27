@@ -36,6 +36,10 @@ import {
   updateAdjustPreview,
 } from './sheets/adjust.js';
 import { readBudget, saveBudget, toggleBudgetCat } from './sheets/budget.js';
+import { actOnDue, addAllDue, dueNow } from './recurring.js';
+import { entryFor } from './core/recurring.js';
+import { hasPlus } from './plus.js';
+import { newRecurringForm, readRecurring, recurringFormFrom, saveRecurring } from './sheets/recurring.js';
 import { tryUnlock } from './plus.js';
 import {
   autoTo,
@@ -110,6 +114,7 @@ document.addEventListener('click', (e) => {
     act !== 'fdel' &&
     act !== 'bdel' &&
     act !== 'rdel' &&
+    act !== 'recdel' &&
     act !== 'keepRest' &&
     act !== 'adel' &&
     act !== 'accRemove' &&
@@ -154,6 +159,8 @@ document.addEventListener('click', (e) => {
         accounts: keptAccounts(),
         tx: own,
         budgets: state.budgets.filter((b) => !isSampleBudget(b)),
+        // Entries you set up to repeat aren't examples, so starting fresh keeps them.
+        recurring: state.recurring,
         unlock: state.unlock,
       };
       setState(normalize(Object.assign(blankState(), keep)));
@@ -271,6 +278,10 @@ document.addEventListener('click', (e) => {
           .map((c) => fmt(left[c], c))
           .join(' and ');
       removeAccount(v);
+      // A recurring entry for it moves to the main account, with the money.
+      state.recurring.forEach((r) => {
+        if (r.account === v) r.account = MAIN;
+      });
       commit();
       toast(name + ' removed' + (moved ? ' · ' + moved + ' moved to ' + accName(MAIN) : ''), () => {
         setState(prev);
@@ -608,6 +619,81 @@ document.addEventListener('click', (e) => {
     case 'bsave':
       saveBudget();
       break;
+    case 'recNew':
+      // Setting up a new one is Plus; the entries already set up always work.
+      if (!hasPlus()) {
+        setForm({});
+        openSheet('plus');
+        break;
+      }
+      setForm(newRecurringForm());
+      openSheet('recurring');
+      break;
+    case 'recEdit': {
+      const r = state.recurring.find((x) => x.id === id);
+      if (!r) break;
+      setForm(recurringFormFrom(r));
+      openSheet('recurring');
+      break;
+    }
+    case 'rtype':
+      readRecurring();
+      if (form.type !== v) Object.assign(form, { type: v, categoryId: null });
+      drawSheet();
+      break;
+    case 'rcat':
+      readRecurring();
+      form.categoryId = v;
+      drawSheet();
+      break;
+    case 'rcur':
+      readRecurring();
+      form.currency = v;
+      drawSheet();
+      break;
+    case 'revery':
+      readRecurring();
+      form.every = v;
+      drawSheet();
+      break;
+    case 'recsave':
+      saveRecurring();
+      break;
+    case 'recdel':
+      if (armed !== 'recurring') {
+        setArmed('recurring');
+        drawSheet();
+        break;
+      }
+      {
+        setArmed(null);
+        const r = state.recurring.find((x) => x.id === form.id);
+        state.recurring = state.recurring.filter((x) => x.id !== form.id);
+        closeSheet();
+        commit();
+        toast('Recurring entry deleted', () => {
+          if (r) state.recurring.push(r);
+          commit();
+        });
+      }
+      break;
+    case 'dueAdd':
+    case 'dueSkip':
+      actOnDue(act === 'dueAdd' ? 'add' : 'skip', id, v);
+      break;
+    case 'dueAll':
+      addAllDue();
+      break;
+    case 'dueEdit': {
+      // Opens the usual entry form, filled in and dated the day it fell due; saving it moves the schedule on.
+      const d = dueNow().find((x) => x.rec.id === id && x.date === v);
+      if (!d) break;
+      const f = formFromTx(entryFor(d.rec, d.date, state.rate, '', Date.now()), 'new');
+      Object.assign(f, { date: d.date, recurringId: d.rec.id, recurringDate: d.date });
+      setForm(f);
+      openSheet('tx');
+      break;
+    }
     case 'bdel':
       if (armed !== 'budget') {
         setArmed('budget');
@@ -697,6 +783,10 @@ document.addEventListener('click', (e) => {
         b.categoryIds = ids.filter((x) => x !== id);
         delete b.categoryId;
         return b.categoryIds.length > 0;
+      });
+      // A recurring entry in it moves to Other, like the entries already made.
+      state.recurring.forEach((r) => {
+        if (r.categoryId === id) r.categoryId = to;
       });
       state.categories = state.categories.filter((x) => x.id !== id);
       commit();
@@ -1095,6 +1185,7 @@ document.addEventListener('keydown', (e) => {
     if (sheetKind === 'tx') saveTx();
     else if (sheetKind === 'repay') saveRepay();
     else if (sheetKind === 'budget') saveBudget();
+    else if (sheetKind === 'recurring') saveRecurring();
     else if (sheetKind === 'adjust' && form.mode === 'new') saveAdjust();
   }
 });

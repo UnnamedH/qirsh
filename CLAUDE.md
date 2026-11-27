@@ -65,6 +65,11 @@ wrappers (`js/money.js`, `ledger.js`, `accounts.js`, `advances.js`): they load t
   "partial" and left out of the average, and is compared with the same days of last month.
   The unlock code is in `state.unlock.code`, checked offline against `UNLOCK_KEY` in `js/config.js` by
   `js/core/plus.js` (ECDSA P-256). `UNLOCK_KEY = null` means Plus isn't offered and everything is open.
+- Recurring entries (`state.recurring`, `js/core/recurring.js`, `js/recurring.js`) are due, never added by
+  themselves: Home's Due card adds or skips each one, and the schedule's `next` moves on in the same `commit()`
+  as the entry. Setting up a new one needs Plus; existing ones always work (so a restored backup does). Dates are
+  local `yyyy-mm-dd` (`ymd()`, never `toISOString()`). Deleting a category or removing an account must move
+  recurring entries off it, as it does for entries and budgets.
 - Never commit a private key (`*.private.jwk` is ignored). Codes are made with `scripts/unlock-codes.mjs`.
 - Tests use the key in `tests/fixtures/plus-test-key.json`: `tests/server.mjs` swaps its public half into
   `js/config.js`, and `plusCode()` / `unlockPlus()` in `tests/helpers.js` sign and type a code.

@@ -9,6 +9,7 @@ import { priceTipBanner, showPriceTip } from '../sheets/demo.js';
 import { state } from '../state.js';
 import { templates } from '../templates.js';
 import { budgetHtml, txAmt, txGlyph, txTitle } from '../ui/format.js';
+import { dueNow, recAmount, recName } from '../recurring.js';
 import { quickTab } from '../ui/ui-state.js';
 import { $, MONTHS, cap, dayLabel, esc } from '../util.js';
 
@@ -76,6 +77,7 @@ export function renderHome() {
     '</span></div>' +
     '<div class="moves"><button class="btn sm" data-act="newMove" data-v="exchange"><b aria-hidden="true">⇄</b>Exchange</button></div></section>';
   h += otherAccounts(b);
+  h += dueCard();
   const open = state.tx
     .filter((t) => t.type === 'advance')
     .map((t) => ({ t, o: owed(t) }))
@@ -311,5 +313,46 @@ function budgetRing(b) {
     ' ' +
     len.toFixed(2) +
     '"/></svg>'
+  );
+}
+
+/* Recurring entries that have come due, to add or skip with a tap. Tapping the name edits it first, for a bill
+   that came to a different amount. Only the oldest due date of each shows; the next waits behind it. */
+function dueCard() {
+  const due = dueNow();
+  if (!due.length) return '';
+  const count = due.reduce((n, x) => n + 1 + x.more, 0);
+  return (
+    '<section class="sec" id="dueSec"><div class="sec-head"><h2>Due</h2>' +
+    (count > 1 ? '<button class="link" data-act="dueAll">Add all ' + count + '</button>' : '') +
+    '</div><div class="list">' +
+    due
+      .map(({ rec, date, more }) => {
+        const key = 'data-id="' + esc(rec.id) + '" data-v="' + date + '"';
+        return (
+          '<div class="due-row"><button class="row-btn" data-act="dueEdit" ' +
+          key +
+          ' aria-label="Edit before adding: ' +
+          esc(recName(rec) + ', due ' + dayLabel(date) + ', ' + recAmount(rec)) +
+          '">' +
+          txGlyph(rec) +
+          '<span class="row-main"><span class="row-title">' +
+          esc(recName(rec)) +
+          '</span><span class="row-sub">Due ' +
+          esc(dayLabel(date)) +
+          (more ? ' · ' + more + ' more after it' : '') +
+          '</span></span><span class="amt priv' +
+          (rec.type === 'income' ? ' in' : '') +
+          '">' +
+          recAmount(rec) +
+          '</span></button><div class="due-actions"><button class="btn sm primary" data-act="dueAdd" ' +
+          key +
+          '>Add</button><button class="btn sm" data-act="dueSkip" ' +
+          key +
+          '>Skip</button></div></div>'
+        );
+      })
+      .join('') +
+    '</div></section>'
   );
 }

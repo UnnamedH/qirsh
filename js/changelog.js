@@ -4,6 +4,13 @@ import { KEY } from './state.js';
 /* Newest first. Each release adds an entry here with the next v, then runs `npm run stamp` for sw.js. */
 export const CHANGELOG = [
   {
+    v: 21,
+    date: '2026-11-27',
+    items: [
+      'Frata Plus now has recurring entries: set up rent, a salary or a subscription in Settings → Recurring, and when one is due it shows on Home to add or skip with a tap.',
+    ],
+  },
+  {
     v: 20,
     date: '2026-11-27',
     items: [

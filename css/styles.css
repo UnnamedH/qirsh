@@ -572,6 +572,27 @@ main .wrap {
   min-width: 70px;
   text-align: right;
 }
+/* Home → Due: a recurring entry that has come due, with its Add and Skip buttons under it. */
+.due-row + .due-row {
+  border-top: 1px solid var(--line);
+}
+.due-row > .row-btn {
+  display: flex;
+  align-items: center;
+  gap: 12px;
+  width: 100%;
+  padding: 11px 14px 4px;
+  background: none;
+  border: 0;
+  text-align: left;
+  color: inherit;
+}
+.due-actions {
+  display: flex;
+  gap: 8px;
+  justify-content: flex-end;
+  padding: 4px 14px 12px;
+}
 /* Frata Plus: the card in History while it's locked, and the list of what it adds. */
 .plus-teaser h3 {
   margin: 0 0 4px;
