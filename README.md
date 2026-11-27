@@ -15,6 +15,7 @@ Plain HTML, CSS and JavaScript modules: no framework and no build step. The host
 - Swipe sideways between tabs, and pull a sheet down to close it
 - Frata Plus, a one-off purchase (Settings → Frata Plus), adds:
   - a month's spending by category as a ring chart (History → By category)
+  - trends: spending month by month for 6 or 12 months, for all spending or one category, how this month compares with the same days of last month, and the categories that changed most (History → Trends)
   - budgets that cover several categories at once (without it, a budget covers all spending or one category)
 - Fold any section on Home down to a glimpse: budgets as little rings, the month as three numbers
 - A "Buy me a coffee" link to support Frata through Whish, from the heart at the top or Settings → Support Frata

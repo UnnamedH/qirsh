@@ -4,6 +4,13 @@ import { KEY } from './state.js';
 /* Newest first. Each release adds an entry here with the next v, then runs `npm run stamp` for sw.js. */
 export const CHANGELOG = [
   {
+    v: 20,
+    date: '2026-11-27',
+    items: [
+      'Frata Plus now has Trends: in History, tap Trends to see your spending month by month, how this month compares with last, and which categories changed most.',
+    ],
+  },
+  {
     v: 19,
     date: '2026-11-27',
     items: [

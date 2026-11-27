@@ -9,8 +9,11 @@ export const hist = {
   q: '',
   // Set when an account is tapped on Home: History then shows only that account's entries.
   account: null,
-  // 'list' of entries, or 'chart' of the month's spending by category.
+  // 'list' of entries, 'chart' of the month's spending by category, or 'trends' month by month.
   mode: 'list',
+  // Trends: how many months to show, and the one category to follow (null for all spending).
+  span: 6,
+  cat: null,
 };
 
 /* Settings: which of its pages is shown ('accounts', 'categories', or null for Settings itself), which
