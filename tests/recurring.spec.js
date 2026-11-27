@@ -321,3 +321,37 @@ test('saved or restored data is repaired, never trusted', async ({ page }) => {
   );
   expect(many).toBe(50);
 });
+
+test('switching the entry type while editing a due one still moves the schedule on when it is saved', async ({
+  page,
+}) => {
+  await start(page);
+  await page.click('#dueSec [data-act=dueEdit]');
+  await page.click('#sheet [data-act=ftype][data-v=income]');
+  await page.click('#sheet [data-act=ftype][data-v=expense]');
+  await page.click('#sheet [data-act=fcat][data-v=bills]');
+  await page.click('#sheet [data-act=fsave]');
+  expect((await appState(page)).tx).toHaveLength(1);
+  expect((await rec(page))[0].next).toBe('2026-12-01');
+  await expect(due(page)).toHaveCount(0);
+});
+
+test('an app left open overnight shows what has come due when it is opened again', async ({ page }) => {
+  await page.clock.install({ time: new Date('2026-11-26T23:00:00') });
+  await openApp(page);
+  await page.evaluate(
+    (r) => {
+      const s = window.__qirsh.state;
+      s.tx = [];
+      s.recurring = [r];
+    },
+    rent({ next: '2026-11-27' }),
+  );
+  await page.click('.tabs [data-act=nav][data-v=settings]');
+  await page.click('.tabs [data-act=nav][data-v=home]');
+  await expect(due(page)).toHaveCount(0); // due tomorrow
+  await page.clock.fastForward('03:00:00'); // past midnight
+  await page.evaluate(() => document.dispatchEvent(new Event('visibilitychange')));
+  await expect(due(page)).toContainText('Rent');
+  await expect(due(page)).toContainText('Today');
+});

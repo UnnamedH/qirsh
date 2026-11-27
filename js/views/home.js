@@ -333,7 +333,7 @@ function dueCard() {
           '<div class="due-row"><button class="row-btn" data-act="dueEdit" ' +
           key +
           ' aria-label="Edit before adding: ' +
-          esc(recName(rec)) +
+          esc(recName(rec) + ', due ' + dayLabel(date) + ', ' + recAmount(rec)) +
           '">' +
           txGlyph(rec) +
           '<span class="row-main"><span class="row-title">' +
