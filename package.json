@@ -7,6 +7,7 @@
   "scripts": {
     "start": "http-server . -p 8765 -c-1",
     "stamp": "node scripts/stamp-sw.mjs",
+    "plus:setup": "node scripts/unlock-codes.mjs setup",
     "lint": "eslint .",
     "format": "prettier --write .",
     "format:check": "prettier --check .",

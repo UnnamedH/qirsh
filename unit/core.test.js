@@ -116,6 +116,80 @@ test('budget status in the budget currency', () => {
   assert.equal(led.catName(s, 'food'), 'Food');
 });
 
+test('a budget can cover several categories, and reads the older single-category form', () => {
+  const s = mk({
+    categories: [
+      { id: 'food', name: 'Food' },
+      { id: 'coffee', name: 'Coffee' },
+      { id: 'transport', name: 'Transport' },
+    ],
+    tx: [
+      exp({ amount: 10, categoryId: 'food' }),
+      exp({ amount: 3, categoryId: 'coffee' }),
+      exp({ amount: 7, categoryId: 'transport' }),
+    ],
+  });
+  assert.equal(led.sumIn(s, month, 'expense', ['food', 'coffee'], 'USD'), 13);
+  assert.equal(led.sumIn(s, month, 'expense', 'transport', 'USD'), 7);
+  assert.equal(led.sumIn(s, month, 'expense', [], 'USD'), 20, 'no categories means all spending');
+  assert.equal(led.sumIn(s, month, 'expense', null, 'USD'), 20);
+
+  assert.deepEqual(led.budgetCats({ categoryIds: ['food', 'coffee'] }), ['food', 'coffee']);
+  assert.deepEqual(led.budgetCats({ categoryId: 'food' }), ['food'], 'older budgets still read');
+  assert.deepEqual(led.budgetCats({ categoryId: null }), []);
+
+  assert.equal(led.budgetName(s, { categoryIds: [] }), 'All spending');
+  assert.equal(led.budgetName(s, { categoryId: 'food' }), 'Food');
+  assert.equal(led.budgetName(s, { categoryIds: ['food', 'coffee'] }), 'Food and Coffee');
+  assert.equal(
+    led.budgetName(s, { categoryIds: ['food', 'coffee', 'transport'] }),
+    'Food, Coffee and 1 more',
+  );
+});
+
+test('spending split by category, biggest first, with unknown categories grouped', () => {
+  const s = mk({
+    categories: [
+      { id: 'food', name: 'Food', type: 'expense' },
+      { id: 'coffee', name: 'Coffee', type: 'expense' },
+      { id: 'salary', name: 'Salary', type: 'income' },
+    ],
+    tx: [
+      exp({ amount: 3, categoryId: 'coffee' }),
+      exp({ amount: 10, categoryId: 'food' }),
+      exp({ amount: 2, categoryId: 'gone' }),
+      exp({ amount: 50, categoryId: 'food', date: '2000-01-01' }),
+      { id: 'i', type: 'income', date: '2026-03-10', currency: 'USD', amount: 100, categoryId: 'salary' },
+    ],
+  });
+  assert.deepEqual(led.spendByCategory(s, month, 'USD'), [
+    { id: 'food', total: 10 },
+    { id: 'coffee', total: 3 },
+    { id: null, total: 2 },
+  ]);
+  assert.deepEqual(led.spendByCategory(mk(), month, 'USD'), []);
+});
+
+test('a closed advance kept as spending counts toward a budget that covers its category', () => {
+  const s = mk({
+    tx: [
+      {
+        id: 'a',
+        type: 'advance',
+        date: '2026-03-02',
+        currency: 'USD',
+        amount: 8,
+        rate: 90000,
+        closed: true,
+        closedOn: '2026-03-05',
+        keptCat: 'food',
+      },
+    ],
+  });
+  assert.equal(led.sumIn(s, month, 'expense', ['food', 'coffee'], 'USD'), 8);
+  assert.equal(led.sumIn(s, month, 'expense', ['coffee'], 'USD'), 0);
+});
+
 test('advances: paybacks reduce what is owed and a part payback in LL uses its saved rate', () => {
   const a = { id: 'a1', type: 'advance', date: '2026-03-01', currency: 'USD', amount: 10, rate: 90000 };
   const r = {

@@ -13,6 +13,7 @@ async function setUp(page) {
     s.budgets.push({ id: 'B', categoryId: null, period: 'month', amount: 200, currency: 'USD' });
   });
   await page.click('.tabs [data-act=nav][data-v=settings]');
+  await page.click('[data-act=setPage][data-v=accounts]');
 }
 
 /** Balances of every account, and what the overall budget has counted as spent. */

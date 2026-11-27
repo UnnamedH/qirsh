@@ -139,7 +139,14 @@ export function normalize(s) {
         ),
       );
   });
-  out.budgets = Array.isArray(s.budgets) ? s.budgets.filter(validBudget) : [];
+  // A budget covers all spending or a list of categories. Older data had one category in `categoryId`.
+  out.budgets = (Array.isArray(s.budgets) ? s.budgets.filter(validBudget) : []).map((b) => {
+    const x = Object.assign({}, b);
+    const ids = Array.isArray(b.categoryIds) ? b.categoryIds : b.categoryId ? [b.categoryId] : [];
+    x.categoryIds = [...new Set(ids.filter((id) => typeof id === 'string' && id))];
+    delete x.categoryId;
+    return x;
+  });
   out.tx = s.tx
     .filter((t) => isObj(t) && t.type && isFinite(+t.amount) && t.date && isCur(t.currency))
     .map((t) => {
@@ -174,6 +181,10 @@ export function normalize(s) {
       }
       return x;
     });
+  // A Frata Plus unlock code: checked against the key each time the app opens (js/plus.js).
+  const code = isObj(s.unlock) && typeof s.unlock.code === 'string' ? s.unlock.code.replace(/\s+/g, '') : '';
+  if (code && code.length <= 600) out.unlock = { code };
+  else delete out.unlock;
   delete out.exportedAt;
   return out;
 }

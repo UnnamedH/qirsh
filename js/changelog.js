@@ -4,6 +4,14 @@ import { KEY } from './state.js';
 /* Newest first. Each release adds an entry here with the next v, then runs `npm run stamp` for sw.js. */
 export const CHANGELOG = [
   {
+    v: 19,
+    date: '2026-11-27',
+    items: [
+      'New: Frata Plus, paid once in Settings → Frata Plus. It adds a chart of where the month’s money went (History → By category) and budgets that cover several categories, like Food, Coffee and Groceries together.',
+      'Every expense in History shows what it cost, with what you paid and any change underneath, however you typed it in.',
+    ],
+  },
+  {
     v: 18,
     date: '2026-11-15',
     items: ['Ideas or bugs? Tap the chat button at the top of any page to send them by email.'],

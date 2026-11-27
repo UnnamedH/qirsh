@@ -8,7 +8,8 @@
  *   release=<x>  serve sw.js with BUILD replaced by <x>, like a newly published version
  *   fail=<path>  answer <path> with a 404, like a file that failed to download
  *   pretty=1     redirect index.html to the folder, as Cloudflare does
- * Without a prefix the app is served as is.
+ * Without a prefix the app is served as is, except that js/config.js gets the test key for Frata Plus
+ * codes (tests/fixtures/plus-test-key.json), so tests can unlock it with codes they sign themselves.
  */
 import fs from 'node:fs';
 import http from 'node:http';
@@ -27,6 +28,9 @@ const TYPES = {
   '.woff2': 'font/woff2',
   '.txt': 'text/plain; charset=utf-8',
 };
+const TEST_KEY = JSON.stringify(
+  JSON.parse(fs.readFileSync(new URL('./fixtures/plus-test-key.json', import.meta.url), 'utf8')).public,
+);
 const settings = new Map(); // id -> { delay, release, fail, pretty }
 
 http
@@ -65,6 +69,10 @@ http
       let body = fs.readFileSync(file);
       if (rel === '/sw.js' && s.release)
         body = body.toString().replace(/const BUILD = '[^']*';/, `const BUILD = '${s.release}';`);
+      if (rel === '/js/config.js')
+        body = body
+          .toString()
+          .replace(/export const UNLOCK_KEY = [^;]*;/, `export const UNLOCK_KEY = ${TEST_KEY};`);
       res.writeHead(200, {
         'Content-Type': TYPES[path.extname(file)] || 'application/octet-stream',
         'Cache-Control': 'no-store',

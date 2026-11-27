@@ -261,10 +261,16 @@ h2 {
 }
 .top-sub {
   white-space: nowrap;
+  /* Never wider than the room left by the logo and buttons: as a last resort it ends in "…" rather
+     than pushing the header, and with it the whole page, wider than the screen. */
+  min-width: 0;
+  overflow: hidden;
+  text-overflow: ellipsis;
 }
 .top-end {
   display: flex;
   align-items: center;
+  min-width: 0;
   /* The last icon's drawing ends flush with the page's right edge, like the cards below; the buttons'
      own padding (9px each side of an icon) is pulled out. */
   margin-right: -9.7px;
@@ -373,7 +379,7 @@ main .wrap {
 .balance-split {
   display: flex;
   flex-wrap: wrap;
-  gap: 6px 18px;
+  gap: 6px 14px;
   font-family: var(--f-num);
   font-variant-numeric: tabular-nums;
   font-size: 15px;
@@ -382,6 +388,11 @@ main .wrap {
   display: flex;
   gap: 6px;
   align-items: baseline;
+}
+/* A thin line between the dollar and lira amounts, so they read as two separate balances. */
+.balance-split span + span {
+  border-left: 1px solid var(--line);
+  padding-left: 14px;
 }
 .balance-split em {
   font-style: normal;
@@ -438,6 +449,167 @@ main .wrap {
 }
 .mini-stats .in {
   color: var(--accent);
+}
+/* Settings: the rows that open Accounts and Categories, and the way back from them. */
+.nav-row svg {
+  flex: none;
+  width: 18px;
+  height: 18px;
+  color: var(--muted);
+}
+.back-link {
+  display: inline-flex;
+  align-items: center;
+  gap: 2px;
+  align-self: flex-start;
+  margin-left: -6px;
+}
+.back-link svg {
+  width: 20px;
+  height: 20px;
+}
+/* Settings → Backup: the spots where a copied or pasted backup appears take no room until used. */
+#exportOut:empty,
+#importArea:empty {
+  display: none;
+}
+/* Settings → Frata: Plus, feedback and support in one card, each under a small heading. */
+.frata-card > div + div {
+  border-top: 1px solid var(--line);
+  margin-top: 14px;
+  padding-top: 14px;
+}
+.frata-card h3 {
+  margin: 0 0 8px;
+  font-size: 15px;
+}
+/* Privacy & terms: headings between the paragraphs. */
+.terms-h {
+  margin: 14px 0 4px;
+  font-size: 15px;
+}
+.terms .note {
+  margin: 0 0 8px;
+}
+/* Frata Plus: the card in History while it's locked, and the list of what it adds. */
+.plus-teaser h3 {
+  margin: 0 0 4px;
+  font-size: 16px;
+}
+.plus-list {
+  margin: 0 0 12px;
+  padding-left: 20px;
+  line-height: 1.5;
+}
+.plus-ok {
+  color: var(--accent);
+  font-weight: 600;
+}
+/* History → By category: the month's spending as a ring, biggest slice in the accent colour. The other
+   colours are mid-tones that read on both the light and dark backgrounds. */
+.pie-card {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  gap: 16px;
+}
+.pie {
+  position: relative;
+  width: min(220px, 70vw);
+  aspect-ratio: 1;
+}
+.pie svg {
+  width: 100%;
+  height: 100%;
+}
+.pie circle {
+  fill: none;
+  stroke-width: 6;
+}
+.pie-total {
+  position: absolute;
+  inset: 0;
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  justify-content: center;
+  gap: 2px;
+}
+.pie-total strong {
+  font-size: 20px;
+}
+.pie-legend {
+  width: 100%;
+  display: flex;
+  flex-direction: column;
+  gap: 8px;
+}
+.pie-row {
+  display: flex;
+  align-items: center;
+  gap: 10px;
+  font-size: 14.5px;
+}
+.pie-name {
+  flex: 1;
+  min-width: 0;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+.pie-pct {
+  width: 3.2em;
+  text-align: right;
+  color: var(--muted);
+  font-variant-numeric: tabular-nums;
+}
+.pie-dot {
+  width: 12px;
+  height: 12px;
+  border-radius: 50%;
+  flex: none;
+}
+.pie .pie-0 {
+  stroke: var(--accent);
+}
+.pie .pie-1 {
+  stroke: #d99a3c;
+}
+.pie .pie-2 {
+  stroke: #4f86e0;
+}
+.pie .pie-3 {
+  stroke: #d0607a;
+}
+.pie .pie-4 {
+  stroke: #8a76c8;
+}
+.pie .pie-5 {
+  stroke: #2fa39b;
+}
+.pie .pie-rest {
+  stroke: #98a0a8;
+}
+.pie-dot.pie-0 {
+  background: var(--accent);
+}
+.pie-dot.pie-1 {
+  background: #d99a3c;
+}
+.pie-dot.pie-2 {
+  background: #4f86e0;
+}
+.pie-dot.pie-3 {
+  background: #d0607a;
+}
+.pie-dot.pie-4 {
+  background: #8a76c8;
+}
+.pie-dot.pie-5 {
+  background: #2fa39b;
+}
+.pie-dot.pie-rest {
+  background: #98a0a8;
 }
 .ring {
   width: 18px;
@@ -914,6 +1086,28 @@ button.row:first-child {
 }
 
 /* buttons, fields */
+/* A double tap on a control never zooms the page, and nothing waits to see if a second tap is coming. */
+button,
+a,
+input,
+select,
+textarea,
+label {
+  touch-action: manipulation;
+}
+/* Mouse and trackpad users get feedback before they click. Phones skip it, so a tap leaves no stuck hover. */
+@media (hover: hover) and (pointer: fine) {
+  .btn:hover {
+    filter: brightness(0.96);
+  }
+  .link:hover {
+    text-decoration: underline;
+  }
+  button.row:hover,
+  .row > button.row-btn:hover {
+    background: var(--line);
+  }
+}
 .btn {
   border: 1px solid var(--line);
   background: var(--surface);
@@ -1062,6 +1256,17 @@ a.btn {
 .amt .chg {
   font-size: 12px;
   color: var(--muted);
+  white-space: normal;
+  text-align: right;
+}
+/* An expense paid in parts can have a long "paid … back" line: it wraps (between amounts, see .nw) rather
+   than push the row's title off the screen. */
+.row .amt.has-chg {
+  flex: none;
+  max-width: 60%;
+}
+.nw {
+  white-space: nowrap;
 }
 .cur-tag {
   flex: none;

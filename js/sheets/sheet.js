@@ -6,8 +6,10 @@ import { demoSheet, markPriceTipDone } from './demo.js';
 import { feedbackSheet } from './feedback.js';
 import { txSheet, updatePreview } from './entry.js';
 import { newsSheet } from './news.js';
+import { plusSheet } from './plus.js';
 import { repaySheet } from './payback.js';
 import { supportSheet } from './support.js';
+import { termsSheet } from './terms.js';
 import { fitAllThousands } from '../ui/amount.js';
 import { render } from '../ui/render.js';
 import { $ } from '../util.js';
@@ -53,7 +55,17 @@ export function drawSheet() {
                 ? feedbackSheet()
                 : sheetKind === 'support'
                   ? supportSheet()
-                  : budgetSheet());
+                  : sheetKind === 'plus'
+                    ? plusSheet()
+                    : sheetKind === 'terms'
+                      ? termsSheet()
+                      : budgetSheet());
+  // The dialog is named after its title ("New entry", "Frata Plus"…), for screen readers.
+  const title = el.querySelector('.sheet-head h2');
+  if (title) {
+    title.id = 'sheetTitle';
+    el.setAttribute('aria-labelledby', 'sheetTitle');
+  } else el.removeAttribute('aria-labelledby');
   fitAllThousands(el);
   if (sheetKind === 'tx') updatePreview();
   if (sheetKind === 'adjust') updateAdjustPreview();

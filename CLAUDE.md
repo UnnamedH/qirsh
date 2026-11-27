@@ -58,6 +58,17 @@ wrappers (`js/money.js`, `ledger.js`, `accounts.js`, `advances.js`): they load t
 - Scouts tests are in `tests/scouts.spec.js`; the shared core's are in `unit/` (`npm run test:unit`).
 - scouts.frata.cc is deployed by `wrangler.scouts.jsonc` (a second Cloudflare project) from the same files.
 
+## Frata Plus
+
+- Paid features (History → By category, budgets with several categories) check `hasPlus()` in `js/plus.js`.
+  The unlock code is in `state.unlock.code`, checked offline against `UNLOCK_KEY` in `js/config.js` by
+  `js/core/plus.js` (ECDSA P-256). `UNLOCK_KEY = null` means Plus isn't offered and everything is open.
+- Never commit a private key (`*.private.jwk` is ignored). Codes are made with `scripts/unlock-codes.mjs`.
+- Tests use the key in `tests/fixtures/plus-test-key.json`: `tests/server.mjs` swaps its public half into
+  `js/config.js`, and `plusCode()` / `unlockPlus()` in `tests/helpers.js` sign and type a code.
+- Starting over and clearing the examples keep `unlock`. No pop-ups asking for money: Plus is offered only
+  where a locked feature is, and in Settings.
+
 ## Data model rules
 
 - Currencies are `'USD'` and `'LBP'` internally; the UI says "LL". Conversion uses `state.rate`.
@@ -97,6 +108,10 @@ wrappers (`js/money.js`, `ledger.js`, `accounts.js`, `advances.js`): they load t
   `tests/privacy.spec.js` enforces this. Inline `style=` is allowed.
 - **New app file?** Add it to the `APP` list in `sw.js`, then `npm run stamp`.
   `tests/precache.spec.js` fails if a file is missing from `APP` or `BUILD` is stale.
+- **No `theme_color` in Frata's manifests, on purpose.** Chrome colours an installed Android app's gesture bar
+  with it, there is no dark version, so a light one leaves a light strip under a dark app. Without it,
+  Android follows the phone's light or dark mode. The page's `<meta name="theme-color">` tags still colour
+  the status bar. Don't add it back.
 - **App icons** come from `scripts/icon.svg` via `npm run icons`, which also writes `icons/<colour>/` and
   `manifest-<colour>.webmanifest` for each preset accent. Rerun it after changing the icon, the presets or
   `manifest.webmanifest`; `tests/precache.spec.js` checks the copies match.

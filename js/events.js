@@ -23,7 +23,7 @@ import {
   restoreAccount,
   setSavings,
 } from './accounts.js';
-import { balances, catName, catOf } from './ledger.js';
+import { balances, budgetCats, catName, catOf } from './ledger.js';
 import { fmt, other, parseAmt, parseInput, toInput } from './money.js';
 import { dismissSafariTip } from './pwa.js';
 import {
@@ -35,7 +35,8 @@ import {
   setAdjustAccount,
   updateAdjustPreview,
 } from './sheets/adjust.js';
-import { readBudget, saveBudget } from './sheets/budget.js';
+import { readBudget, saveBudget, toggleBudgetCat } from './sheets/budget.js';
+import { tryUnlock } from './plus.js';
 import {
   autoTo,
   defaultAdjCur,
@@ -76,6 +77,7 @@ import {
   setPendingImport,
   setPendingMove,
   setQuickTab,
+  setUi,
   setShowOpening,
   setView,
   showOpening,
@@ -88,6 +90,8 @@ import { historyList, historyTxs } from './views/history.js';
 /* Shows a tab, from the tab bar or at the end of a swipe. */
 function goTab(v) {
   hist.account = null;
+  // A tab always opens at its start: Settings itself, not the Accounts or Categories page left open.
+  setUi.page = null;
   setView(v);
   closeSheet();
   render();
@@ -150,6 +154,7 @@ document.addEventListener('click', (e) => {
         accounts: keptAccounts(),
         tx: own,
         budgets: state.budgets.filter((b) => !isSampleBudget(b)),
+        unlock: state.unlock,
       };
       setState(normalize(Object.assign(blankState(), keep)));
       commit();
@@ -564,7 +569,7 @@ document.addEventListener('click', (e) => {
       render();
       break;
     case 'newBudget':
-      setForm({ id: null, categoryId: null, period: 'month', amount: '', currency: 'USD' });
+      setForm({ id: null, categoryIds: [], period: 'month', amount: '', currency: 'USD' });
       openSheet('budget');
       break;
     case 'editBudget': {
@@ -572,7 +577,7 @@ document.addEventListener('click', (e) => {
       if (!b) break;
       setForm({
         id: b.id,
-        categoryId: b.categoryId,
+        categoryIds: [...budgetCats(b)],
         period: b.period,
         amount: toInput(b.amount, b.currency),
         currency: b.currency,
@@ -580,6 +585,16 @@ document.addEventListener('click', (e) => {
       openSheet('budget');
       break;
     }
+    case 'bcat':
+      readBudget();
+      toggleBudgetCat(v);
+      drawSheet();
+      break;
+    case 'bcatAll':
+      readBudget();
+      form.categoryIds = [];
+      drawSheet();
+      break;
     case 'bperiod':
       readBudget();
       form.period = v;
@@ -613,6 +628,10 @@ document.addEventListener('click', (e) => {
       break;
     case 'month':
       hist.month = new Date(hist.month.getFullYear(), hist.month.getMonth() + +v, 1);
+      render();
+      break;
+    case 'hmode':
+      hist.mode = v;
       render();
       break;
     case 'hfilter':
@@ -667,12 +686,46 @@ document.addEventListener('click', (e) => {
         if (t.categoryId === id) t.categoryId = to;
         if (t.keptCat === id) t.keptCat = to;
       });
-      state.budgets = state.budgets.filter((b) => b.categoryId !== id);
+      // A budget loses the deleted category; one left with none would become an overall cap, so it goes.
+      state.budgets = state.budgets.filter((b) => {
+        const ids = budgetCats(b);
+        if (!ids.includes(id)) return true;
+        b.categoryIds = ids.filter((x) => x !== id);
+        delete b.categoryId;
+        return b.categoryIds.length > 0;
+      });
       state.categories = state.categories.filter((x) => x.id !== id);
       commit();
       toast('Deleted ' + c.name);
       break;
     }
+    case 'backupMode':
+      setUi.backup = setUi.backup === v ? null : v;
+      render();
+      break;
+    case 'setPage':
+      setUi.page = v || null;
+      setUi.catEdit = false;
+      setArmed(null);
+      render();
+      window.scrollTo(0, 0);
+      break;
+    case 'catEdit':
+      setUi.catEdit = !setUi.catEdit;
+      setArmed(null);
+      render();
+      break;
+    case 'termsOpen':
+      setForm({});
+      openSheet('terms');
+      break;
+    case 'plusOpen':
+      setForm({});
+      openSheet('plus');
+      break;
+    case 'plusUnlock':
+      unlockPlus();
+      break;
     case 'supportOpen':
       setForm({});
       openSheet('support');
@@ -688,6 +741,9 @@ document.addEventListener('click', (e) => {
       render();
       break;
     case 'backupNow': {
+      // Straight to the ways of backing up, not just the section.
+      setUi.backup = 'out';
+      setUi.page = null;
       setView('settings');
       render();
       const sec = $('#backupSec');
@@ -814,6 +870,7 @@ document.addEventListener('click', (e) => {
           settings: state.settings,
           categories: state.categories,
           accounts: keptAccounts(),
+          unlock: state.unlock,
         };
         setState(normalize(Object.assign(blankState(), keep)));
         commit();
@@ -827,6 +884,26 @@ document.addEventListener('click', (e) => {
   }
 });
 
+/* Checks the typed Frata Plus code on the phone and, if it's genuine, keeps it with the data. */
+async function unlockPlus() {
+  const field = $('#plus-code');
+  if (!field) return;
+  form.code = field.value;
+  const info = await tryUnlock(field.value);
+  if (sheetKind !== 'plus') return;
+  if (!info) {
+    const err = $('#plus-err');
+    err.textContent = field.value.trim()
+      ? 'That code doesn’t work. Check it was copied in full.'
+      : 'Paste the code you were sent.';
+    err.hidden = false;
+    return;
+  }
+  commit();
+  drawSheet();
+  toast('Frata Plus unlocked. Thank you!');
+}
+
 /* Starting over keeps the accounts in use, like the categories; removed ones go, as their entries do. */
 const keptAccounts = () => state.accounts.filter((a) => !a.hidden).map((a) => Object.assign({}, a));
 
@@ -836,6 +913,7 @@ async function moveAway() {
   const link = empty ? FRATA_URL : await moveLink(state);
   if (!link) {
     toast('Too much data for a link. Make a backup here and import it on frata.cc.');
+    setUi.page = null;
     setView('settings');
     render();
     return;

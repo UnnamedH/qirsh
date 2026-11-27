@@ -74,18 +74,19 @@ export const inRange = (t, r) => {
 };
 
 /**
- * Total spending ('expense') or income ('income') in a date range, optionally for one category, in
+ * Total spending ('expense') or income ('income') in a date range, optionally for some categories, in
  * `cur`. Each entry counts at the rate saved on it, so the total doesn't move when the app's rate does.
  * Spending includes the part of a closed advance that was never paid back.
  * @param {import("./types.js").CoreState} state
  * @param {import("./types.js").Range} r
  * @param {string} type
- * @param {string | null | undefined} catId
+ * @param {string | string[] | null | undefined} catId one category, several, or none for all of them
  * @param {string} cur
  * @param {string | null} [account]
  * @returns {number}
  */
 export function sumIn(state, r, type, catId, cur, account) {
+  const cats = catId == null ? null : Array.isArray(catId) ? (catId.length ? catId : null) : [catId];
   let s = 0;
   for (const t of state.tx) {
     if (account && (t.account || 'wallet') !== account) continue;
@@ -93,14 +94,14 @@ export function sumIn(state, r, type, catId, cur, account) {
       if (
         t.closed &&
         t.keptCat &&
-        (!catId || t.keptCat === catId) &&
+        (!cats || cats.includes(t.keptCat)) &&
         inRange({ date: t.closedOn || t.date }, r)
       )
         s += leftIn(state, t, cur);
       continue;
     }
     if (t.type !== type) continue;
-    if (catId && t.categoryId !== catId) continue;
+    if (cats && !cats.includes(t.categoryId || '')) continue;
     if (!inRange(t, r)) continue;
     s += entryValueIn(t, cur, state.rate);
   }
@@ -122,7 +123,7 @@ export const sumUSD = (state, r, type, catId) => sumIn(state, r, type, catId, 'U
  */
 export function budgetStatus(state, b) {
   const r = range(b.period, undefined, state.settings.weekStart);
-  const spent = sumIn(state, r, 'expense', b.categoryId || null, b.currency);
+  const spent = sumIn(state, r, 'expense', budgetCats(b), b.currency);
   const limit = +b.amount;
   const pct = limit > 0 ? spent / limit : 0;
   const daysLeft = Math.max(1, Math.round((r.end.getTime() - startOfDay(new Date()).getTime()) / 864e5));
@@ -134,6 +135,28 @@ export function budgetStatus(state, b) {
     daysLeft,
     state: pct >= 1 ? 'over' : pct >= 0.8 ? 'warn' : 'ok',
   };
+}
+
+/**
+ * A range's spending split by category, biggest first, in `cur` and each entry at its own rate, like
+ * sumIn. Spending in no known category (for example a deleted one) is grouped as `id: null`.
+ * @param {import("./types.js").CoreState} state
+ * @param {import("./types.js").Range} r
+ * @param {string} cur
+ * @param {string | null} [account]
+ * @returns {{ id: string | null, total: number }[]}
+ */
+export function spendByCategory(state, r, cur, account) {
+  const known = state.categories.filter((c) => c.type !== 'income');
+  const parts = known
+    .map((c) => ({
+      id: /** @type {string | null} */ (c.id),
+      total: sumIn(state, r, 'expense', c.id, cur, account),
+    }))
+    .filter((x) => x.total > 0.005);
+  const rest = sumIn(state, r, 'expense', null, cur, account) - parts.reduce((s, x) => s + x.total, 0);
+  if (rest > 0.005) parts.push({ id: null, total: rest });
+  return parts.sort((a, b) => b.total - a.total);
 }
 
 /**
@@ -150,7 +173,21 @@ export const catOf = (state, id) => state.categories.find((c) => c.id === id);
 export const catName = (state, id) => (catOf(state, id) || { name: 'Uncategorised' }).name;
 
 /**
+ * The categories a budget covers; empty means all spending. Reads the older single `categoryId` too.
+ * @param {import("./types.js").Budget} b
+ * @returns {string[]}
+ */
+export const budgetCats = (b) =>
+  Array.isArray(b.categoryIds) ? b.categoryIds : b.categoryId ? [b.categoryId] : [];
+
+/**
+ * "All spending", one category's name, two joined with "and", or the first two and how many more.
  * @param {import("./types.js").CoreState} state
  * @param {import("./types.js").Budget} b
  */
-export const budgetName = (state, b) => (b.categoryId ? catName(state, b.categoryId) : 'All spending');
+export const budgetName = (state, b) => {
+  const names = budgetCats(b).map((id) => catName(state, id));
+  if (!names.length) return 'All spending';
+  if (names.length <= 2) return names.join(' and ');
+  return names.slice(0, 2).join(', ') + ' and ' + (names.length - 2) + ' more';
+};

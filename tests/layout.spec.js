@@ -144,3 +144,27 @@ test('the header’s date and icons are evenly spaced, level, and flush with the
     expect(Math.abs(g.edge), 'flush with the page edge ' + at).toBeLessThanOrEqual(1);
   }
 });
+
+test('the header fits on the widest date of the year, at every phone width', async ({ page }) => {
+  // "Wed 30 September" is the longest date the header shows.
+  await page.clock.setFixedTime(new Date(2026, 8, 30, 12));
+  await openApp(page);
+  for (const width of [320, 340, 360, 390, 430]) {
+    await page.setViewportSize({ width, height: 700 });
+    await page.click('.tabs [data-act=nav][data-v=history]');
+    await page.click('.tabs [data-act=nav][data-v=home]');
+    const m = await page.evaluate(() => {
+      const sub = document.querySelector('#topSub');
+      return {
+        text: sub.textContent,
+        cut: sub.scrollWidth > sub.clientWidth,
+        doc: document.documentElement.scrollWidth,
+        right: document.querySelector('.top-end').getBoundingClientRect().right,
+      };
+    });
+    const at = `at ${width}px ("${m.text}")`;
+    expect(m.cut, 'date not cut off ' + at).toBe(false);
+    expect(m.doc, 'page no wider than the screen ' + at).toBeLessThanOrEqual(width);
+    expect(m.right, at).toBeLessThanOrEqual(width);
+  }
+});

@@ -3,3 +3,6 @@ test-results/
 playwright-report/
 package-lock.json
 icons/
+
+# Vendored third-party skill, kept byte for byte so its checksum still matches
+.claude/skills/web-design-guidelines/

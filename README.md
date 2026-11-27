@@ -13,6 +13,9 @@ Plain HTML, CSS and JavaScript modules: no framework and no build step. The host
 - Accounts that are yours to name: Wallet, Savings and Whish to start with, then add, rename or remove them. Each holds both USD and LL; spend from or earn into any of them, and tap one on Home to see its own entries
 - Hide amounts on Home with one tap, for showing the app to someone
 - Swipe sideways between tabs, and pull a sheet down to close it
+- Frata Plus, a one-off purchase (Settings → Frata Plus), adds:
+  - a month's spending by category as a ring chart (History → By category)
+  - budgets that cover several categories at once (without it, a budget covers all spending or one category)
 - Fold any section on Home down to a glimpse: budgets as little rings, the month as three numbers
 - A "Buy me a coffee" link to support Frata through Whish, from the heart at the top or Settings → Support Frata
 - Feedback and bug reports from the button at the top (or Settings), by email, with the version, phone, screen size and tab filled in
@@ -128,3 +131,24 @@ For each release that users will notice:
 2. Run `npm run stamp` before committing. It writes a fingerprint of all the app's files into `BUILD` in `sw.js`, which is how phones notice there's something new.
 
 If you add a new file, also add it to the `APP` list in `sw.js`. `npm test` fails if a file is missing from the list or if `BUILD` is out of date, so CI catches both.
+
+## Frata Plus unlock codes
+
+Plus is unlocked with a code, checked on the phone with no server: each code is signed with a private key
+that only the maker keeps, and the app carries just the public key (`UNLOCK_KEY` in `js/config.js`), which
+can check a code but not make one. While `UNLOCK_KEY` is `null`, Plus isn't offered and its features are open.
+
+```bash
+npm run plus:setup
+```
+
+Run once, on your own computer: it saves the private key in `~/frata-keys` (outside the repo), puts the public
+key in `UNLOCK_KEY`, stamps the service workers and checks a test code. Run again, it reuses the same key.
+Then for each buyer:
+
+```bash
+node scripts/unlock-codes.mjs code ~/frata-keys/frata-plus.private.jwk "Buyer's name"
+```
+
+The code is kept with the person's data, so backups and moving phones keep Plus. As the app's code is public,
+this keeps honest people honest: a code can be shared, but not forged.

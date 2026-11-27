@@ -9,7 +9,14 @@ export const hist = {
   q: '',
   // Set when an account is tapped on Home: History then shows only that account's entries.
   account: null,
+  // 'list' of entries, or 'chart' of the month's spending by category.
+  mode: 'list',
 };
+
+/* Settings: which of its pages is shown ('accounts', 'categories', or null for Settings itself), which
+   backup choices are open ('out' to back up, 'in' to restore, or null), and whether the categories show
+   their move and delete buttons. */
+export const setUi = { page: null, backup: null, catEdit: false };
 
 export let pendingImport = null,
   pendingMove = null,
