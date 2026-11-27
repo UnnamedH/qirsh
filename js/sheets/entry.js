@@ -1,5 +1,6 @@
 /* Sheet for adding and editing entries: expense, income, transfer, exchange, paid for others. */
 import { paybacksOf } from '../advances.js';
+import { nextDate } from '../core/recurring.js';
 import { MAIN, accName, otherAccount, pickable } from '../accounts.js';
 import { ICON } from '../icons.js';
 import {
@@ -782,6 +783,10 @@ export function saveTx() {
     toast('Saved');
   } else {
     state.tx.push(t);
+    // Added from a due recurring entry: its schedule moves past that date in the same save.
+    const rec = f.recurringId && state.recurring.find((x) => x.id === f.recurringId);
+    const wasNext = rec && rec.next;
+    if (rec && rec.next <= f.recurringDate) rec.next = nextDate(rec, f.recurringDate);
     closeSheet();
     commit();
     toast(
@@ -792,6 +797,7 @@ export function saveTx() {
         (isT && t.toCurrency !== t.currency ? ' → ' + fmt(t.toAmount, t.toCurrency) : ''),
       () => {
         state.tx = state.tx.filter((x) => x.id !== t.id);
+        if (rec) rec.next = wasNext;
         commit();
       },
     );

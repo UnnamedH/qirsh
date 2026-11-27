@@ -1,6 +1,8 @@
 /* The saved app state: shape, loading, saving and repairing data from older versions or backups. */
 import { DEFAULT_ACCOUNTS, DEFAULT_CATS, PROTECTED } from './config.js';
+import { MAX_RECURRING, isYmd } from './core/recurring.js';
 import { sampleState } from './sample.js';
+import { parseYmd } from './util.js';
 
 export const KEY = 'qirsh.v1';
 
@@ -24,6 +26,7 @@ export function blankState() {
     categories: DEFAULT_CATS.map((c) => Object.assign({}, c)),
     tx: [],
     budgets: [],
+    recurring: [],
     lastExport: null,
     sample: false,
   };
@@ -111,6 +114,31 @@ function normalizeAccounts(s, defaults) {
   return out;
 }
 
+/* A recurring entry from saved data or a backup, repaired, or null if it can't be used. A category or account
+   that's gone falls back to Other or the main account, so it never makes an entry for something missing. */
+function normalizeRecurring(r, out) {
+  if (!isObj(r) || typeof r.id !== 'string' || !r.id || r.id.length > 40) return null;
+  if (r.type !== 'expense' && r.type !== 'income') return null;
+  const amount = +r.amount;
+  if (!(amount > 0) || !isFinite(amount) || !isCur(r.currency) || !isYmd(r.next)) return null;
+  const every = r.every === 'week' ? 'week' : 'month';
+  const income = r.type === 'income';
+  const cats = out.categories.filter((c) => (c.type === 'income') === income);
+  const x = {
+    id: r.id,
+    type: r.type,
+    amount,
+    currency: r.currency,
+    categoryId: cats.some((c) => c.id === r.categoryId) ? r.categoryId : income ? 'other-in' : 'other',
+    account: out.accounts.some((a) => a.id === r.account && !a.hidden) ? r.account : 'wallet',
+    note: typeof r.note === 'string' ? r.note.trim().slice(0, 100) : '',
+    every,
+    next: r.next,
+  };
+  if (every === 'month') x.day = Math.min(31, Math.max(1, Math.round(+r.day) || parseYmd(r.next).getDate()));
+  return x;
+}
+
 export function normalize(s) {
   const b = blankState();
   const out = Object.assign({}, b, s);
@@ -147,6 +175,11 @@ export function normalize(s) {
     delete x.categoryId;
     return x;
   });
+  const seenRec = new Set();
+  out.recurring = (Array.isArray(s.recurring) ? s.recurring : [])
+    .map((r) => normalizeRecurring(r, out))
+    .filter((r) => r && !seenRec.has(r.id) && seenRec.add(r.id))
+    .slice(0, MAX_RECURRING);
   out.tx = s.tx
     .filter((t) => isObj(t) && t.type && isFinite(+t.amount) && t.date && isCur(t.currency))
     .map((t) => {

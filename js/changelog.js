@@ -8,6 +8,7 @@ export const CHANGELOG = [
     date: '2026-11-27',
     items: [
       'Frata Plus now has Trends: in History, tap Trends to see your spending month by month, how this month compares with last, and which categories changed most.',
+      'Frata Plus also has recurring entries: set up rent, a salary or a subscription in Settings → Recurring, and when one is due it shows on Home to add or skip with a tap.',
     ],
   },
   {

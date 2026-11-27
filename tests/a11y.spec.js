@@ -76,3 +76,36 @@ test('the chart and Trends are as accessible as the list: the bars are a picture
   await expect(page.locator('.trend-bars')).toHaveAttribute('aria-hidden', 'true');
   await expect(page.locator('.trends select')).toHaveAccessibleName('Category');
 });
+
+test('the Due card, the Recurring page and its sheet have named controls and labelled fields', async ({
+  page,
+}) => {
+  await openApp(page);
+  await unlockPlus(page);
+  await page.evaluate(() => {
+    window.__qirsh.state.recurring = [
+      {
+        id: 'r',
+        type: 'expense',
+        amount: 300,
+        currency: 'USD',
+        categoryId: 'bills',
+        account: 'wallet',
+        note: 'Rent',
+        every: 'month',
+        day: 1,
+        next: '2020-01-01',
+      },
+    ];
+  });
+  await page.click('.tabs [data-act=nav][data-v=settings]');
+  await page.click('.tabs [data-act=nav][data-v=home]');
+  await expect(page.locator('#dueSec')).toBeVisible();
+  expect(await problems(page), 'home').toEqual([]);
+  await page.click('.tabs [data-act=nav][data-v=settings]');
+  await page.click('[data-act=setPage][data-v=recurring]');
+  expect(await problems(page), 'page').toEqual([]);
+  await page.click('[data-act=recNew]');
+  await expect(page.locator('#sheet')).toHaveAccessibleName('New recurring entry');
+  expect(await problems(page), 'sheet').toEqual([]);
+});

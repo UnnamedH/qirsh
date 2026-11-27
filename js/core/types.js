@@ -46,6 +46,11 @@
  * @property {Category[]} categories
  * @property {Tx[]} tx
  */
+/**
+ * An entry that repeats, like rent or a salary. `next` is the next day it's due (yyyy-mm-dd, local); a monthly
+ * one keeps its `day` of the month (the 31st falls on a short month's last day, without drifting for good).
+ * @typedef {{ id: string, type: 'expense' | 'income', amount: number, currency: Cur, categoryId: string, account: string, note: string, every: 'week' | 'month', day?: number, next: string }} Recurring
+ */
 /** @typedef {{ whole?: boolean, round?: boolean, sign?: boolean }} FmtOptions */
 
 export {};
